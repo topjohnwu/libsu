@@ -31,17 +31,6 @@ class Utils {
         return (flags & flag) != 0;
     }
 
-    static int inToOut(InputStream in, OutputStream out) throws IOException {
-        int read, total = 0;
-        byte buffer[] = new byte[4096];
-        while ((read = in.read(buffer)) > 0) {
-            out.write(buffer, 0, read);
-            total += read;
-        }
-        out.flush();
-        return total;
-    }
-
     static void log(String tag, CharSequence log) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());

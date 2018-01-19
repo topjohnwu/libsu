@@ -23,9 +23,14 @@ public abstract class ShellCallbackVector extends Vector<String> implements Shel
     }
 
     @Override
-    public boolean add(String s) {
+    public boolean add(final String s) {
         boolean ret = super.add(s);
-        handler.post(() -> onShellOutput(s));
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                ShellCallbackVector.this.onShellOutput(s);
+            }
+        });
         return ret;
     }
 }

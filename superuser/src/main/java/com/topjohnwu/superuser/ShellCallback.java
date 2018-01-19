@@ -28,8 +28,13 @@ public abstract class ShellCallback extends AbstractList<String> implements Shel
     }
 
     @Override
-    public synchronized boolean add(String s) {
-        handler.post(() -> onShellOutput(s));
+    public synchronized boolean add(final String s) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                ShellCallback.this.onShellOutput(s);
+            }
+        });
         return true;
     }
 

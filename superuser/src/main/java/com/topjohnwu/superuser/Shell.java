@@ -233,8 +233,13 @@ public class Shell implements Closeable {
         run(null, null, commands);
     }
 
-    public void run(Collection<String> output, Collection<String> error, String... commands) {
-        run_sync_output(output, error, () -> run_raw(output != null, error != null, commands));
+    public void run(final Collection<String> output, final Collection<String> error, final String... commands) {
+        run_sync_output(output, error, new Runnable() {
+            @Override
+            public void run() {
+                Shell.this.run_raw(output != null, error != null, commands);
+            }
+        });
     }
 
     public void run_async(String... commands) {
@@ -245,19 +250,22 @@ public class Shell implements Closeable {
         loadInputStream(null, null, in);
     }
 
-    public void loadInputStream(Collection<String> output, Collection<String> error, InputStream in) {
-        run_sync_output(output, error, () -> {
-            StringBuilder builder = new StringBuilder();
-            try {
-                int read;
-                byte buffer[] = new byte[4096];
-                while ((read = in.read(buffer)) > 0)
-                    builder.append(new String(buffer, 0, read));
-                STDIN.write(builder.toString().getBytes("UTF-8"));
-                STDIN.flush();
-                Utils.log(INTAG, builder);
-            } catch (IOException e) {
-                e.printStackTrace();
+    public void loadInputStream(Collection<String> output, Collection<String> error, final InputStream in) {
+        run_sync_output(output, error, new Runnable() {
+            @Override
+            public void run() {
+                StringBuilder builder = new StringBuilder();
+                try {
+                    int read;
+                    byte buffer[] = new byte[4096];
+                    while ((read = in.read(buffer)) > 0)
+                        builder.append(new String(buffer, 0, read));
+                    STDIN.write(builder.toString().getBytes("UTF-8"));
+                    STDIN.flush();
+                    Utils.log(INTAG, builder);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
