@@ -1,5 +1,6 @@
 package com.topjohnwu.superuser;
 
+import android.os.Looper;
 import android.util.Log;
 
 import java.security.SecureRandom;
@@ -36,5 +37,9 @@ class Utils {
     static void stackTrace(Throwable t) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             t.printStackTrace();
+    }
+
+    static boolean onMainThread() {
+        return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
     }
 }
