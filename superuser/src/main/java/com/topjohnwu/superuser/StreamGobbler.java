@@ -13,15 +13,15 @@ import java.util.Collections;
  * Created by topjohnwu on 2018/1/19.
  */
 
-public class StreamGobbler extends Thread {
+class StreamGobbler extends Thread {
 
-    public static final String TAG = "SHELLOUT";
+    private static final String TAG = "SHELLOUT";
 
     BufferedReader reader;
     Collection<String> writer;
     CharSequence token;
 
-    public StreamGobbler(InputStream in, Collection<String> out, CharSequence token) {
+    StreamGobbler(InputStream in, Collection<String> out, CharSequence token) {
         // Make sure our input is clean before running
         try {
             while (in.available() != 0)

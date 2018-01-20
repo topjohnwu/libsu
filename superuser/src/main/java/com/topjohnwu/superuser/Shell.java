@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Created by topjohnwu on 2018/1/19.
@@ -25,20 +24,21 @@ public class Shell implements Closeable {
     public static final int ROOT_MOUNT_MASTER = 2;
     public static final int FLAG_NON_ROOT_SHELL = 0x01;
     public static final int FLAG_MOUNT_MASTER = 0x02;
-    public static final int FLAG_NO_GLOBAL_SHELL = 0x04;
-    public static final int FLAG_VERBOSE_LOGGING = 0x08;
-    public static final int FLAG_REDIRECT_STDERR = 0x10;
+    public static final int FLAG_VERBOSE_LOGGING = 0x04;
+    public static final int FLAG_REDIRECT_STDERR = 0x08;
+
+    static int flags = 0;
 
     private static final String INTAG = "SHELL_IN";
     private static final String TAG = "LIBSU";
-
-    static int flags = 0;
     private static WeakReference<ShellContainer> weakContainer = new WeakReference<>(null);
+
+    public int status;
+
+    final Process process;
     final OutputStream STDIN;
     final InputStream STDOUT;
     final InputStream STDERR;
-    private final Process process;
-    public int status;
 
     private Shell(String... cmd) throws IOException {
         process = Runtime.getRuntime().exec(cmd);
@@ -52,12 +52,16 @@ public class Shell implements Closeable {
         weakContainer = new WeakReference<>(container);
     }
 
-    public static void addFlags(int f) {
-        flags |= f;
+    public static void addFlags(int flags) {
+        Shell.flags |= flags;
     }
 
-    public static void setFlags(int f) {
-        flags = f;
+    public static void removeFlags(int flags) {
+        Shell.flags &= (~flags);
+    }
+
+    public static void setFlags(int flags) {
+        Shell.flags = flags;
     }
 
     public static boolean rootAccess() {
@@ -68,42 +72,66 @@ public class Shell implements Closeable {
         }
     }
 
+    private static void testShell(Shell shell) throws IOException {
+        shell.STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
+        shell.STDIN.flush();
+        String s = new BufferedReader(new InputStreamReader(shell.STDOUT)).readLine();
+        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
+            shell.close();
+            throw new IOException();
+        }
+    }
+
     private static void testRootShell(Shell shell) throws IOException {
         shell.STDIN.write(("id\n").getBytes("UTF-8"));
         shell.STDIN.flush();
         String s = new BufferedReader(new InputStreamReader(shell.STDOUT)).readLine();
         if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
-            shell.STDIN.close();
-            shell.STDIN.close();
+            shell.close();
             throw new IOException();
         }
     }
 
-    public static Shell getShell() throws NoShellException {
-        return getShell(Utils.hasFlag(FLAG_NO_GLOBAL_SHELL) ? null : weakContainer.get());
+    public static Shell newShell() throws NoShellException {
+        return getShell(null);
     }
 
-    public static Shell getShell(ShellContainer container) throws NoShellException {
+    public static Shell newShell(String... commands) throws NoShellException {
+        try {
+            Shell shell = new Shell(commands);
+            testShell(shell);
+            shell.status = NON_ROOT_SHELL;
+            try {
+                testRootShell(shell);
+                shell.status = ROOT_SHELL;
+            } catch (IOException ignored) {}
+            return shell;
+        } catch (IOException e) {
+            Utils.stackTrace(e);
+            throw new NoShellException();
+        }
+    }
+
+    public static Shell getShell() throws NoShellException {
+        return getShell(weakContainer.get());
+    }
+
+    private static Shell getShell(ShellContainer container) throws NoShellException {
         boolean newShell = container == null || container.getShell() == null;
 
         Shell shell = newShell ? null : container.getShell();
 
         if (!newShell) {
-            try {
-                shell.process.exitValue();
-                // Process is dead, start new shell
-                newShell = true;
-            } catch (IllegalThreadStateException ignored) {
-                // This should be the expected result
-            }
+            newShell = !shell.isAlive();
         }
 
         if (newShell && !Utils.hasFlag(FLAG_NON_ROOT_SHELL) && Utils.hasFlag(FLAG_MOUNT_MASTER)) {
             // Try mount master
             try {
-                shell = new Shell("su", "--mount-master");
-                testRootShell(shell);
                 Utils.log(TAG, "su --mount-master");
+                shell = new Shell("su", "--mount-master");
+                testShell(shell);
+                testRootShell(shell);
                 newShell = false;
                 shell.status = ROOT_MOUNT_MASTER;
             } catch (IOException e) {
@@ -115,9 +143,10 @@ public class Shell implements Closeable {
         if (newShell && !Utils.hasFlag(FLAG_NON_ROOT_SHELL)) {
             // Try normal root shell
             try {
-                shell = new Shell("su");
-                testRootShell(shell);
                 Utils.log(TAG, "su");
+                shell = new Shell("su");
+                testShell(shell);
+                testRootShell(shell);
                 newShell = false;
                 shell.status = ROOT_SHELL;
             } catch (IOException e) {
@@ -129,13 +158,14 @@ public class Shell implements Closeable {
         if (newShell) {
             // Try normal non-root shell
             try {
-                shell = new Shell("sh");
                 Utils.log(TAG, "sh");
-                newShell = false;
+                shell = new Shell("sh");
+                testShell(shell);
                 shell.status = NON_ROOT_SHELL;
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
+                throw new NoShellException();
             }
         }
 
@@ -145,8 +175,8 @@ public class Shell implements Closeable {
         return shell;
     }
 
-    public static List<String> sh(String... commands) {
-        List<String> res = new ArrayList<>();
+    public static ArrayList<String> sh(String... commands) {
+        ArrayList<String> res = new ArrayList<>();
         sh(res, commands);
         return res;
     }
@@ -156,33 +186,44 @@ public class Shell implements Closeable {
             Shell shell = getShell();
             shell.run(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
         } catch (NoShellException e) {
-            e.printStackTrace();
+            Utils.stackTrace(e);
         }
 
     }
 
-    public static void sh_async(String... commands) {
+    public static void sh_raw(String... commands) {
         try {
             Shell shell = getShell();
-            shell.run_async(commands);
+            shell.run_raw(commands);
         } catch (NoShellException e) {
-            e.printStackTrace();
+            Utils.stackTrace(e);
         }
     }
 
-    public static List<String> su(String... commands) {
-        if (!rootAccess()) return sh();
-        return sh(commands);
+    public static ArrayList<String> su(String... commands) {
+        ArrayList<String> res = new ArrayList<>();
+        su(res, commands);
+        return res;
     }
 
     public static void su(Collection<String> output, String... commands) {
-        if (!rootAccess()) return;
-        sh(output, commands);
+        try {
+            Shell shell = getShell();
+            if (shell.status > 0)
+                shell.run(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+        } catch (NoShellException e) {
+            Utils.stackTrace(e);
+        }
     }
 
-    public static void su_async(String... commands) {
-        if (!rootAccess()) return;
-        sh_async(commands);
+    public static void su_raw(String... commands) {
+        try {
+            Shell shell = getShell();
+            if (shell.status > 0)
+                shell.run_raw(commands);
+        } catch (NoShellException e) {
+            Utils.stackTrace(e);
+        }
     }
 
     private void run_raw(boolean stdout, boolean stderr, String... commands) {
@@ -242,7 +283,7 @@ public class Shell implements Closeable {
         });
     }
 
-    public void run_async(String... commands) {
+    public void run_raw(String... commands) {
         run_raw(false, false, commands);
     }
 
@@ -270,6 +311,17 @@ public class Shell implements Closeable {
         });
     }
 
+    public boolean isAlive() {
+        try {
+            process.exitValue();
+            // Process is dead, start new shell
+            return false;
+        } catch (IllegalThreadStateException e) {
+            // This should be the expected result
+            return true;
+        }
+    }
+
     @Override
     public void close() throws IOException {
         STDIN.close();
@@ -283,7 +335,7 @@ public class Shell implements Closeable {
         close();
     }
 
-    interface IShellCallback {
+    public interface IShellCallback {
         void onShellOutput(String e);
     }
 }
