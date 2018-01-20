@@ -86,7 +86,6 @@ public class Shell implements Closeable {
         shell.STDIN.flush();
         String s = new BufferedReader(new InputStreamReader(shell.STDOUT)).readLine();
         if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
-            shell.close();
             throw new IOException();
         }
     }
@@ -96,7 +95,6 @@ public class Shell implements Closeable {
         shell.STDIN.flush();
         String s = new BufferedReader(new InputStreamReader(shell.STDOUT)).readLine();
         if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
-            shell.close();
             throw new IOException();
         }
     }
@@ -150,6 +148,7 @@ public class Shell implements Closeable {
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
+                shell = null;
             }
         }
 
@@ -167,6 +166,7 @@ public class Shell implements Closeable {
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
+                shell = null;
             }
         }
 
