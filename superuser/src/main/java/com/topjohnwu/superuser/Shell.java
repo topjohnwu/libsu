@@ -32,6 +32,7 @@ public class Shell implements Closeable {
     private static final String INTAG = "SHELL_IN";
     private static final String TAG = "LIBSU";
     private static WeakReference<ShellContainer> weakContainer = new WeakReference<>(null);
+    private static ShellInitializer initializer = new ShellInitializer();
 
     public int status;
 
@@ -50,6 +51,14 @@ public class Shell implements Closeable {
 
     public static void setGlobalContainer(ShellContainer container) {
         weakContainer = new WeakReference<>(container);
+    }
+
+    public static void setInitializer(ShellInitializer init) {
+        initializer = init;
+    }
+
+    public static void unsetInitializer() {
+        initializer = new ShellInitializer();
     }
 
     public static void addFlags(int flags) {
@@ -101,9 +110,11 @@ public class Shell implements Closeable {
             Shell shell = new Shell(commands);
             testShell(shell);
             shell.status = NON_ROOT_SHELL;
+            initializer.onShellInit(shell);
             try {
                 testRootShell(shell);
                 shell.status = ROOT_SHELL;
+                initializer.onRootShellInit(shell);
             } catch (IOException ignored) {}
             return shell;
         } catch (IOException e) {
@@ -134,6 +145,8 @@ public class Shell implements Closeable {
                 testRootShell(shell);
                 newShell = false;
                 shell.status = ROOT_MOUNT_MASTER;
+                initializer.onShellInit(shell);
+                initializer.onRootShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
@@ -149,6 +162,8 @@ public class Shell implements Closeable {
                 testRootShell(shell);
                 newShell = false;
                 shell.status = ROOT_SHELL;
+                initializer.onShellInit(shell);
+                initializer.onRootShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
@@ -162,6 +177,7 @@ public class Shell implements Closeable {
                 shell = new Shell("sh");
                 testShell(shell);
                 shell.status = NON_ROOT_SHELL;
+                initializer.onShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
