@@ -2,7 +2,6 @@ package com.topjohnwu.libsuexample;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
@@ -11,14 +10,14 @@ import android.widget.TextView;
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellCallback;
-import com.topjohnwu.superuser.ShellCallbackVector;
 
 import java.util.List;
 
 public class MainActivity extends Activity {
 
+    private static final String TAG = "EXAMPLE";
+
     private TextView console;
-    private Button cmd, script, clear;
     private EditText input;
     private ScrollView sv;
     private List<String> callback;
@@ -31,21 +30,46 @@ public class MainActivity extends Activity {
         input = findViewById(R.id.cmd_input);
         sv = findViewById(R.id.sv);
 
-        cmd = findViewById(R.id.run_cmd);
-        script = findViewById(R.id.run_script);
-        clear = findViewById(R.id.clear);
+        Button sync_cmd = findViewById(R.id.sync_cmd);
+        Button async_cmd = findViewById(R.id.async_cmd);
+        Button raw_cmd = findViewById(R.id.raw_cmd);
+        Button sync_script = findViewById(R.id.sync_script);
+        Button async_script = findViewById(R.id.async_script);
+        Button clear = findViewById(R.id.clear);
 
-        // Run the shell command in the input box
-        cmd.setOnClickListener(v -> {
-           Shell.su(callback, input.getText().toString());
-           input.setText("");
+        // Run the shell command in the input box synchronously
+        sync_cmd.setOnClickListener(v -> {
+            Shell.su(callback, input.getText().toString());
+            input.setText("");
+        });
+
+        // Run the shell command in the input box asynchronously
+        async_cmd.setOnClickListener(v -> {
+            Shell.su_async(callback, input.getText().toString());
+            input.setText("");
+        });
+
+        // Run the shell command in the input box ignoring output asynchronously
+        raw_cmd.setOnClickListener(v -> {
+            Shell.su_raw(input.getText().toString());
+            input.setText("");
         });
 
         // Load a script from raw resources
-        script.setOnClickListener(v -> {
+        sync_script.setOnClickListener(v -> {
             try {
                 Shell.getShell().loadInputStream(callback, callback,
-                        getResources().openRawResource(R.raw.script));
+                        getResources().openRawResource(R.raw.info));
+            } catch (NoShellException e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Load a script from raw resources
+        async_script.setOnClickListener(v -> {
+            try {
+                Shell.getShell().loadInputStreamAsync(callback, callback,
+                        getResources().openRawResource(R.raw.count));
             } catch (NoShellException e) {
                 e.printStackTrace();
             }

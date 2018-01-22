@@ -3,6 +3,8 @@ package com.topjohnwu.superuser;
 import android.os.Looper;
 import android.util.Log;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.SecureRandom;
 
 class Utils {
@@ -29,17 +31,24 @@ class Utils {
         return (flags & flag) != 0;
     }
 
-    static void log(String tag, CharSequence log) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
+    static void log(String tag, Object log) {
+        if (BuildConfig.DEBUG && hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());
     }
 
     static void stackTrace(Throwable t) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
+        if (BuildConfig.DEBUG && hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             t.printStackTrace();
     }
 
     static boolean onMainThread() {
         return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
+    }
+
+    static void cleanInputStream(InputStream in) {
+        try {
+            while (in.available() != 0)
+                in.skip(in.available());
+        } catch (IOException ignored) {}
     }
 }

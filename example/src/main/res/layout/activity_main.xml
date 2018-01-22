@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/background_dark"
     android:orientation="vertical"
+    android:focusableInTouchMode="true"
     tools:context="com.topjohnwu.libsuexample.MainActivity">
 
     <ScrollView
@@ -43,31 +44,62 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/darker_gray"
-        android:orientation="horizontal"
-        android:paddingBottom="5dp"
-        android:paddingTop="5dp" >
+        android:orientation="horizontal">
 
         <Button
-            android:id="@+id/run_cmd"
+            android:id="@+id/sync_cmd"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Run cmd" />
+            android:text="Sync CMD" />
 
         <Button
-            android:id="@+id/run_script"
+            android:id="@+id/async_cmd"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Run script" />
+            android:text="Async CMD" />
+
+        <Button
+            android:id="@+id/raw_cmd"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Raw CMD" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="?android:buttonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/sync_script"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Sync Script" />
+
+        <Button
+            android:id="@+id/async_script"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Async Script" />
 
         <Button
             android:id="@+id/clear"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Clear" />
 

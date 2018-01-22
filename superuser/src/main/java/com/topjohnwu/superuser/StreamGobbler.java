@@ -16,35 +16,78 @@ import java.util.Collections;
 class StreamGobbler extends Thread {
 
     private static final String TAG = "SHELLOUT";
+    private static final int PENDING = 0;
+    private static final int RUNNING = 1;
+    private static final int TERMINATE = 2;
 
-    BufferedReader reader;
-    Collection<String> writer;
-    CharSequence token;
+    private final InputStream in;
+    private CharSequence token;
+    private Collection<String> writer;
 
-    StreamGobbler(InputStream in, Collection<String> out, CharSequence token) {
-        // Make sure our input is clean before running
-        try {
-            while (in.available() != 0)
-                in.skip(in.available());
-        } catch (IOException ignored) {}
+    private int status;
 
-        reader = new BufferedReader(new InputStreamReader(in));
-        writer = out == null ? null : Collections.synchronizedCollection(out);
+    StreamGobbler(InputStream in, CharSequence token) {
+        status = PENDING;
+        this.in = in;
         this.token = token;
     }
 
     @Override
+    protected void finalize() throws Throwable {
+        terminate();
+    }
+
+    synchronized void begin(Collection<String> out) {
+        if (!isAlive())
+            start();
+        status = RUNNING;
+        writer = out == null ? null : Collections.synchronizedCollection(out);
+        notifyAll();
+    }
+
+    synchronized void terminate() {
+        status = TERMINATE;
+        if (isAlive())
+            notifyAll();
+    }
+
+    private synchronized void notifyDone() {
+        status = PENDING;
+        writer = null;
+        notifyAll();
+    }
+
+    synchronized void waitDone() throws InterruptedException {
+        while (status != PENDING)
+            wait();
+    }
+
+    @Override
     public void run() {
-        // Keep reading the InputStream until it ends (or an error occurs)
-        try {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (TextUtils.equals(line, token))
-                    return;
-                if (writer != null)
-                    writer.add(line);
-                Utils.log(TAG, line);
-            }
-        } catch (IOException ignored) {}
+        while (true) {
+            try {
+                synchronized(this) {
+                    while (status != RUNNING) {
+                        if (status == TERMINATE)
+                            return;
+                        wait();
+                    }
+                }
+                synchronized (in) {
+                    Utils.cleanInputStream(in);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (TextUtils.equals(line, token)) {
+                            notifyDone();
+                            break;
+                        }
+                        if (writer != null)
+                            writer.add(line);
+                        Utils.log(TAG, line);
+                    }
+                }
+            } catch (InterruptedException | IOException ignored) {}
+        }
     }
 }

@@ -23,7 +23,7 @@ public class ExampleApp extends Application implements ShellContainer {
     public void onCreate() {
         super.onCreate();
         // Enable verbose logging flags
-        Shell.addFlags(Shell.FLAG_VERBOSE_LOGGING);
+        Shell.addFlags(Shell.FLAG_VERBOSE_LOGGING | Shell.FLAG_REDIRECT_STDERR);
         Shell.setGlobalContainer(this);
     }
 
