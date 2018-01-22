@@ -17,8 +17,9 @@ class StreamGobbler extends Thread {
 
     private static final String TAG = "SHELLOUT";
     private static final int PENDING = 0;
-    private static final int RUNNING = 1;
-    private static final int TERMINATE = 2;
+    private static final int BEGIN = 1;
+    private static final int RUNNING = 2;
+    private static final int TERMINATE = 3;
 
     private final InputStream in;
     private CharSequence token;
@@ -40,7 +41,10 @@ class StreamGobbler extends Thread {
     synchronized void begin(Collection<String> out) {
         if (!isAlive())
             start();
-        status = RUNNING;
+        status = BEGIN;
+        synchronized (in) {
+            Utils.cleanInputStream(in);
+        }
         writer = out == null ? null : Collections.synchronizedCollection(out);
         notifyAll();
     }
@@ -67,26 +71,25 @@ class StreamGobbler extends Thread {
         while (true) {
             try {
                 synchronized(this) {
-                    while (status != RUNNING) {
+                    while (status != BEGIN) {
                         if (status == TERMINATE)
                             return;
                         wait();
                     }
+                    status = RUNNING;
                 }
                 synchronized (in) {
-                    Utils.cleanInputStream(in);
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in));
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        if (TextUtils.equals(line, token)) {
-                            notifyDone();
+                        if (TextUtils.equals(line, token))
                             break;
-                        }
                         if (writer != null)
                             writer.add(line);
                         Utils.log(TAG, line);
                     }
                 }
+                notifyDone();
             } catch (InterruptedException | IOException ignored) {}
         }
     }
