@@ -94,6 +94,11 @@ public class Shell implements Closeable {
         Shell.flags &= (~flags);
     }
 
+    public static void enableVerboseLogging(boolean verbose) {
+        if (verbose)
+            addFlags(FLAG_VERBOSE_LOGGING);
+    }
+
     public static Shell getShell() throws NoShellException {
         Shell shell = getGlobalShell();
 

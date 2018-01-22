@@ -32,12 +32,12 @@ class Utils {
     }
 
     static void log(String tag, Object log) {
-        if (BuildConfig.DEBUG && hasFlag(Shell.FLAG_VERBOSE_LOGGING))
+        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());
     }
 
     static void stackTrace(Throwable t) {
-        if (BuildConfig.DEBUG && hasFlag(Shell.FLAG_VERBOSE_LOGGING))
+        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             t.printStackTrace();
     }
 
