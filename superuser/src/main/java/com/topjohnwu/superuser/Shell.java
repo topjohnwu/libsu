@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -130,19 +130,19 @@ public class Shell implements Closeable {
         return res;
     }
 
-    public static void sh(Collection<String> output, String... commands) {
+    public static void sh(List<String> output, String... commands) {
         sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
     }
 
-    public static void sh(Collection<String> output, Collection<String> error, String... commands) {
+    public static void sh(List<String> output, List<String> error, String... commands) {
         global_run_wrapper(false, output, error, commands);
     }
 
-    public static PoolThread sh_async(final Collection<String> output, final String... commands) {
+    public static PoolThread sh_async(final List<String> output, final String... commands) {
         return sh_async(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
     }
 
-    public static PoolThread sh_async(Collection<String> output, Collection<String> error, String... commands) {
+    public static PoolThread sh_async(List<String> output, List<String> error, String... commands) {
         return global_run_async_wrapper(false, output, error, commands);
     }
 
@@ -160,19 +160,19 @@ public class Shell implements Closeable {
         return res;
     }
 
-    public static void su(Collection<String> output, String... commands) {
+    public static void su(List<String> output, String... commands) {
         su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
     }
 
-    public static void su(Collection<String> output, Collection<String> error, String... commands) {
+    public static void su(List<String> output, List<String> error, String... commands) {
         global_run_wrapper(true, output, error, commands);
     }
 
-    public static PoolThread su_async(final Collection<String> output, final String... commands) {
+    public static PoolThread su_async(final List<String> output, final String... commands) {
         return su_async(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
     }
 
-    public static PoolThread su_async(Collection<String> output, Collection<String> error, String... commands) {
+    public static PoolThread su_async(List<String> output, List<String> error, String... commands) {
         return global_run_async_wrapper(true, output, error, commands);
     }
 
@@ -203,7 +203,7 @@ public class Shell implements Closeable {
         run(null, null, commands);
     }
 
-    public void run(final Collection<String> output, final Collection<String> error, final String... commands) {
+    public void run(final List<String> output, final List<String> error, final String... commands) {
         run_sync_output(output, error, new Runnable() {
             @Override
             public void run() {
@@ -212,7 +212,7 @@ public class Shell implements Closeable {
         });
     }
 
-    public PoolThread run_async(final Collection<String> output, final Collection<String> error, final String... commands) {
+    public PoolThread run_async(final List<String> output, final List<String> error, final String... commands) {
         return run_async_output(output, error, new Runnable() {
             @Override
             public void run() {
@@ -234,7 +234,7 @@ public class Shell implements Closeable {
         loadInputStream(null, null, in);
     }
 
-    public void loadInputStream(Collection<String> output, Collection<String> error, final InputStream in) {
+    public void loadInputStream(List<String> output, List<String> error, final InputStream in) {
         run_sync_output(output, error, new LoadInputStream(in));
     }
 
@@ -242,7 +242,7 @@ public class Shell implements Closeable {
         loadInputStreamAsync(null, null, in);
     }
 
-    public void loadInputStreamAsync(Collection<String> output, Collection<String> error, final InputStream in) {
+    public void loadInputStreamAsync(List<String> output, List<String> error, final InputStream in) {
         run_async_output(output, error, new LoadInputStream(in));
     }
 
@@ -353,8 +353,8 @@ public class Shell implements Closeable {
         return shell;
     }
 
-    private static void global_run_wrapper(boolean root, Collection<String> output,
-                                           Collection<String> error, String... commands) {
+    private static void global_run_wrapper(boolean root, List<String> output,
+                                           List<String> error, String... commands) {
         try {
             Shell shell = getShell();
             if (root && shell.status == NON_ROOT_SHELL)
@@ -365,8 +365,8 @@ public class Shell implements Closeable {
         }
     }
 
-    private static PoolThread global_run_async_wrapper(final boolean root, final Collection<String> output,
-                                                       final Collection<String> error, final String... commands) {
+    private static PoolThread global_run_async_wrapper(final boolean root, final List<String> output,
+                                                       final List<String> error, final String... commands) {
         try {
             Shell shell = getShell();
             if (root && shell.status == NON_ROOT_SHELL)
@@ -425,7 +425,7 @@ public class Shell implements Closeable {
         }
     }
 
-    private void run_sync_output(Collection<String> output, Collection<String> error, Runnable callback) {
+    private void run_sync_output(List<String> output, List<String> error, Runnable callback) {
         lock.lock();
         Utils.log(TAG, "run_sync_output");
         try {
@@ -449,7 +449,7 @@ public class Shell implements Closeable {
         }
     }
 
-    private PoolThread run_async_output(final Collection<String> output, final Collection<String> error, final Runnable callback) {
+    private PoolThread run_async_output(final List<String> output, final List<String> error, final Runnable callback) {
         Utils.log(TAG, "run_async_output");
         return new PoolThread() {
             @Override

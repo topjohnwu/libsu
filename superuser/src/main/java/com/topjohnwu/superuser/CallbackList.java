@@ -10,7 +10,7 @@ import java.util.List;
  * An {@code AbstractList} that calls {@code onAddElement} when a new element is added to the list.
  * <p>
  * To simplify the API of {@link Shell}, both STDOUT and STDERR will output to
- * {@link java.util.Collection}. This class is useful if you want to trigger a callback
+ * {@link List}. This class is useful if you want to trigger a callback
  * every time {@link Shell} outputs a new line: simply implement {@link #onAddElement(Object)}, and
  * provide an instance to the shell.
  * <p>

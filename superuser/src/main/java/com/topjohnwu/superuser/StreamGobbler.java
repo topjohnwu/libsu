@@ -6,8 +6,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by topjohnwu on 2018/1/19.
@@ -23,7 +23,7 @@ class StreamGobbler extends Thread {
 
     private final InputStream in;
     private CharSequence token;
-    private Collection<String> writer;
+    private List<String> writer;
 
     private int status;
 
@@ -38,14 +38,14 @@ class StreamGobbler extends Thread {
         terminate();
     }
 
-    synchronized void begin(Collection<String> out) {
+    synchronized void begin(List<String> out) {
         if (!isAlive())
             start();
         status = BEGIN;
         synchronized (in) {
             Utils.cleanInputStream(in);
         }
-        writer = out == null ? null : Collections.synchronizedCollection(out);
+        writer = out == null ? null : Collections.synchronizedList(out);
         notifyAll();
     }
 
