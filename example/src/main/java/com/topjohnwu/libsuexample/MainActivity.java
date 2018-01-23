@@ -7,9 +7,9 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ShellCallback;
 
 import java.util.List;
 
@@ -81,11 +81,12 @@ public class MainActivity extends Activity {
         });
 
         // We create a ShellCallback to update the UI with the Shell output
-        callback = new ShellCallback() {
+        callback = new CallbackList<String>() {
             StringBuilder builder = new StringBuilder();
+
             @Override
-            public void onShellOutput(String e) {
-                builder.append(e).append('\n');
+            public void onAddElement(String s) {
+                builder.append(s).append('\n');
                 console.setText(builder);
                 sv.postDelayed(() -> sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
             }

@@ -487,9 +487,4 @@ public class Shell implements Closeable {
             }
         }
     }
-
-    public interface IShellCallback {
-        void onShellOutput(String e);
-    }
-
 }

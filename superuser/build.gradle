@@ -3,6 +3,15 @@ apply plugin: 'com.github.dcendents.android-maven'
 
 group='com.github.topjohnwu'
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
+    }
+}
+
 android {
     compileSdkVersion 27
 
