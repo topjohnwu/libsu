@@ -9,10 +9,6 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by topjohnwu on 2018/1/19.
- */
-
 class StreamGobbler extends Thread {
 
     private static final String TAG = "SHELLOUT";

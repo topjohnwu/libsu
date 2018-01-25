@@ -18,8 +18,6 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 27
-        versionCode 10
-        versionName "0.1.0"
     }
 
     buildTypes {
@@ -32,6 +30,7 @@ android {
 
 task javadoc(type: Javadoc) {
     failOnError  false
+    title = 'libsu API'
     source = android.sourceSets.main.java.sourceFiles
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
     classpath += configurations.compile
@@ -42,4 +41,5 @@ task javadoc(type: Javadoc) {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:support-annotations:27.0.2'
 }

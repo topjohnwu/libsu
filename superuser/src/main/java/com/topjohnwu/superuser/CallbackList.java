@@ -26,8 +26,13 @@ import java.util.List;
 
 public abstract class CallbackList<E> extends AbstractList<E> {
 
-    private Handler handler = null;
-    private List<E> mBase = null;
+    /**
+     * The internal handler to run the callback on the main thread.
+     * It will only get created when the constructor is called on the main thread.
+     */
+    protected Handler handler = null;
+
+    protected List<E> mBase = null;
 
     /**
      * Sole constructor. Will setup a {@link Handler} if constructed in the main thread.

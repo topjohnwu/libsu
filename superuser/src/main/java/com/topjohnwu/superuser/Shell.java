@@ -1,6 +1,10 @@
 package com.topjohnwu.superuser;
 
+import android.app.Application;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import java.io.BufferedReader;
@@ -12,30 +16,148 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by topjohnwu on 2018/1/19.
+ * A class providing an API to an interactive (root) shell.
+ * <p>
+ * This class can be put into 3 categories: the static methods, which are some utility functions;
+ * the methods in {@link Sync} and {@link Async}, which are high level APIs using the global
+ * {@code Shell} instance; the instance methods, which are low level APIs interacting with the invoking
+ * {@code Shell} instance.
+ * <p>
+ * A {@code Shell} instance consists of a Unix shell process along with 2 additional threads to
+ * gobble through STDOUT and STDERR. The process itself and the 2 worker threads are always running
+ * in the background as long as the {@code Shell} instance exists unless an error occurs.
+ * <p>
+ * Creating a new root shell is an expensive operation, so the best practice for any root app is to
+ * create a single shell session and share it across the application. This class is designed with
+ * this concept in mind, and provides a very easy way to share shell sessions. One of the challenges
+ * in sharing a shell session is synchronization, as a single shell can only do tasks serially. This
+ * class does all the heavy lifting under-the-hood, providing consistent output and synchronization.
+ * In multi-thread environments or using the asynchronous APIs in this class, the shell and
+ * all callbacks are all handled with concurrency in mind, so all tasks will be queued internally.
+ * <p>
+ * A global shell means it needs a container to store the {@code Shell} instance.
+ * Generally, most developers would want to have the {@code Shell} instance shared globally
+ * across the application. In that case, the developer can directly subclass the the readily
+ * available {@link ContainerApp} (which extends {@link Application}) and the setup is all done.
+ * If it is impossible to subclass {@link ContainerApp}, or for some reason one would
+ * want to store the {@code Shell} instance somewhere else, the developer would need to manually
+ * create a volatile field in the target class for storing the {@code Shell} instance, implement the
+ * {@link Container} interface to expose the new field, and finally register the container as a
+ * global container in its constructor by calling {@link #setContainer(Container)}. If no
+ * {@link Container} is setup, every shell related methods (including {@link #rootAccess()})
+ * will respawn a new shell process, which is very inefficient.
+ * <p>
+ * The reason behind this design is to let the {@code Shell} instance live along with the life
+ * cycle of the target class. The {@code Shell} class statically stores a {@link WeakReference}
+ * of the registered container, which means the container could be garbage collected if applicable.
+ * For example, one decides to store the {@code Shell} instance in an {@link android.app.Activity}.
+ * When the {@code Activity} is constructed, it shall register itself as the global
+ * {@link Container}. All root commands will be executed via the single {@code Shell}
+ * instance stored in a field of the activity as long as the activity is alive. When the activity
+ * is terminated (e.g. the user leaves the activity), the garbage collector will do its job and close
+ * the root shell, and at the same time the reference to the container will also be removed.
+ * <p>
+ * Once a global {@link Container} is registered, use {@link #getShell()} (synchronously) or
+ * {@link #getShell(GetShellCallback)} (asynchronously) to get the global {@code Shell} instance.
+ * However in most cases, developers do not need to get a {@code Shell} instance; instead use
+ * the helper methods in {@link Sync} and {@link Async}, as they all use the global
+ * shell and provides a higher level API.
+ * One thing worth mentioning: {@code sh(...)} and {@code su(...)} behaves exactly the same, the
+ * only difference is that {@code su(...)} methods will only run if the underlying {@code Shell}
+ * is a root shell. This also means that {@code sh(...)} will run in a root environment if the
+ * global shell is actually a root shell.
+ * <p>
+ * The {@link Async} class hosts all asynchronous helper methods, and they are all
+ * guaranteed to return immediately: it will get shell asynchronously and run commands
+ * asynchronously. All asynchronous tasks are queued and executed with Android's native
+ * {@link AsyncTask#THREAD_POOL_EXECUTOR}, so threads and execution is managed along with all other
+ * {@link AsyncTask} by the system.
+ * Asynchronous APIs are useful when the developer just wants to run commands and does not care the
+ * output at all ({@link Async#su(String...)}). One can register a {@link Async.Callback}
+ * when the asynchronous task is done, the outputs will be passed to the callback. Furthermore,
+ * since the output is updated asynchronously, a more advanced callback could be done with the help
+ * of {@link CallbackList}: {@link CallbackList#onAddElement(Object)} will be invoked every time a
+ * new line is outputted.
+ * <p>
+ * Developers can check the example that came along with the library, it demonstrates many features
+ * the library has to offer.
  */
 
 public class Shell implements Closeable {
 
+    /**
+     * Shell status: Unknown. One possible result of {@link #getStatus()}.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int UNKNOWN = -1;
+    /**
+     * Shell status: Non-root shell. One possible result of {@link #getStatus()}.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int NON_ROOT_SHELL = 0;
+    /**
+     * Shell status: Root shell. One possible result of {@link #getStatus()}.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int ROOT_SHELL = 1;
+    /**
+     * Shell status: Root shell with mount master enabled. One possible result of {@link #getStatus()}.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int ROOT_MOUNT_MASTER = 2;
+    /**
+     * If set, create a non-root shell by default.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int FLAG_NON_ROOT_SHELL = 0x01;
+    /**
+     * If set, create a root shell with {@code --mount-master} option.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int FLAG_MOUNT_MASTER = 0x02;
+    /**
+     * If set, verbose log everything.
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int FLAG_VERBOSE_LOGGING = 0x04;
+    /**
+     * If set, STDERR outputs will be stored in STDOUT outputs.
+     * <p>
+     * Note: This flag affects all methods in {@link Sync} {@link Async} except:
+     * <ul>
+     *     <li>{@link Sync#sh(List, List, String...)}</li>
+     *     <li>{@link Sync#su(List, List, String...)}</li>
+     *     <li>{@link Sync#loadScript(List, List, InputStream)}</li>
+     *     <li>{@link Async#sh(List, List, String...)}</li>
+     *     <li>{@link Async#sh(List, List, Shell.Async.Callback, String...)}</li>
+     *     <li>{@link Async#su(List, List, String...)}</li>
+     *     <li>{@link Async#su(List, List, Shell.Async.Callback, String...)}</li>
+     *     <li>{@link Async#loadScript(List, List, InputStream)}</li>
+     *     <li>{@link Async#loadScript(List, List, Shell.Async.Callback, InputStream)}</li>
+     * </ul>
+     * <p>
+     * Constant value {@value}.
+     */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
 
     static int flags = 0;
 
     private static final String INTAG = "SHELL_IN";
     private static final String TAG = "LIBSU";
-    private static WeakReference<ShellContainer> weakContainer = new WeakReference<>(null);
-    private static ShellInitializer initializer = new ShellInitializer();
+    private static WeakReference<Container> weakContainer = new WeakReference<>(null);
+    private static Initializer initializer = new Initializer();
 
     final Process process;
     final OutputStream STDIN;
@@ -49,16 +171,20 @@ public class Shell implements Closeable {
     private StreamGobbler errGobbler;
 
     private Shell(String... cmd) throws IOException {
-        lock = new ReentrantLock();
-        status = UNKNOWN;
-        token = Utils.genRandomAlphaNumString(32);
+        Utils.log(TAG, "exec " + TextUtils.join(" ", cmd));
 
         process = Runtime.getRuntime().exec(cmd);
         STDIN = process.getOutputStream();
         STDOUT = process.getInputStream();
         STDERR = process.getErrorStream();
+
+        token = Utils.genRandomAlphaNumString(32);
+        Utils.log(TAG, "token: " + token);
         outGobbler = new StreamGobbler(STDOUT, token);
         errGobbler = new StreamGobbler(STDERR, token);
+
+        lock = new ReentrantLock();
+        status = UNKNOWN;
     }
 
     @Override
@@ -70,41 +196,64 @@ public class Shell implements Closeable {
     * Static utility / configuration methods
     * ***************************************/
 
-    public static void setGlobalContainer(ShellContainer container) {
+    /**
+     * Set the container to store the global {@code Shell} instance.
+     * <p>
+     * Future shell commands using static method APIs will automatically obtain a {@code Shell}
+     * from the container with {@link #getShell()} or {@link #getShell(GetShellCallback)}.
+     * @param container the container to store the global {@code Shell} instance.
+     */
+    public static void setContainer(@Nullable Container container) {
         weakContainer = new WeakReference<>(container);
     }
 
-    public static void setInitializer(ShellInitializer init) {
+    /**
+     * Set a desired {@code Initializer}.
+     * @see Initializer
+     * @param init the desired initializer.
+     */
+    public static void setInitializer(@NonNull Initializer init) {
         initializer = init;
     }
 
-    public static void removeInitializer() {
-        initializer = new ShellInitializer();
-    }
-
+    /**
+     * Set special flags that controls how {@code Shell} works and how a new {@code Shell} will be
+     * constructed.
+     * @param flags the desired flags.
+     *              Value is either 0 or a combination of {@link #FLAG_NON_ROOT_SHELL},
+     *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER},
+     *              {@link #FLAG_REDIRECT_STDERR}
+     */
     public static void setFlags(int flags) {
         Shell.flags = flags;
     }
 
-    public static void addFlags(int flags) {
-        Shell.flags |= flags;
-    }
-
-    public static void removeFlags(int flags) {
-        Shell.flags &= (~flags);
-    }
-
-    public static void enableVerboseLogging(boolean verbose) {
+    /**
+     * Set whether enable verbose logging.
+     * <p>
+     * This is just a handy function to toggle verbose logging with a boolean value.
+     * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
+     * @param verbose if true, add {@link #FLAG_VERBOSE_LOGGING} to flags.
+     */
+    public static void verboseLogging(boolean verbose) {
         if (verbose)
-            addFlags(FLAG_VERBOSE_LOGGING);
+            flags |= FLAG_VERBOSE_LOGGING;
     }
 
-    public static Shell getShell() throws NoShellException {
+    /**
+     * Get a {@code Shell} instance from the global container.
+     * If the global container is not set, or the container has not contained any {@code Shell} yet,
+     * it will call {@link #newInstance()} to construct a new {@code Shell}.
+     * @see #newInstance()
+     * @return a {@code Shell} instance
+     */
+    @NonNull
+    public static Shell getShell() {
         Shell shell = getGlobalShell();
 
         if (shell == null) {
-            shell = newShell();
-            ShellContainer container = weakContainer.get();
+            shell = newInstance();
+            Container container = weakContainer.get();
             if (container != null)
                 container.setShell(shell);
         }
@@ -112,72 +261,302 @@ public class Shell implements Closeable {
         return shell;
     }
 
-    public static boolean rootAccess() {
-        try {
-            return getShell().status > 0;
-        } catch (NoShellException e) {
-            return false;
+    /**
+     * Get a {@code Shell} instance from the global container and call a callback.
+     * When the global container is set and contains a shell, the callback will be called immediately,
+     * or else it will queue a new asynchronous task to call {@link #newInstance()} and the callback.
+     * @param callback called when a shell is acquired.
+     */
+    public static void getShell(@NonNull final GetShellCallback callback) {
+        Shell shell = getGlobalShell();
+        if (shell != null) {
+            // If global shell exists, it runs synchronously
+            callback.onShell(shell);
+        } else {
+            // Else we add it to the queue and call the callback when we get a Shell
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
+                @Override
+                public void run() {
+                    Shell shell = getShell();
+                    callback.onShell(shell);
+                }
+            });
         }
     }
 
-    /* ************************
-    * Global shell static APIs
-    * *************************/
-
-    public static ArrayList<String> sh(String... commands) {
-        ArrayList<String> res = new ArrayList<>();
-        sh(res, commands);
-        return res;
+    /**
+     * Return whether the global shell has root access.
+     * @return {@code true} if the global shell has root access.
+     */
+    public static boolean rootAccess() {
+        return getShell().status > NON_ROOT_SHELL;
     }
 
-    public static void sh(List<String> output, String... commands) {
-        sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+    /**
+     * High level API for synchronous operations
+     */
+    public static class Sync {
+
+        /* ************************************
+        * Global static synchronous shell APIs
+        * *************************************/
+
+        /**
+         * Equivalent to {@code sh(new ArrayList<String>(), commands)} with the new ArrayList
+         * returned when all commands are done.
+         * @return the result of the commands.
+         */
+        @NonNull
+        public static ArrayList<String> sh(@NonNull String... commands) {
+            ArrayList<String> result = new ArrayList<>();
+            sh(result, commands);
+            return result;
+        }
+
+        /**
+         * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, commands).</code></pre>
+         * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
+         */
+        public static void sh(List<String> output, @NonNull String... commands) {
+            sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+        }
+
+        /**
+         * Get a shell from {@link #getShell()} and call {@link #run(List, List, String...)}.
+         * @see #run(List, List, String...)
+         */
+        public static void sh(List<String> output, List<String> error, @NonNull String... commands) {
+            global_run_wrapper(false, output, error, commands);
+        }
+
+        /* *****************************************
+        * Global static synchronous root shell APIs
+        * ******************************************/
+
+        /**
+         * Equivalent to {@link #sh(String...)} with root access check before running.
+         */
+        @NonNull
+        public static ArrayList<String> su(@NonNull String... commands) {
+            ArrayList<String> result = new ArrayList<>();
+            su(result, commands);
+            return result;
+        }
+
+        /**
+         * Equivalent to {@link #sh(List, String...)} with root access check before running.
+         */
+        public static void su(List<String> output, @NonNull String... commands) {
+            su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+        }
+
+        /**
+         * Equivalent to {@link #sh(List, List, String...)} with root access check before running.
+         */
+        public static void su(List<String> output, List<String> error, @NonNull String... commands) {
+            global_run_wrapper(true, output, error, commands);
+        }
+
+        /* *****************************************
+        * Global static loadScript synchronous APIs
+        * ******************************************/
+
+        /**
+         * Equivalent to {@code loadScript(new ArrayList<String>(), in)} with the new ArrayList
+         * returned after the script finish running.
+         * @return the result of the script loaded from the InputStream.
+         */
+        @NonNull
+        public static ArrayList<String> loadScript(@NonNull InputStream in) {
+            ArrayList<String> result = new ArrayList<>();
+            loadScript(result, in);
+            return result;
+        }
+
+        /**
+         * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
+         * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
+         */
+        public static void loadScript(List<String> output, @NonNull InputStream in) {
+            loadScript(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+        }
+
+        /**
+         * Get a shell from {@link #getShell()} and call {@link #loadInputStream(List, List, InputStream)}.
+         * @see #loadInputStream(List, List, InputStream)
+         */
+        public static void loadScript(List<String> output, List<String> error, @NonNull InputStream in) {
+            getShell().loadInputStream(output, error, in);
+        }
     }
 
-    public static void sh(List<String> output, List<String> error, String... commands) {
-        global_run_wrapper(false, output, error, commands);
-    }
+    /**
+     * High level API for asynchronous operations
+     */
+    public static class Async {
 
-    public static PoolThread sh_async(final List<String> output, final String... commands) {
-        return sh_async(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
-    }
+        /**
+         * The callback when an asynchronous shell operation is done.
+         * <p>
+         * When an asynchronous shell operation is done, it will pass over the result of the output
+         * to {@link #onTaskResult(List, List)}. If both outputs are null, then the callback will
+         * not be called.
+         * <p>
+         * Similar to {@link CallbackList}, when the asynchronous operation is initialized on the
+         * main thread, the callback will also be run on the main thread. So updating the UI
+         * in the callbacks are allowed.
+         * <p>
+         * The two lists passed to the callback are wrapped with
+         * {@link Collections#synchronizedList(List)}, so the developer can iterate the list without
+         * worrying about {@link java.util.ConcurrentModificationException}.
+         */
+        public interface Callback {
+            /**
+             * The method that will be called when asynchronous shell operation is done.
+             * If {@code out == err}, then {@code err} will be {@code null}.
+             * This means if {@link #FLAG_REDIRECT_STDERR} is set, the output of STDERR would be
+             * stored in {@code out}, {@code err} will be {@code null}, unless explicitly passed
+             * a different list to store STDERR while request.
+             * @param out the list that stores the output of STDOUT.
+             * @param err the list that stores the output of STDERR.
+             */
+            void onTaskResult(@Nullable List<String> out, @Nullable List<String> err);
+        }
 
-    public static PoolThread sh_async(List<String> output, List<String> error, String... commands) {
-        return global_run_async_wrapper(false, output, error, commands);
-    }
+        /* *************************************
+        * Global static asynchronous shell APIs
+        * **************************************/
 
-    public static void sh_raw(String... commands) {
-        global_run_raw_wrapper(false, commands);
-    }
+        /**
+         * Equivalent to {@code sh(null, null, null, commands)}.
+         */
+        public static void sh(@NonNull String... commands) {
+            sh(null, null, null, commands);
+        }
 
-    /* *****************************
-    * Global root shell static APIs
-    * ******************************/
+        /**
+         * Equivalent to <pre><code>output = new ArrayList&#60;String&#62;(); sh(output, REDIRECT_STDERR &#63; output : null, callback, commands).</code></pre>
+         * <p>
+         * This method is useful if you only need a callback after the commands are done.
+         */
+        public static void sh(Callback callback, @NonNull String... commands) {
+            ArrayList<String> result = new ArrayList<>();
+            sh(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+        }
 
-    public static ArrayList<String> su(String... commands) {
-        ArrayList<String> res = new ArrayList<>();
-        su(res, commands);
-        return res;
-    }
+        /**
+         * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, null, commands).</code></pre>
+         */
+        public static void sh(List<String> output, @NonNull String... commands) {
+            sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+        }
 
-    public static void su(List<String> output, String... commands) {
-        su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
-    }
+        /**
+         * Equivalent to {@code sh(output, error, null, commands)}.
+         */
+        public static void sh(List<String> output, List<String> error, @NonNull String... commands) {
+            sh(output, error, null, commands);
+        }
 
-    public static void su(List<String> output, List<String> error, String... commands) {
-        global_run_wrapper(true, output, error, commands);
-    }
+        /**
+         * Get a shell with {@link #getShell(GetShellCallback)} and call
+         * {@link #run(List, List, Shell.Async.Callback, String...)}.
+         * @see #run(List, List, Shell.Async.Callback, String...)
+         */
+        public static void sh(List<String> output, List<String> error, Callback callback, @NonNull String... commands) {
+            global_run_async_wrapper(false, output, error, callback, commands);
+        }
 
-    public static PoolThread su_async(final List<String> output, final String... commands) {
-        return su_async(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
-    }
+        /* ******************************************
+        * Global static asynchronous root shell APIs
+        * *******************************************/
 
-    public static PoolThread su_async(List<String> output, List<String> error, String... commands) {
-        return global_run_async_wrapper(true, output, error, commands);
-    }
+        /**
+         * Equivalent to {@link #sh(String...)} with root access check before running.
+         */
+        public static void su(@NonNull String... commands) {
+            su(null, null, null, commands);
+        }
 
-    public static void su_raw(String... commands) {
-        global_run_raw_wrapper(true, commands);
+        /**
+         * Equivalent to {@link #sh(Shell.Async.Callback, String...)} with root access check before running.
+         */
+        public static void su(Callback callback, @NonNull String... commands) {
+            ArrayList<String> result = new ArrayList<>();
+            su(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+        }
+
+        /**
+         * Equivalent to {@link #sh(List, String...)} with root access check before running.
+         */
+        public static void su(List<String> output, @NonNull String... commands) {
+            su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+        }
+
+        /**
+         * Equivalent to {@link #sh(List, List, String...)} with root access check before running.
+         */
+        public static void su(List<String> output, List<String> error, @NonNull String... commands) {
+            su(output, error, null, commands);
+        }
+
+        /**
+         * Equivalent to {@link #sh(List, List, Callback, String...)} with root access check before running.
+         */
+        public static void su(List<String> output, List<String> error, Callback callback,
+                              @NonNull String... commands) {
+            global_run_async_wrapper(true, output, error, callback, commands);
+        }
+
+        /* ******************************************
+        * Global static loadScript asynchronous APIs
+        * *******************************************/
+
+        /**
+         * Equivalent to {@code loadScript(null, null, null, in)}.
+         */
+        public static void loadScript(InputStream in) {
+            loadScript(null, null, null, in);
+        }
+
+        /**
+         * Equivalent to <pre><code>output = new ArrayList&#60;String&#62;(); loadScript(output, REDIRECT_STDERR &#63; output : null, callback, in).</code></pre>
+         * <p>
+         * This method is useful if you only need a callback after the script finish running.
+         * <p>
+         * Note: when the {@link Callback#onTaskResult(List, List)} of the callback is called,
+         * the second parameter will always be null. If {@link #FLAG_REDIRECT_STDERR} is set, the
+         * output of STDERR will be stored in the first parameter.
+         */
+        public static void loadScript(Callback callback, @NonNull InputStream in) {
+            ArrayList<String> result = new ArrayList<>();
+            loadScript(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
+        }
+
+        /**
+         * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
+         */
+        public static void loadScript(List<String> output, @NonNull InputStream in) {
+            loadScript(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+        }
+
+        /**
+         * Equivalent to {@code loadScript(output, error, null, in)}.
+         */
+        public static void loadScript(List<String> output, List<String> error,
+                                      @NonNull InputStream in) {
+            loadScript(output, error, null, in);
+        }
+
+        /**
+         * Get a shell with {@link #getShell(GetShellCallback)} and call
+         * {@link #loadInputStream(List, List, Shell.Async.Callback, InputStream)}.
+         * @see #loadInputStream(List, List, Shell.Async.Callback, InputStream)
+         */
+        public static void loadScript(List<String> output, List<String> error, Callback callback,
+                                      @NonNull InputStream in) {
+            getShell().loadInputStream(output, error, callback, in);
+        }
     }
 
     /* ***************
@@ -186,24 +565,40 @@ public class Shell implements Closeable {
 
     @Override
     public void close() throws IOException {
-        status = UNKNOWN;
-        outGobbler.terminate();
-        errGobbler.terminate();
-        STDIN.close();
-        STDERR.close();
-        STDOUT.close();
-        process.destroy();
+        // Make sure no thread is currently using the shell before closing
+        lock.lock();
+        try {
+            Utils.log(TAG, "close");
+            status = UNKNOWN;
+            outGobbler.terminate();
+            errGobbler.terminate();
+            STDIN.close();
+            STDERR.close();
+            STDOUT.close();
+            process.destroy();
+        } finally {
+            lock.unlock();
+        }
     }
 
+    /**
+     * Get the status of the shell.
+     * @return the status of the shell.
+     *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL},
+     *         {@link #ROOT_MOUNT_MASTER}
+     */
     public int getStatus() {
         return status;
     }
 
-    public void run(String... commands) {
-        run(null, null, commands);
-    }
-
-    public void run(final List<String> output, final List<String> error, final String... commands) {
+    /**
+     * Synchronously run commands and stores outputs to the two lists.
+     * @param output the list to store STDOUT outputs.
+     * @param error the list to store STDERR outputs.
+     * @param commands the commands to run in the shell.
+     */
+    public void run(final List<String> output, final List<String> error,
+                    @NonNull final String... commands) {
         run_sync_output(output, error, new Runnable() {
             @Override
             public void run() {
@@ -212,8 +607,17 @@ public class Shell implements Closeable {
         });
     }
 
-    public PoolThread run_async(final List<String> output, final List<String> error, final String... commands) {
-        return run_async_output(output, error, new Runnable() {
+    /**
+     * Asynchronously run commands, stores outputs to the two lists, and call the callback when
+     * all commands are ran and the outputs are done.
+     * @param output the list to store STDOUT outputs.
+     * @param error the list to store STDERR outputs.
+     * @param callback the callback when all commands are ran and the outputs are done.
+     * @param commands the commands to run in the shell.
+     */
+    public void run(final List<String> output, final List<String> error,
+                    final Async.Callback callback, @NonNull final String... commands) {
+        run_async_task(output, error, callback, new Runnable() {
             @Override
             public void run() {
                 run_commands(output != null, error != null, commands);
@@ -221,35 +625,45 @@ public class Shell implements Closeable {
         });
     }
 
-    public void run_raw(final String... commands) {
-        AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                run_commands(false, false, commands);
-            }
-        });
-    }
-
-    public void loadInputStream(InputStream in) {
-        loadInputStream(null, null, in);
-    }
-
-    public void loadInputStream(List<String> output, List<String> error, final InputStream in) {
+    /**
+     * Synchronously load an input stream to the shell and stores outputs to the two lists.
+     * <p>
+     * This command is useful for loading a script stored in the APK. An InputStream can be opened
+     * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
+     * with {@link android.content.res.Resources#openRawResource(int)}.
+     * @param output the list to store STDOUT outputs.
+     * @param error the list to store STDERR outputs.
+     * @param in the InputStream to load
+     */
+    public void loadInputStream(List<String> output, List<String> error, @NonNull InputStream in) {
         run_sync_output(output, error, new LoadInputStream(in));
     }
 
-    public void loadInputStreamAsync(InputStream in) {
-        loadInputStreamAsync(null, null, in);
-    }
-
-    public void loadInputStreamAsync(List<String> output, List<String> error, final InputStream in) {
-        run_async_output(output, error, new LoadInputStream(in));
+    /**
+     * Asynchronously load an input stream to the shell, stores outputs to the two lists, and call
+     * the callback when the InputStream is loaded and the outputs are done.
+     * <p>
+     * This command is useful for loading a script stored in the APK. An InputStream can be opened
+     * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
+     * with {@link android.content.res.Resources#openRawResource(int)}.
+     * @param output the list to store STDOUT outputs.
+     * @param error the list to store STDERR outputs.
+     * @param callback the callback when the InputStream is loaded and the outputs are done.
+     * @param in the InputStream to load
+     */
+    public void loadInputStream(List<String> output, List<String> error,
+                                Async.Callback callback, @NonNull InputStream in) {
+        run_async_task(output, error, callback, new LoadInputStream(in));
     }
 
     /* *****************************
     * Actual implementation details
     * ******************************/
 
+    /**
+     * Return whether the {@code Shell} is still alive.
+     * @return {@code true} if the {@code Shell} is still alive.
+     */
     public boolean isAlive() {
         // If status is unknown, it is not alive
         if (status < 0)
@@ -259,27 +673,44 @@ public class Shell implements Closeable {
             return true;
         try {
             process.exitValue();
-            // Process is dead, start new shell
+            // Process is dead, shell is not alive
             return false;
         } catch (IllegalThreadStateException e) {
-            // This should be the expected result
+            // Process is still running
             return true;
         }
     }
 
-    public static Shell newShell() throws NoShellException {
+    /**
+     * Construct a new {@code Shell} instance with the default methods.
+     * <p>
+     * There are 3 methods to construct a Unix shell; if any method fails, it will fallback to the
+     * next method:
+     * <ol>
+     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set and {@link #FLAG_MOUNT_MASTER}
+     *     is set, construct a Unix shell by calling {@code su --mount-master}.
+     *     It may fail if the root implementation does not support mount master.</li>
+     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
+     *     {@code su}. It may fail if the device is not rooted, or root permission is not granted.</li>
+     *     <li>Construct a Unix shell by calling {@code sh}. This would not fail in normal
+     *     conditions, but should it fails, it will throw {@link NoShellException}</li>
+     * </ol>
+     * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
+     * since it may return the result of any of the 3 possible methods.
+     * @return a new {@code Shell} instance.
+     * @throws NoShellException impossible to construct {@code Shell} instance.
+     */
+    @NonNull
+    public static Shell newInstance() {
         Shell shell = null;
 
         if (!Utils.hasFlag(FLAG_NON_ROOT_SHELL) && Utils.hasFlag(FLAG_MOUNT_MASTER)) {
             // Try mount master
             try {
-                Utils.log(TAG, "su --mount-master");
                 shell = new Shell("su", "--mount-master");
                 shell.testShell();
                 shell.testRootShell();
                 shell.status = ROOT_MOUNT_MASTER;
-                initializer.onShellInit(shell);
-                initializer.onRootShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
@@ -290,13 +721,10 @@ public class Shell implements Closeable {
         if (shell == null && !Utils.hasFlag(FLAG_NON_ROOT_SHELL)) {
             // Try normal root shell
             try {
-                Utils.log(TAG, "su");
                 shell = new Shell("su");
                 shell.testShell();
                 shell.testRootShell();
                 shell.status = ROOT_SHELL;
-                initializer.onShellInit(shell);
-                initializer.onRootShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
@@ -307,11 +735,9 @@ public class Shell implements Closeable {
         if (shell == null) {
             // Try normal non-root shell
             try {
-                Utils.log(TAG, "sh");
                 shell = new Shell("sh");
                 shell.testShell();
                 shell.status = NON_ROOT_SHELL;
-                initializer.onShellInit(shell);
             } catch (IOException e) {
                 // Shell initialize failed
                 Utils.stackTrace(e);
@@ -319,10 +745,22 @@ public class Shell implements Closeable {
             }
         }
 
+        initializer.onShellInit(shell);
+        if (shell.status >= ROOT_SHELL)
+            initializer.onRootShellInit(shell);
+
         return shell;
     }
 
-    public static Shell newShell(String... commands) throws NoShellException {
+    /**
+     * Construct a new {@code Shell} instance with provided commands.
+     * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
+     *                 a new {@link Process}.
+     * @return a new {@code Shell} instance.
+     * @throws NoShellException the provided command cannot create a new Unix shell.
+     */
+    @NonNull
+    public static Shell newInstance(String... commands) {
         try {
             Shell shell = new Shell(commands);
             shell.testShell();
@@ -342,7 +780,7 @@ public class Shell implements Closeable {
 
     private static Shell getGlobalShell() {
         Shell shell = null;
-        ShellContainer container = weakContainer.get();
+        Container container = weakContainer.get();
 
         if (container != null)
             shell = container.getShell();
@@ -355,38 +793,23 @@ public class Shell implements Closeable {
 
     private static void global_run_wrapper(boolean root, List<String> output,
                                            List<String> error, String... commands) {
-        try {
-            Shell shell = getShell();
-            if (root && shell.status == NON_ROOT_SHELL)
-                return;
-            shell.run(output, error, commands);
-        } catch (NoShellException e) {
-            Utils.stackTrace(e);
-        }
+        Shell shell = getShell();
+        if (root && shell.status == NON_ROOT_SHELL)
+            return;
+        shell.run(output, error, commands);
     }
 
-    private static PoolThread global_run_async_wrapper(final boolean root, final List<String> output,
-                                                       final List<String> error, final String... commands) {
-        try {
-            Shell shell = getShell();
-            if (root && shell.status == NON_ROOT_SHELL)
-                return null;
-            return shell.run_async(output, error, commands);
-        } catch (NoShellException e) {
-            Utils.stackTrace(e);
-            return null;
-        }
-    }
-
-    private static void global_run_raw_wrapper(boolean root, String... commands) {
-        try {
-            Shell shell = getShell();
-            if (root && shell.status == NON_ROOT_SHELL)
-                return;
-            shell.run_raw(commands);
-        } catch (NoShellException e) {
-            Utils.stackTrace(e);
-        }
+    private static void global_run_async_wrapper(final boolean root, final List<String> output,
+                                                 final List<String> error, final Async.Callback callback,
+                                                 final String... commands) {
+        getShell(new GetShellCallback() {
+            @Override
+            public void onShell(@NonNull Shell shell) {
+                if (root && shell.status == NON_ROOT_SHELL)
+                    return;
+                shell.run(output, error, callback, commands);
+            }
+        });
     }
 
     private void testShell() throws IOException {
@@ -425,14 +848,14 @@ public class Shell implements Closeable {
         }
     }
 
-    private void run_sync_output(List<String> output, List<String> error, Runnable callback) {
+    private void run_sync_output(List<String> output, List<String> error, Runnable task) {
         lock.lock();
         Utils.log(TAG, "run_sync_output");
         try {
             outGobbler.begin(output);
             if (error != null)
                 errGobbler.begin(error);
-            callback.run();
+            task.run();
             byte[] finalize = String.format("echo %s; echo %s >&2\n", token, token)
                     .getBytes("UTF-8");
             STDIN.write(finalize);
@@ -449,14 +872,37 @@ public class Shell implements Closeable {
         }
     }
 
-    private PoolThread run_async_output(final List<String> output, final List<String> error, final Runnable callback) {
-        Utils.log(TAG, "run_async_output");
-        return new PoolThread() {
+    private void run_async_task(final List<String> output, final List<String> error,
+                                final Async.Callback callback, final Runnable task) {
+        Utils.log(TAG, "run_async_task");
+        final Handler handler = Utils.onMainThread() ? new Handler() : null;
+        AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
             @Override
-            void run() {
-                run_sync_output(output, error, callback);
+            public void run() {
+                if (output == null && error == null) {
+                    // Without any output request, we simply run the task
+                    task.run();
+                } else {
+                    run_sync_output(output, error, task);
+                    if (callback != null) {
+                        Runnable acb = new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onTaskResult(
+                                    output == null ? null : Collections.synchronizedList(output),
+                                    error == null ? null : (error == output ? null :
+                                            Collections.synchronizedList(error))
+                                );
+                            }
+                        };
+                        if (handler == null)
+                            acb.run();
+                        else
+                            handler.post(acb);
+                    }
+                }
             }
-        }.start();
+        });
     }
 
     private class LoadInputStream implements Runnable {
@@ -477,9 +923,9 @@ public class Shell implements Closeable {
                 while ((read = in.read(buffer)) > 0)
                     baos.write(buffer, 0, read);
                 in.close();
-                // Make sure it flushes the shell
-                baos.write("\n".getBytes("UTF-8"));
                 baos.writeTo(STDIN);
+                // Make sure it flushes the shell
+                STDIN.write("\n".getBytes("UTF-8"));
                 STDIN.flush();
                 Utils.log(INTAG, baos);
             } catch (IOException e) {
@@ -487,4 +933,96 @@ public class Shell implements Closeable {
             }
         }
     }
+
+    /**
+     * The container to store the global {@code Shell} instance.
+     */
+    public interface Container {
+        /**
+         * @return the {@code Shell} instance stored in the implementing class.
+         */
+        @Nullable
+        Shell getShell();
+
+        /**
+         * @param shell replaces the instance stored in the implementing class.
+         */
+        void setShell(@Nullable Shell shell);
+    }
+
+    /**
+     * A subclass of {@link Application} that implements {@link Container}.
+     */
+    public static class ContainerApp extends Application implements Container {
+
+        /**
+         * The actual field to save the global {@code Shell} instance.
+         */
+        protected volatile Shell mShell;
+
+        /**
+         * Set the {@code ContainerApp} as the global container as soon as it is constructed.
+         */
+        public ContainerApp() {
+            setContainer(this);
+        }
+
+        @Nullable
+        @Override
+        public Shell getShell() {
+            return mShell;
+        }
+
+        @Override
+        public void setShell(@Nullable Shell shell) {
+            mShell = shell;
+        }
+    }
+
+    /**
+     * The initializer when a new {@code Shell} is constructed.
+     * <p>
+     * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
+     * is constructed, subclass this class, add your own implementation, and register it with
+     * {@link #setInitializer(Initializer)}.
+     * The concept is a bit like {@code .bashrc} a specific script/command will run when the shell
+     * starts up.
+     * A {@code Shell} instance will be passed to the two callbacks, please directly call the low level
+     * APIs on the instance. <strong>DO NOT</strong> call the methods in {@link Shell.Sync} or
+     * {@link Shell.Async}, since the global shell is not setup yet, calling the high level
+     * APIs will end up in an infinite loop of creating new {@code Shell} and calling the initializer.
+     * <p>
+     * The {@link #onShellInit(Shell)} will be called as soon as the {@code Shell} is constructed
+     * and tested as a valid shell. {@link #onRootShellInit(Shell)} will only be called after the
+     * {@code Shell} passes the internal root shell test. In short, a non-root shell will only
+     * be initialized with {@link #onShellInit(Shell)}, while a root shell will be initialized with
+     * both {@link #onShellInit(Shell)} and {@link #onRootShellInit(Shell)}.
+     */
+    public static class Initializer {
+        /**
+         * Called when a new shell is constructed.
+         * The default implementation is NOP.
+         * @param shell the newly constructed shell
+         */
+        public void onShellInit(@NonNull Shell shell) {}
+
+        /**
+         * Called when a new shell has passed the internal root tests.
+         * The default implementation is NOP.
+         * @param shell the newly constructed shell that passes internal root tests.
+         */
+        public void onRootShellInit(@NonNull Shell shell) {}
+
+    }
+
+    /**
+     * The callback used in {@link #getShell(GetShellCallback)}.
+     */
+    public interface GetShellCallback {
+        /**
+         * @param shell the {@code Shell} obtained in the asynchronous operation.
+         */
+        void onShell(@NonNull Shell shell);
+    }
+
 }

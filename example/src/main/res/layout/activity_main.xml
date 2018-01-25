@@ -63,12 +63,12 @@
             android:text="Async CMD" />
 
         <Button
-            android:id="@+id/raw_cmd"
+            android:id="@+id/close_shell"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Raw CMD" />
+            android:text="Close Shell" />
 
     </LinearLayout>
 

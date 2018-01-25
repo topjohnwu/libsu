@@ -1,12 +1,13 @@
 package com.topjohnwu.superuser;
 
 /**
- * Created by topjohnwu on 2018/1/19.
+ * Thrown when it is impossible to construct {@code Shell}.
+ * This is a runtime exception, and should happen very rarely.
  */
 
-public class NoShellException extends Exception {
+public class NoShellException extends RuntimeException {
 
     public NoShellException() {
-        super("Unable to start a shell!");
+        super("Impossible to create a shell!");
     }
 }
