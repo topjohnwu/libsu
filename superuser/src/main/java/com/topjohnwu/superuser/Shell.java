@@ -181,7 +181,7 @@ public class Shell implements Closeable {
     final InputStream STDERR;
     final ReentrantLock lock;
 
-    private int status;
+    private int status = -2;
     private CharSequence token;
     private StreamGobbler outGobbler;
     private StreamGobbler errGobbler;
@@ -581,6 +581,8 @@ public class Shell implements Closeable {
 
     @Override
     public void close() throws IOException {
+        if (status < UNKNOWN)
+            return;
         // Make sure no thread is currently using the shell before closing
         lock.lock();
         try {

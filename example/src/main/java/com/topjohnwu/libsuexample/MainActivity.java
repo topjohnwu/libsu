@@ -40,14 +40,14 @@ public class MainActivity extends Activity {
 
         // Run the shell command in the input box synchronously
         sync_cmd.setOnClickListener(v -> {
-            Shell.Sync.su(consoleList, input.getText().toString());
+            Shell.Sync.sh(consoleList, input.getText().toString());
             input.setText("");
         });
 
         // Run the shell command in the input box asynchronously.
         // Also demonstrates that Async.Callback works
         async_cmd.setOnClickListener(v -> {
-            Shell.Async.su(consoleList, consoleList,
+            Shell.Async.sh(consoleList, consoleList,
                     (out, err) -> Log.d(TAG, "in_async_callback"),
                     input.getText().toString());
             input.setText("");
