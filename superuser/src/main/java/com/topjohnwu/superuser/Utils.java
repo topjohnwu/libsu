@@ -17,11 +17,14 @@
 package com.topjohnwu.superuser;
 
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 
 class Utils {
 
@@ -66,5 +69,21 @@ class Utils {
             while (in.available() != 0)
                 in.skip(in.available());
         } catch (IOException ignored) {}
+    }
+
+    static ArrayList<String> runCmd(Shell shell, String... cmd) {
+        ArrayList<String> ret = new ArrayList<>();
+        shell.run(ret, null, cmd);
+        return ret;
+    }
+
+    static boolean isValidOutput(List<String> out) {
+        if (out != null && out.size() != 0) {
+            // Check if all empty
+            for (String s : out)
+                if (!TextUtils.isEmpty(s))
+                    return true;
+        }
+        return false;
     }
 }
