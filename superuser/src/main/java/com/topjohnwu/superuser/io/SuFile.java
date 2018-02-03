@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser;
+package com.topjohnwu.superuser.io;
 
 import android.support.annotation.NonNull;
-import android.util.Log;
+
+import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.internal.LibUtils;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -111,39 +113,20 @@ public class SuFile extends File {
     }
 
     private List<String> runCmd(String cmd) {
-        return Utils.runCmd(shell, cmd.replace("%file%", "'" + getAbsolutePath() + "'"));
+        return LibUtils.runCmd(shell, cmd.replace("%file%", "'" + getAbsolutePath() + "'"));
     }
 
     private boolean cmdBoolean(String cmd) {
         List<String> out = runCmd(cmd + " && echo true || echo false");
-        return Utils.isValidOutput(out) && Boolean.parseBoolean(out.get(out.size() - 1));
-    }
-
-    private long cmdLong(String cmd) {
-        List<String> out = runCmd(cmd);
-        if (!Utils.isValidOutput(out))
-            return 0L;
-        try {
-            return Long.parseLong(out.get(out.size() - 1));
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+        return LibUtils.isValidOutput(out) && Boolean.parseBoolean(out.get(out.size() - 1));
     }
 
     private class Attributes {
-        char[] perms;
-        String owner;
-        String group;
-        long size;
-        long time;
-
-        Attributes() {
-            perms = new char[3];
-            owner = "";
-            group = "";
-            size = 0L;
-            time = 0L;
-        }
+        char[] perms = new char[3];
+        String owner = "";
+        String group = "";
+        long size = 0L;
+        long time = 0L;
 
         @Override
         public String toString() {
@@ -156,7 +139,7 @@ public class SuFile extends File {
     private Attributes getAttributes() {
         List<String> out = runCmd("ls -ld %file%");
         Attributes a = new Attributes();
-        if (!Utils.isValidOutput(out))
+        if (!LibUtils.isValidOutput(out))
             return a;
         String[] toks = out.get(out.size() - 1).split("\\s+");
         int idx = 0;
@@ -182,7 +165,6 @@ public class SuFile extends File {
             a.time = df.parse(toks[idx++] + " " + toks[idx++]).getTime();
         } catch (ParseException ignored) {}
 
-        Log.d("SUFILE", a.toString());
         return a;
     }
 
@@ -352,7 +334,7 @@ public class SuFile extends File {
     public String[] list() {
         if (useShell && isDirectory()) {
             List<String> out = runCmd("ls %file%");
-            if (!Utils.isValidOutput(out))
+            if (!LibUtils.isValidOutput(out))
                 return null;
             return out.toArray(new String[0]);
         } else {

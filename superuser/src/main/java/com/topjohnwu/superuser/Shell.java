@@ -18,23 +18,19 @@ package com.topjohnwu.superuser;
 
 import android.app.Application;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
+import com.topjohnwu.superuser.internal.Factory;
+import com.topjohnwu.superuser.internal.LibUtils;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A class providing an API to an interactive (root) shell.
@@ -104,7 +100,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * the library has to offer.
  */
 
-public class Shell implements Closeable {
+public abstract class Shell implements Closeable {
 
     /**
      * Shell status: Unknown. One possible result of {@link #getStatus()}.
@@ -170,43 +166,10 @@ public class Shell implements Closeable {
 
     static int flags = 0;
 
-    private static final String INTAG = "SHELL_IN";
-    private static final String TAG = "LIBSU";
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
     private static Initializer initializer = new Initializer();
 
-    final Process process;
-    final OutputStream STDIN;
-    final InputStream STDOUT;
-    final InputStream STDERR;
-    final ReentrantLock lock;
-
-    private int status = -2;
-    private CharSequence token;
-    private StreamGobbler outGobbler;
-    private StreamGobbler errGobbler;
-
-    private Shell(String... cmd) throws IOException {
-        Utils.log(TAG, "exec " + TextUtils.join(" ", cmd));
-
-        process = Runtime.getRuntime().exec(cmd);
-        STDIN = process.getOutputStream();
-        STDOUT = process.getInputStream();
-        STDERR = process.getErrorStream();
-
-        token = Utils.genRandomAlphaNumString(32);
-        Utils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(STDOUT, token);
-        errGobbler = new StreamGobbler(STDERR, token);
-
-        lock = new ReentrantLock();
-        status = UNKNOWN;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-    }
+    protected int status = -2;
 
     /* **************************************
     * Static utility / configuration methods
@@ -242,6 +205,15 @@ public class Shell implements Closeable {
      */
     public static void setFlags(int flags) {
         Shell.flags = flags;
+    }
+
+    /**
+     * Get special flags that controls how {@code Shell} works and how a new {@code Shell} will be
+     * constructed.
+     * @return the flags
+     */
+    public static int getFlags() {
+        return flags;
     }
 
     /**
@@ -301,6 +273,92 @@ public class Shell implements Closeable {
     }
 
     /**
+     * Construct a new {@code Shell} instance with the default methods.
+     * <p>
+     * There are 3 methods to construct a Unix shell; if any method fails, it will fallback to the
+     * next method:
+     * <ol>
+     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set and {@link #FLAG_MOUNT_MASTER}
+     *     is set, construct a Unix shell by calling {@code su --mount-master}.
+     *     It may fail if the root implementation does not support mount master.</li>
+     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
+     *     {@code su}. It may fail if the device is not rooted, or root permission is not granted.</li>
+     *     <li>Construct a Unix shell by calling {@code sh}. This would not fail in normal
+     *     conditions, but should it fails, it will throw {@link NoShellException}</li>
+     * </ol>
+     * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
+     * since it may return the result of any of the 3 possible methods.
+     * @return a new {@code Shell} instance.
+     * @throws NoShellException impossible to construct {@code Shell} instance.
+     */
+    @NonNull
+    public static Shell newInstance() {
+        Shell shell = null;
+
+        if (!LibUtils.hasFlag(FLAG_NON_ROOT_SHELL) && LibUtils.hasFlag(FLAG_MOUNT_MASTER)) {
+            // Try mount master
+            try {
+                shell = Factory.createShell("su", "--mount-master");
+                if (shell.status == ROOT_SHELL)
+                    shell.status = ROOT_MOUNT_MASTER;
+                else
+                    shell = null;
+            } catch (IOException e) {
+                // Shell initialize failed
+                LibUtils.stackTrace(e);
+                shell = null;
+            }
+        }
+
+        if (shell == null && !LibUtils.hasFlag(FLAG_NON_ROOT_SHELL)) {
+            // Try normal root shell
+            try {
+                shell = Factory.createShell("su");
+                if (shell.status != ROOT_SHELL)
+                    shell = null;
+            } catch (IOException e) {
+                // Shell initialize failed
+                LibUtils.stackTrace(e);
+                shell = null;
+            }
+        }
+
+        if (shell == null) {
+            // Try normal non-root shell
+            try {
+                shell = Factory.createShell("sh");
+            } catch (IOException e) {
+                // Shell initialize failed
+                LibUtils.stackTrace(e);
+                throw new NoShellException();
+            }
+        }
+
+        initShell(shell);
+
+        return shell;
+    }
+
+    /**
+     * Construct a new {@code Shell} instance with provided commands.
+     * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
+     *                 a new {@link Process}.
+     * @return a new {@code Shell} instance.
+     * @throws NoShellException the provided command cannot create a new Unix shell.
+     */
+    @NonNull
+    public static Shell newInstance(String... commands) {
+        try {
+            Shell shell = Factory.createShell(commands);
+            initShell(shell);
+            return shell;
+        } catch (IOException e) {
+            LibUtils.stackTrace(e);
+            throw new NoShellException();
+        }
+    }
+
+    /**
      * Return whether the global shell has root access.
      * @return {@code true} if the global shell has root access.
      */
@@ -334,7 +392,7 @@ public class Shell implements Closeable {
          * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
          */
         public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+            sh(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
         }
 
         /**
@@ -363,7 +421,7 @@ public class Shell implements Closeable {
          * Equivalent to {@link #sh(List, String...)} with root access check before running.
          */
         public static void su(List<String> output, @NonNull String... commands) {
-            su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+            su(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
         }
 
         /**
@@ -394,7 +452,7 @@ public class Shell implements Closeable {
          * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
          */
         public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+            loadScript(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
         }
 
         /**
@@ -457,14 +515,14 @@ public class Shell implements Closeable {
          */
         public static void sh(Callback callback, @NonNull String... commands) {
             ArrayList<String> result = new ArrayList<>();
-            sh(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+            sh(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
         }
 
         /**
          * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, null, commands).</code></pre>
          */
         public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+            sh(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
         }
 
         /**
@@ -499,14 +557,14 @@ public class Shell implements Closeable {
          */
         public static void su(Callback callback, @NonNull String... commands) {
             ArrayList<String> result = new ArrayList<>();
-            su(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+            su(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
         }
 
         /**
          * Equivalent to {@link #sh(List, String...)} with root access check before running.
          */
         public static void su(List<String> output, @NonNull String... commands) {
-            su(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+            su(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
         }
 
         /**
@@ -546,14 +604,14 @@ public class Shell implements Closeable {
          */
         public static void loadScript(Callback callback, @NonNull InputStream in) {
             ArrayList<String> result = new ArrayList<>();
-            loadScript(result, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
+            loadScript(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
         }
 
         /**
          * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
          */
         public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, Utils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+            loadScript(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
         }
 
         /**
@@ -579,26 +637,6 @@ public class Shell implements Closeable {
     * Non-static APIs
     * ****************/
 
-    @Override
-    public void close() throws IOException {
-        if (status < UNKNOWN)
-            return;
-        // Make sure no thread is currently using the shell before closing
-        lock.lock();
-        try {
-            Utils.log(TAG, "close");
-            status = UNKNOWN;
-            outGobbler.terminate();
-            errGobbler.terminate();
-            STDIN.close();
-            STDERR.close();
-            STDOUT.close();
-            process.destroy();
-        } finally {
-            lock.unlock();
-        }
-    }
-
     /**
      * Get the status of the shell.
      * @return the status of the shell.
@@ -615,15 +653,8 @@ public class Shell implements Closeable {
      * @param error the list to store STDERR outputs.
      * @param commands the commands to run in the shell.
      */
-    public void run(final List<String> output, final List<String> error,
-                    @NonNull final String... commands) {
-        run_sync_output(output, error, new Runnable() {
-            @Override
-            public void run() {
-                run_commands(output != null, error != null, commands);
-            }
-        });
-    }
+    public abstract void run(final List<String> output, final List<String> error,
+                    @NonNull final String... commands);
 
     /**
      * Asynchronously run commands, stores outputs to the two lists, and call the callback when
@@ -633,15 +664,8 @@ public class Shell implements Closeable {
      * @param callback the callback when all commands are ran and the outputs are done.
      * @param commands the commands to run in the shell.
      */
-    public void run(final List<String> output, final List<String> error,
-                    final Async.Callback callback, @NonNull final String... commands) {
-        run_async_task(output, error, callback, new Runnable() {
-            @Override
-            public void run() {
-                run_commands(output != null, error != null, commands);
-            }
-        });
-    }
+    public abstract void run(final List<String> output, final List<String> error,
+                    final Async.Callback callback, @NonNull final String... commands);
 
     /**
      * Synchronously load an input stream to the shell and stores outputs to the two lists.
@@ -653,9 +677,7 @@ public class Shell implements Closeable {
      * @param error the list to store STDERR outputs.
      * @param in the InputStream to load
      */
-    public void loadInputStream(List<String> output, List<String> error, @NonNull InputStream in) {
-        run_sync_output(output, error, new LoadInputStream(in));
-    }
+    public abstract void loadInputStream(List<String> output, List<String> error, @NonNull InputStream in);
 
     /**
      * Asynchronously load an input stream to the shell, stores outputs to the two lists, and call
@@ -669,131 +691,23 @@ public class Shell implements Closeable {
      * @param callback the callback when the InputStream is loaded and the outputs are done.
      * @param in the InputStream to load
      */
-    public void loadInputStream(List<String> output, List<String> error,
-                                Async.Callback callback, @NonNull InputStream in) {
-        run_async_task(output, error, callback, new LoadInputStream(in));
-    }
-
-    /* *****************************
-    * Actual implementation details
-    * ******************************/
+    public abstract void loadInputStream(List<String> output, List<String> error,
+                                Async.Callback callback, @NonNull InputStream in);
 
     /**
      * Return whether the {@code Shell} is still alive.
      * @return {@code true} if the {@code Shell} is still alive.
      */
-    public boolean isAlive() {
-        // If status is unknown, it is not alive
-        if (status < 0)
-            return false;
-        // If some threads are holding the lock, it is still alive
-        if (lock.isLocked())
-            return true;
-        try {
-            process.exitValue();
-            // Process is dead, shell is not alive
-            return false;
-        } catch (IllegalThreadStateException e) {
-            // Process is still running
-            return true;
-        }
-    }
+    public abstract boolean isAlive();
 
-    /**
-     * Construct a new {@code Shell} instance with the default methods.
-     * <p>
-     * There are 3 methods to construct a Unix shell; if any method fails, it will fallback to the
-     * next method:
-     * <ol>
-     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set and {@link #FLAG_MOUNT_MASTER}
-     *     is set, construct a Unix shell by calling {@code su --mount-master}.
-     *     It may fail if the root implementation does not support mount master.</li>
-     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
-     *     {@code su}. It may fail if the device is not rooted, or root permission is not granted.</li>
-     *     <li>Construct a Unix shell by calling {@code sh}. This would not fail in normal
-     *     conditions, but should it fails, it will throw {@link NoShellException}</li>
-     * </ol>
-     * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
-     * since it may return the result of any of the 3 possible methods.
-     * @return a new {@code Shell} instance.
-     * @throws NoShellException impossible to construct {@code Shell} instance.
-     */
-    @NonNull
-    public static Shell newInstance() {
-        Shell shell = null;
+    /* **********************
+    * Private helper methods
+    * ***********************/
 
-        if (!Utils.hasFlag(FLAG_NON_ROOT_SHELL) && Utils.hasFlag(FLAG_MOUNT_MASTER)) {
-            // Try mount master
-            try {
-                shell = new Shell("su", "--mount-master");
-                shell.testShell();
-                shell.testRootShell();
-                shell.status = ROOT_MOUNT_MASTER;
-            } catch (IOException e) {
-                // Shell initialize failed
-                Utils.stackTrace(e);
-                shell = null;
-            }
-        }
-
-        if (shell == null && !Utils.hasFlag(FLAG_NON_ROOT_SHELL)) {
-            // Try normal root shell
-            try {
-                shell = new Shell("su");
-                shell.testShell();
-                shell.testRootShell();
-                shell.status = ROOT_SHELL;
-            } catch (IOException e) {
-                // Shell initialize failed
-                Utils.stackTrace(e);
-                shell = null;
-            }
-        }
-
-        if (shell == null) {
-            // Try normal non-root shell
-            try {
-                shell = new Shell("sh");
-                shell.testShell();
-                shell.status = NON_ROOT_SHELL;
-            } catch (IOException e) {
-                // Shell initialize failed
-                Utils.stackTrace(e);
-                throw new NoShellException();
-            }
-        }
-
+    private static void initShell(Shell shell) {
         initializer.onShellInit(shell);
         if (shell.status >= ROOT_SHELL)
             initializer.onRootShellInit(shell);
-
-        return shell;
-    }
-
-    /**
-     * Construct a new {@code Shell} instance with provided commands.
-     * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
-     *                 a new {@link Process}.
-     * @return a new {@code Shell} instance.
-     * @throws NoShellException the provided command cannot create a new Unix shell.
-     */
-    @NonNull
-    public static Shell newInstance(String... commands) {
-        try {
-            Shell shell = new Shell(commands);
-            shell.testShell();
-            shell.status = NON_ROOT_SHELL;
-            initializer.onShellInit(shell);
-            try {
-                shell.testRootShell();
-                shell.status = ROOT_SHELL;
-                initializer.onRootShellInit(shell);
-            } catch (IOException ignored) {}
-            return shell;
-        } catch (IOException e) {
-            Utils.stackTrace(e);
-            throw new NoShellException();
-        }
     }
 
     private static Shell getGlobalShell() {
@@ -828,128 +742,6 @@ public class Shell implements Closeable {
                 shell.run(output, error, callback, commands);
             }
         });
-    }
-
-    private void testShell() throws IOException {
-        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
-        STDIN.flush();
-        String s = new BufferedReader(new InputStreamReader(STDOUT)).readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
-            throw new IOException();
-        }
-    }
-
-    private void testRootShell() throws IOException {
-        STDIN.write(("id\n").getBytes("UTF-8"));
-        STDIN.flush();
-        String s = new BufferedReader(new InputStreamReader(STDOUT)).readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
-            throw new IOException();
-        }
-    }
-
-    private void run_commands(boolean stdout, boolean stderr, String... commands) {
-        String suffix = (stdout ? "" : " >/dev/null") + (stderr ? "" : " 2>/dev/null") + "\n";
-        lock.lock();
-        Utils.log(TAG, "run_commands");
-        try {
-            for (String command : commands) {
-                STDIN.write((command + suffix).getBytes("UTF-8"));
-                STDIN.flush();
-                Utils.log(INTAG, command);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            status = UNKNOWN;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private void run_sync_output(List<String> output, List<String> error, Runnable task) {
-        lock.lock();
-        Utils.log(TAG, "run_sync_output");
-        try {
-            outGobbler.begin(output);
-            if (error != null)
-                errGobbler.begin(error);
-            task.run();
-            byte[] finalize = String.format("echo %s; echo %s >&2\n", token, token)
-                    .getBytes("UTF-8");
-            STDIN.write(finalize);
-            STDIN.flush();
-            try {
-                outGobbler.waitDone();
-                errGobbler.waitDone();
-            } catch (InterruptedException ignored) {}
-        } catch (IOException e) {
-            e.printStackTrace();
-            status = UNKNOWN;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private void run_async_task(final List<String> output, final List<String> error,
-                                final Async.Callback callback, final Runnable task) {
-        Utils.log(TAG, "run_async_task");
-        final Handler handler = Utils.onMainThread() ? new Handler() : null;
-        AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                if (output == null && error == null) {
-                    // Without any output request, we simply run the task
-                    task.run();
-                } else {
-                    run_sync_output(output, error, task);
-                    if (callback != null) {
-                        Runnable acb = new Runnable() {
-                            @Override
-                            public void run() {
-                                callback.onTaskResult(
-                                    output == null ? null : Collections.synchronizedList(output),
-                                    error == null ? null : (error == output ? null :
-                                            Collections.synchronizedList(error))
-                                );
-                            }
-                        };
-                        if (handler == null)
-                            acb.run();
-                        else
-                            handler.post(acb);
-                    }
-                }
-            }
-        });
-    }
-
-    private class LoadInputStream implements Runnable {
-
-        private InputStream in;
-
-        LoadInputStream(InputStream in) {
-            this.in = in;
-        }
-
-        @Override
-        public void run() {
-            Utils.log(TAG, "loadInputStream");
-            try {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                int read;
-                byte buffer[] = new byte[4096];
-                while ((read = in.read(buffer)) > 0)
-                    baos.write(buffer, 0, read);
-                in.close();
-                baos.writeTo(STDIN);
-                // Make sure it flushes the shell
-                STDIN.write("\n".getBytes("UTF-8"));
-                STDIN.flush();
-                Utils.log(INTAG, baos);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     /**

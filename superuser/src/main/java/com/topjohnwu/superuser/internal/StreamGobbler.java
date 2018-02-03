@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser;
+package com.topjohnwu.superuser.internal;
 
 import android.text.TextUtils;
 
@@ -39,7 +39,7 @@ class StreamGobbler extends Thread {
 
     private int status;
 
-    StreamGobbler(InputStream in, CharSequence token) {
+    public StreamGobbler(InputStream in, CharSequence token) {
         status = PENDING;
         this.in = in;
         this.token = token;
@@ -55,7 +55,7 @@ class StreamGobbler extends Thread {
             start();
         status = BEGIN;
         synchronized (in) {
-            Utils.cleanInputStream(in);
+            LibUtils.cleanInputStream(in);
         }
         writer = out == null ? null : Collections.synchronizedList(out);
         notifyAll();
@@ -98,7 +98,7 @@ class StreamGobbler extends Thread {
                             break;
                         if (writer != null)
                             writer.add(line);
-                        Utils.log(TAG, line);
+                        LibUtils.log(TAG, line);
                     }
                 }
                 notifyDone();

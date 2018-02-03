@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser;
+package com.topjohnwu.superuser.internal;
 
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +28,14 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
-class Utils {
+public final class LibUtils {
 
-    static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
-    static final String UPPER_CASE = LOWER_CASE.toUpperCase();
-    static final String NUMBERS = "0123456789";
-    static final String ALPHANUM = LOWER_CASE + UPPER_CASE + NUMBERS;
+    private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
+    private static final String UPPER_CASE = LOWER_CASE.toUpperCase();
+    private static final String NUMBERS = "0123456789";
+    private static final String ALPHANUM = LOWER_CASE + UPPER_CASE + NUMBERS;
 
-    static CharSequence genRandomAlphaNumString(int length) {
+    public static CharSequence genRandomAlphaNumString(int length) {
         SecureRandom random = new SecureRandom();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < length; ++i) {
@@ -42,42 +44,42 @@ class Utils {
         return builder;
     }
 
-    static boolean hasFlag(int flag) {
-        return hasFlag(Shell.flags, flag);
+    public static boolean hasFlag(int flag) {
+        return hasFlag(Shell.getFlags(), flag);
     }
 
-    static boolean hasFlag(int flags, int flag) {
+    public static boolean hasFlag(int flags, int flag) {
         return (flags & flag) != 0;
     }
 
-    static void log(String tag, Object log) {
+    public static void log(String tag, Object log) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());
     }
 
-    static void stackTrace(Throwable t) {
+    public static void stackTrace(Throwable t) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
-            t.printStackTrace();
+            Log.d("LIBSU", "Error", t);
     }
 
-    static boolean onMainThread() {
+    public static boolean onMainThread() {
         return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
     }
 
-    static void cleanInputStream(InputStream in) {
+    public static void cleanInputStream(InputStream in) {
         try {
             while (in.available() != 0)
                 in.skip(in.available());
         } catch (IOException ignored) {}
     }
 
-    static ArrayList<String> runCmd(Shell shell, String... cmd) {
+    public static ArrayList<String> runCmd(Shell shell, String... cmd) {
         ArrayList<String> ret = new ArrayList<>();
         shell.run(ret, null, cmd);
         return ret;
     }
 
-    static boolean isValidOutput(List<String> out) {
+    public static boolean isValidOutput(List<String> out) {
         if (out != null && out.size() != 0) {
             // Check if all empty
             for (String s : out)
