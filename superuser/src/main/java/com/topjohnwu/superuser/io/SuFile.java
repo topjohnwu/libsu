@@ -44,10 +44,9 @@ import java.util.Locale;
  * is writable so we can create/delete the target. If any of the checks doesn't pass, all operations
  * will then be backed with root shell commands instead of the native implementations.
  * If you want to bypass the check and always use the root shell for all methods, use
- * {@link #SuFile(File, Shell)} to construct the instance.
+ * {@link #SuFile(File, boolean)} to construct the instance.
  * <p>
  * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
- * The developer can manually specify a {@code Shell} instance by {@link #SuFile(File, Shell)}.
  * <p>
  * The shell backed operations rely on the following shell tools: {@code rm}, {@code rmdir},
  * {@code mv}, {@code ls}, {@code mkdir}, and {@code touch}. These are all available on
@@ -57,7 +56,6 @@ import java.util.Locale;
 public class SuFile extends File {
 
     private boolean useShell = true;
-    private Shell shell = null;
 
     public SuFile(@NonNull String pathname) {
         super(pathname);
@@ -89,31 +87,24 @@ public class SuFile extends File {
     }
 
     /**
-     * Create a new {@code SuFile} using the path of the given {@code File} with all operations
-     * running with the provided {@code Shell}.
+     * Create a new {@code SuFile} using the path of the given {@code File}.
      * @param file the base file.
-     * @param shell the shell used for operation.
+     * @param shell whether use shell for operations.
      */
-    public SuFile(File file, @NonNull Shell shell) {
+    public SuFile(@NonNull File file, boolean shell) {
         super(file.getAbsolutePath());
-        useShell = true;
-        this.shell = shell;
+        useShell = shell;
     }
 
     private void checkShell() {
         // We at least need to be able to rw and also be able to write to parent
-        if (super.canRead() && super.canWrite() && super.getParentFile().canWrite())
-            useShell = false;
-
-        if (useShell)
-            useShell = Shell.rootAccess();
-
-        if (useShell)
-            shell = Shell.getShell();
+        useShell = (!super.canRead() || !super.canWrite() || !super.getParentFile().canWrite())
+                && Shell.rootAccess();
     }
 
     private List<String> runCmd(String cmd) {
-        return LibUtils.runCmd(shell, cmd.replace("%file%", "'" + getAbsolutePath() + "'"));
+        return LibUtils.runCmd(Shell.getShell(),
+                cmd.replace("%file%", "'" + getAbsolutePath() + "'"));
     }
 
     private boolean cmdBoolean(String cmd) {
