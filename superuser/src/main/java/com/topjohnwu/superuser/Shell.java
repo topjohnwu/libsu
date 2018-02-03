@@ -257,19 +257,16 @@ public abstract class Shell implements Closeable {
      * or else it will queue a new asynchronous task to call {@link #newInstance()} and the callback.
      * @param callback called when a shell is acquired.
      */
-    public static void getShell(@NonNull final GetShellCallback callback) {
+    public static void getShell(@NonNull GetShellCallback callback) {
         Shell shell = getGlobalShell();
         if (shell != null) {
             // If global shell exists, it runs synchronously
             callback.onShell(shell);
         } else {
             // Else we add it to the queue and call the callback when we get a Shell
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
-                @Override
-                public void run() {
-                    Shell shell = getShell();
-                    callback.onShell(shell);
-                }
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+                Shell s = getShell();
+                callback.onShell(s);
             });
         }
     }
@@ -737,16 +734,13 @@ public abstract class Shell implements Closeable {
         shell.run(output, error, commands);
     }
 
-    private static void global_run_async_wrapper(final boolean root, final List<String> output,
-                                                 final List<String> error, final Async.Callback callback,
-                                                 final String... commands) {
-        getShell(new GetShellCallback() {
-            @Override
-            public void onShell(@NonNull Shell shell) {
-                if (root && shell.status == NON_ROOT_SHELL)
-                    return;
-                shell.run(output, error, callback, commands);
-            }
+    private static void global_run_async_wrapper(boolean root, List<String> output,
+                                                 List<String> error, Async.Callback callback,
+                                                 String... commands) {
+        getShell(shell -> {
+            if (root && shell.status == NON_ROOT_SHELL)
+                return;
+            shell.run(output, error, callback, commands);
         });
     }
 

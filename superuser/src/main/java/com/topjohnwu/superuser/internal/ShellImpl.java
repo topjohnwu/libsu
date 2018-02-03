@@ -104,25 +104,17 @@ class ShellImpl extends Shell {
 
 
     @Override
-    public void run(final List<String> output, final List<String> error,
+    public void run(List<String> output, List<String> error,
                     @NonNull final String... commands) {
-        run_sync_output(output, error, new Runnable() {
-            @Override
-            public void run() {
-                run_commands(output != null, error != null, commands);
-            }
-        });
+        run_sync_output(output, error, () ->
+                run_commands(output != null, error != null, commands));
     }
 
     @Override
-    public void run(final List<String> output, final List<String> error, Async.Callback callback,
+    public void run(List<String> output, List<String> error, Async.Callback callback,
                     @NonNull final String... commands) {
-        run_async_task(output, error, callback, new Runnable() {
-            @Override
-            public void run() {
-                run_commands(output != null, error != null, commands);
-            }
-        });
+        run_async_task(output, error, callback, () ->
+                run_commands(output != null, error != null, commands));
     }
 
     @Override
@@ -214,34 +206,26 @@ class ShellImpl extends Shell {
         }
     }
 
-    private void run_async_task(final List<String> output, final List<String> error,
-                                final Async.Callback callback, final Runnable task) {
+    private void run_async_task(List<String> output, List<String> error,
+                                Async.Callback callback, Runnable task) {
         LibUtils.log(TAG, "run_async_task");
         final Handler handler = LibUtils.onMainThread() ? new Handler() : null;
-        AsyncTask.THREAD_POOL_EXECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                if (output == null && error == null) {
-                    // Without any output request, we simply run the task
-                    task.run();
-                } else {
-                    run_sync_output(output, error, task);
-                    if (callback != null) {
-                        Runnable acb = new Runnable() {
-                            @Override
-                            public void run() {
-                                callback.onTaskResult(
-                                        output == null ? null : Collections.synchronizedList(output),
-                                        error == null ? null : (error == output ? null :
-                                                Collections.synchronizedList(error))
-                                );
-                            }
-                        };
-                        if (handler == null)
-                            acb.run();
-                        else
-                            handler.post(acb);
-                    }
+        AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+            if (output == null && error == null) {
+                // Without any output request, we simply run the task
+                task.run();
+            } else {
+                run_sync_output(output, error, task);
+                if (callback != null) {
+                    Runnable acb = () -> callback.onTaskResult(
+                            output == null ? null : Collections.synchronizedList(output),
+                            error == null ? null : (error == output ? null :
+                                    Collections.synchronizedList(error))
+                    );
+                    if (handler == null)
+                        acb.run();
+                    else
+                        handler.post(acb);
                 }
             }
         });
