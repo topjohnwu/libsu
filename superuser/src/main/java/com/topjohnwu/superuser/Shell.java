@@ -164,12 +164,14 @@ public abstract class Shell implements Closeable {
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
 
-    static int flags = 0;
-
+    /**
+     * The status of the shell
+     */
+    protected int status = -2;
+    
+    private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
     private static Initializer initializer = new Initializer();
-
-    protected int status = -2;
 
     /* **************************************
     * Static utility / configuration methods
@@ -369,7 +371,9 @@ public abstract class Shell implements Closeable {
     /**
      * High level API for synchronous operations
      */
-    public static class Sync {
+    public final static class Sync {
+
+        private Sync() {}
 
         /* ************************************
         * Global static synchronous shell APIs
@@ -467,7 +471,9 @@ public abstract class Shell implements Closeable {
     /**
      * High level API for asynchronous operations
      */
-    public static class Async {
+    public final static class Async {
+
+        private Async() {}
 
         /**
          * The callback when an asynchronous shell operation is done.
@@ -653,8 +659,7 @@ public abstract class Shell implements Closeable {
      * @param error the list to store STDERR outputs.
      * @param commands the commands to run in the shell.
      */
-    public abstract void run(final List<String> output, final List<String> error,
-                    @NonNull final String... commands);
+    public abstract void run(List<String> output, List<String> error, @NonNull String... commands);
 
     /**
      * Asynchronously run commands, stores outputs to the two lists, and call the callback when
@@ -664,8 +669,8 @@ public abstract class Shell implements Closeable {
      * @param callback the callback when all commands are ran and the outputs are done.
      * @param commands the commands to run in the shell.
      */
-    public abstract void run(final List<String> output, final List<String> error,
-                    final Async.Callback callback, @NonNull final String... commands);
+    public abstract void run(List<String> output, List<String> error,
+                             Async.Callback callback, @NonNull String... commands);
 
     /**
      * Synchronously load an input stream to the shell and stores outputs to the two lists.
@@ -677,7 +682,8 @@ public abstract class Shell implements Closeable {
      * @param error the list to store STDERR outputs.
      * @param in the InputStream to load
      */
-    public abstract void loadInputStream(List<String> output, List<String> error, @NonNull InputStream in);
+    public abstract void loadInputStream(List<String> output, List<String> error,
+                                         @NonNull InputStream in);
 
     /**
      * Asynchronously load an input stream to the shell, stores outputs to the two lists, and call
