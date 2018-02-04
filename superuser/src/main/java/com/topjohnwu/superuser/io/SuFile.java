@@ -19,7 +19,7 @@ package com.topjohnwu.superuser.io;
 import android.support.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.ShellUtils;
+import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -102,26 +102,26 @@ public class SuFile extends File {
         useShell = shell;
     }
 
+    boolean isUseShell() {
+        return useShell;
+    }
+
     private void checkShell() {
         // We at least need to be able to write to parent, and rw if exists
         useShell = (!super.getParentFile().canWrite() ||
                 super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
         // Check the tools we have
-        wc = cmdString("which wc") != null;
+        wc = ShellUtils.fastCmd("which wc") != null;
     }
 
-    private List<String> runCmd(String cmd) {
-        return ShellUtils.runCmd(Shell.getShell(),
-                cmd.replace("%file%", String.format("\"`readlink -f %s`\"", getAbsolutePath())));
+    private String genCmd(String cmd) {
+        return cmd.replace("%file%",
+                String.format("\"`readlink -f %s`\"", getAbsolutePath()));
     }
 
     private boolean cmdBoolean(String cmd) {
-        return Boolean.parseBoolean(cmdString(cmd + " && echo true || echo false"));
-    }
-
-    private String cmdString(String cmd) {
-        List<String> out = runCmd(cmd);
-        return ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : null;
+        return Boolean.parseBoolean(ShellUtils.fastCmd(
+                genCmd(cmd) + " && echo true || echo false"));
     }
 
     private class Attributes {
@@ -140,11 +140,11 @@ public class SuFile extends File {
 
 
     private Attributes getAttributes() {
-        List<String> out = runCmd("ls -ld %file%");
+        String lsInfo = ShellUtils.fastCmd(genCmd("ls -ld %file%"));
         Attributes a = new Attributes();
-        if (!ShellUtils.isValidOutput(out))
+        if (lsInfo == null)
             return a;
-        String[] toks = out.get(out.size() - 1).split("\\s+");
+        String[] toks = lsInfo.split("\\s+");
         int idx = 0;
         for (int i = 0; i < 9; i += 3) {
             int perm = 0;
@@ -218,7 +218,7 @@ public class SuFile extends File {
     @Override
     public String getCanonicalPath() throws IOException {
         if (useShell) {
-            String path = cmdString("echo %file%");
+            String path = ShellUtils.fastCmd(genCmd("echo %file%"));
             return path == null ? getAbsolutePath() : path;
         }
         return super.getCanonicalPath();
@@ -277,7 +277,8 @@ public class SuFile extends File {
     @Override
     public long length() {
         return useShell ?
-                (wc ? Long.parseLong(cmdString("wc -c %file%").split("\\s+")[0]) : getAttributes().size)
+                (wc ? Long.parseLong(ShellUtils.fastCmd(genCmd("wc -c %file%"))
+                        .split("\\s+")[0]) : getAttributes().size)
                 : super.length();
     }
 
@@ -357,7 +358,7 @@ public class SuFile extends File {
     @Override
     public String[] list() {
         if (useShell && isDirectory()) {
-            List<String> out = runCmd("ls %file%");
+            List<String> out = Shell.Sync.su(genCmd("ls %file%"));
             if (!ShellUtils.isValidOutput(out))
                 return null;
             return out.toArray(new String[0]);

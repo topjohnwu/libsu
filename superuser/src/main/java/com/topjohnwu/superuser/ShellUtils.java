@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.internal;
+package com.topjohnwu.superuser;
 
-import android.os.Looper;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.topjohnwu.superuser.Shell;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class ShellUtils {
+
+    private ShellUtils() {}
 
     private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
     private static final String UPPER_CASE = LOWER_CASE.toUpperCase();
@@ -44,41 +41,6 @@ public final class ShellUtils {
         return builder;
     }
 
-    public static boolean hasFlag(int flag) {
-        return hasFlag(Shell.getFlags(), flag);
-    }
-
-    public static boolean hasFlag(int flags, int flag) {
-        return (flags & flag) != 0;
-    }
-
-    public static void log(String tag, Object log) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
-            Log.d(tag, log.toString());
-    }
-
-    public static void stackTrace(Throwable t) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
-            Log.d("LIBSU", "Error", t);
-    }
-
-    public static boolean onMainThread() {
-        return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
-    }
-
-    public static void cleanInputStream(InputStream in) {
-        try {
-            while (in.available() != 0)
-                in.skip(in.available());
-        } catch (IOException ignored) {}
-    }
-
-    public static ArrayList<String> runCmd(Shell shell, String... cmd) {
-        ArrayList<String> ret = new ArrayList<>();
-        shell.run(ret, null, cmd);
-        return ret;
-    }
-
     public static boolean isValidOutput(List<String> out) {
         if (out != null && out.size() != 0) {
             // Check if all empty
@@ -87,5 +49,17 @@ public final class ShellUtils {
                     return true;
         }
         return false;
+    }
+
+    @Nullable
+    public static String fastCmd(String... commands) {
+        return fastCmd(Shell.getShell(), commands);
+    }
+
+    @Nullable
+    public static String fastCmd(Shell shell, String... commands) {
+        ArrayList<String> out = new ArrayList<>(1);
+        shell.run(out, null, commands);
+        return isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 }

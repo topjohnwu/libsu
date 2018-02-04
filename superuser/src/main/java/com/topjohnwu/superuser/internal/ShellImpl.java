@@ -22,6 +22,7 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -49,7 +50,7 @@ class ShellImpl extends Shell {
     private StreamGobbler errGobbler;
 
     ShellImpl(String... cmd) throws IOException {
-        ShellUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
+        InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
 
         process = Runtime.getRuntime().exec(cmd);
@@ -58,7 +59,7 @@ class ShellImpl extends Shell {
         STDERR = process.getErrorStream();
 
         token = ShellUtils.genRandomAlphaNumString(32);
-        ShellUtils.log(TAG, "token: " + token);
+        InternalUtils.log(TAG, "token: " + token);
         outGobbler = new StreamGobbler(STDOUT, token);
         errGobbler = new StreamGobbler(STDERR, token);
 
@@ -83,7 +84,7 @@ class ShellImpl extends Shell {
     public void close() throws IOException {
         if (status < UNKNOWN)
             return;
-        ShellUtils.log(TAG, "close");
+        InternalUtils.log(TAG, "close");
         status = UNINT;
         outGobbler.interrupt();
         errGobbler.interrupt();
@@ -158,11 +159,11 @@ class ShellImpl extends Shell {
         try {
             if (!isAlive())
                 return;
-            ShellUtils.log(TAG, "run_commands");
+            InternalUtils.log(TAG, "run_commands");
             for (String command : commands) {
                 STDIN.write((command + suffix).getBytes("UTF-8"));
                 STDIN.flush();
-                ShellUtils.log(INTAG, command);
+                InternalUtils.log(INTAG, command);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -179,7 +180,7 @@ class ShellImpl extends Shell {
         try {
             if (!isAlive())
                 return;
-            ShellUtils.log(TAG, "run_sync_output");
+            InternalUtils.log(TAG, "run_sync_output");
             outGobbler.begin(output);
             if (error != null)
                 errGobbler.begin(error);
@@ -202,8 +203,8 @@ class ShellImpl extends Shell {
 
     private void run_async_task(List<String> output, List<String> error,
                                 Async.Callback callback, Runnable task) {
-        ShellUtils.log(TAG, "run_async_task");
-        final Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
+        InternalUtils.log(TAG, "run_async_task");
+        final Handler handler = InternalUtils.onMainThread() ? new Handler() : null;
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
             if (output == null && error == null) {
                 // Without any output request, we simply run the task
@@ -235,7 +236,7 @@ class ShellImpl extends Shell {
 
         @Override
         public void run() {
-            ShellUtils.log(TAG, "loadInputStream");
+            InternalUtils.log(TAG, "loadInputStream");
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 int read;
@@ -247,7 +248,7 @@ class ShellImpl extends Shell {
                 // Make sure it flushes the shell
                 STDIN.write('\n');
                 STDIN.flush();
-                ShellUtils.log(INTAG, baos);
+                InternalUtils.log(INTAG, baos);
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -18,7 +18,7 @@ package com.topjohnwu.superuser;
 
 import android.os.Handler;
 
-import com.topjohnwu.superuser.internal.ShellUtils;
+import com.topjohnwu.superuser.internal.InternalUtils;
 
 import java.util.AbstractList;
 import java.util.Collections;
@@ -56,7 +56,7 @@ public abstract class CallbackList<E> extends AbstractList<E> {
      * Sole constructor. Will setup a {@link Handler} if constructed in the main thread.
      */
     protected CallbackList() {
-        if (ShellUtils.onMainThread())
+        if (InternalUtils.onMainThread())
             handler = new Handler();
     }
 
