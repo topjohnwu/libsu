@@ -167,7 +167,7 @@ public abstract class Shell implements Closeable {
     /**
      * The status of the shell
      */
-    protected int status = -2;
+    protected int status;
     
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
@@ -651,6 +651,12 @@ public abstract class Shell implements Closeable {
     }
 
     /**
+     * Return whether the {@code Shell} is still alive.
+     * @return {@code true} if the {@code Shell} is still alive.
+     */
+    public abstract boolean isAlive();
+
+    /**
      * Synchronously run commands and stores outputs to the two lists.
      * @param output the list to store STDOUT outputs.
      * @param error the list to store STDERR outputs.
@@ -696,12 +702,6 @@ public abstract class Shell implements Closeable {
      */
     public abstract void loadInputStream(List<String> output, List<String> error,
                                 Async.Callback callback, @NonNull InputStream in);
-
-    /**
-     * Return whether the {@code Shell} is still alive.
-     * @return {@code true} if the {@code Shell} is still alive.
-     */
-    public abstract boolean isAlive();
 
     /* **********************
     * Private helper methods

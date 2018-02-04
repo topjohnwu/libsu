@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.text.TextUtils;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,12 +27,11 @@ class StreamGobbler extends Thread {
 
     private static final String TAG = "SHELLOUT";
     private static final int PENDING = 0;
-    private static final int BEGIN = 1;
-    private static final int RUNNING = 2;
-    private static final int TERMINATE = 3;
+    private static final int RUNNING = 1;
+    private static final int TERMINATE = 2;
 
     private final InputStream in;
-    private CharSequence token;
+    private String token;
     private List<String> writer;
 
     private int status;
@@ -42,40 +39,27 @@ class StreamGobbler extends Thread {
     public StreamGobbler(InputStream in, CharSequence token) {
         status = PENDING;
         this.in = in;
-        this.token = token;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        terminate();
+        this.token = token.toString();
     }
 
     synchronized void begin(List<String> out) {
         if (!isAlive())
             start();
-        status = BEGIN;
-        synchronized (in) {
-            LibUtils.cleanInputStream(in);
-        }
+        status = RUNNING;
+        LibUtils.cleanInputStream(in);
         writer = out == null ? null : Collections.synchronizedList(out);
         notifyAll();
     }
 
-    synchronized void terminate() {
-        status = TERMINATE;
-        if (isAlive())
-            notifyAll();
-    }
-
-    private synchronized void notifyDone() {
-        status = PENDING;
-        writer = null;
-        notifyAll();
-    }
-
     synchronized void waitDone() throws InterruptedException {
-        while (status != PENDING)
+        while (status == RUNNING)
             wait();
+    }
+
+    private void output(String s) {
+        if (writer != null)
+            writer.add(s);
+        LibUtils.log(TAG, s);
     }
 
     @Override
@@ -83,26 +67,32 @@ class StreamGobbler extends Thread {
         while (true) {
             try {
                 synchronized(this) {
-                    while (status != BEGIN) {
-                        if (status == TERMINATE)
+                    while (status != RUNNING) {
+                        if (status == TERMINATE) {
+                            notifyAll();
                             return;
+                        }
                         wait();
                     }
-                    status = RUNNING;
                 }
-                synchronized (in) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        if (TextUtils.equals(line, token))
-                            break;
-                        if (writer != null)
-                            writer.add(line);
-                        LibUtils.log(TAG, line);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    int end = line.lastIndexOf(token);
+                    if (end >= 0) {
+                        if (end > 0)
+                            output(line.substring(0, end));
+                        break;
                     }
+                    output(line);
                 }
-                notifyDone();
-            } catch (InterruptedException | IOException ignored) {}
+                synchronized (this) {
+                    status = PENDING;
+                    notifyAll();
+                }
+            } catch (InterruptedException | IOException e) {
+                status = TERMINATE;
+            }
         }
     }
 }

@@ -39,16 +39,19 @@ import java.util.Locale;
  * <p>
  * This class is meant to be used just like a normal {@link File}, so developers can access files
  * via root shells without messing with command-lines. When a new {@code SuFile} is constructed, it
- * will first check whether the target abstract path is accessible without root privileges. The
+ * will first check whether the abstract pathname is accessible without root privileges. The
  * checks are: whether the process have rw permission to the path, and whether the parent directory
  * is writable so we can create/delete the target. If any of the checks doesn't pass, all operations
  * will then be backed with root shell commands instead of the native implementations.
  * If you want to bypass the check and always use the root shell for all methods, use
  * {@link #SuFile(File, boolean)} to construct the instance.
  * <p>
- * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
+ * This class has exact same behavior as a normal {@link File}, however all atomic promises in the
+ * parent class does not apply if the actual operations are done via a shell. This is a limitation
+ * of using shells, be aware of it.
  * <p>
- * The shell backed operations rely on the following shell tools: {@code rm}, {@code rmdir},
+ * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
+ * The shell backed operations rely on the following tools: {@code rm}, {@code rmdir},
  * {@code mv}, {@code ls}, {@code mkdir}, and {@code touch}. These are all available on
  * modern Android versions (tested on Lollipop+), earlier versions might need to install additional
  * {@code busybox} to make things work properly.
@@ -166,12 +169,12 @@ public class SuFile extends File {
 
     @Override
     public boolean canRead() {
-        return useShell || super.canRead();
+        return useShell ? exists() : super.canRead();
     }
 
     @Override
     public boolean canWrite() {
-        return useShell || super.canWrite();
+        return useShell ? exists() : super.canWrite();
     }
 
     @Override

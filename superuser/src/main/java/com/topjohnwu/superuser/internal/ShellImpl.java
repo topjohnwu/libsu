@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
     private static final String INTAG = "SHELL_IN";
+    private static final int UNINT = -2;
 
     final Process process;
     final OutputStream STDIN;
@@ -49,6 +50,7 @@ class ShellImpl extends Shell {
 
     ShellImpl(String... cmd) throws IOException {
         LibUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
+        status = UNINT;
 
         process = Runtime.getRuntime().exec(cmd);
         STDIN = process.getOutputStream();
@@ -81,27 +83,31 @@ class ShellImpl extends Shell {
     public void close() throws IOException {
         if (status < UNKNOWN)
             return;
-        // Make sure no thread is currently using the shell before closing
-        lock.lock();
-        try {
-            LibUtils.log(TAG, "close");
-            status = UNKNOWN;
-            outGobbler.terminate();
-            errGobbler.terminate();
-            STDIN.close();
-            STDERR.close();
-            STDOUT.close();
-            process.destroy();
-        } finally {
-            lock.unlock();
-        }
+        LibUtils.log(TAG, "close");
+        status = UNINT;
+        outGobbler.interrupt();
+        errGobbler.interrupt();
+        STDIN.close();
+        STDERR.close();
+        STDOUT.close();
+        process.destroy();
     }
+
 
     @Override
-    public int getStatus() {
-        return status;
+    public boolean isAlive() {
+        // If status is unknown, it is not alive
+        if (status < 0)
+            return false;
+        try {
+            process.exitValue();
+            // Process is dead, shell is not alive
+            return false;
+        } catch (IllegalThreadStateException e) {
+            // Process is still running
+            return true;
+        }
     }
-
 
     @Override
     public void run(List<String> output, List<String> error,
@@ -128,24 +134,6 @@ class ShellImpl extends Shell {
         run_async_task(output, error, callback, new LoadInputStream(in));
     }
 
-    @Override
-    public boolean isAlive() {
-        // If status is unknown, it is not alive
-        if (status < 0)
-            return false;
-        // If some threads are holding the lock, it is still alive
-        if (lock.isLocked())
-            return true;
-        try {
-            process.exitValue();
-            // Process is dead, shell is not alive
-            return false;
-        } catch (IllegalThreadStateException e) {
-            // Process is still running
-            return true;
-        }
-    }
-
     private void testShell() throws IOException {
         STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
         STDIN.flush();
@@ -167,8 +155,10 @@ class ShellImpl extends Shell {
     private void run_commands(boolean stdout, boolean stderr, String... commands) {
         String suffix = (stdout ? "" : " >/dev/null") + (stderr ? "" : " 2>/dev/null") + "\n";
         lock.lock();
-        LibUtils.log(TAG, "run_commands");
         try {
+            if (!isAlive())
+                return;
+            LibUtils.log(TAG, "run_commands");
             for (String command : commands) {
                 STDIN.write((command + suffix).getBytes("UTF-8"));
                 STDIN.flush();
@@ -176,7 +166,9 @@ class ShellImpl extends Shell {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            status = UNKNOWN;
+            try {
+                close();
+            } catch (IOException ignored) {}
         } finally {
             lock.unlock();
         }
@@ -184,8 +176,10 @@ class ShellImpl extends Shell {
 
     private void run_sync_output(List<String> output, List<String> error, Runnable task) {
         lock.lock();
-        LibUtils.log(TAG, "run_sync_output");
         try {
+            if (!isAlive())
+                return;
+            LibUtils.log(TAG, "run_sync_output");
             outGobbler.begin(output);
             if (error != null)
                 errGobbler.begin(error);
@@ -194,13 +188,13 @@ class ShellImpl extends Shell {
                     .getBytes("UTF-8");
             STDIN.write(finalize);
             STDIN.flush();
-            try {
-                outGobbler.waitDone();
-                errGobbler.waitDone();
-            } catch (InterruptedException ignored) {}
-        } catch (IOException e) {
+            outGobbler.waitDone();
+            errGobbler.waitDone();
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            status = UNKNOWN;
+            try {
+                close();
+            } catch (IOException ignored) {}
         } finally {
             lock.unlock();
         }
@@ -251,7 +245,7 @@ class ShellImpl extends Shell {
                 in.close();
                 baos.writeTo(STDIN);
                 // Make sure it flushes the shell
-                STDIN.write("\n".getBytes("UTF-8"));
+                STDIN.write('\n');
                 STDIN.flush();
                 LibUtils.log(INTAG, baos);
             } catch (IOException e) {
