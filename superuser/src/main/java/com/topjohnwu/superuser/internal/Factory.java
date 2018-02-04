@@ -16,13 +16,24 @@
 
 package com.topjohnwu.superuser.internal;
 
-import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.io.SuFile;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public final class Factory {
 
-    public static Shell createShell(String... cmd) throws IOException {
+    public static ShellImpl createShell(String... cmd) throws IOException {
         return new ShellImpl(cmd);
+    }
+
+    public static ShellFileIO createShellFileIO(SuFile file) throws FileNotFoundException {
+        return new ShellFileIO(file);
+    }
+
+    public static RandomAccessFileWrapper createRandomAccessFileWrapper(File file)
+            throws FileNotFoundException {
+        return new RandomAccessFileWrapper(file);
     }
 }

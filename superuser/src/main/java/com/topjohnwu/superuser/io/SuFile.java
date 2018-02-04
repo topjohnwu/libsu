@@ -102,7 +102,7 @@ public class SuFile extends File {
         useShell = shell;
     }
 
-    boolean isUseShell() {
+    boolean useShell() {
         return useShell;
     }
 
@@ -110,8 +110,10 @@ public class SuFile extends File {
         // We at least need to be able to write to parent, and rw if exists
         useShell = (!super.getParentFile().canWrite() ||
                 super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
-        // Check the tools we have
-        wc = ShellUtils.fastCmd("which wc") != null;
+        if (useShell) {
+            // Check the tools we have
+            wc = ShellUtils.fastCmd("which wc") != null;
+        }
     }
 
     private String genCmd(String cmd) {
