@@ -49,7 +49,7 @@ class ShellImpl extends Shell {
     private StreamGobbler errGobbler;
 
     ShellImpl(String... cmd) throws IOException {
-        LibUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
+        ShellUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
 
         process = Runtime.getRuntime().exec(cmd);
@@ -57,8 +57,8 @@ class ShellImpl extends Shell {
         STDOUT = process.getInputStream();
         STDERR = process.getErrorStream();
 
-        token = LibUtils.genRandomAlphaNumString(32);
-        LibUtils.log(TAG, "token: " + token);
+        token = ShellUtils.genRandomAlphaNumString(32);
+        ShellUtils.log(TAG, "token: " + token);
         outGobbler = new StreamGobbler(STDOUT, token);
         errGobbler = new StreamGobbler(STDERR, token);
 
@@ -83,7 +83,7 @@ class ShellImpl extends Shell {
     public void close() throws IOException {
         if (status < UNKNOWN)
             return;
-        LibUtils.log(TAG, "close");
+        ShellUtils.log(TAG, "close");
         status = UNINT;
         outGobbler.interrupt();
         errGobbler.interrupt();
@@ -158,11 +158,11 @@ class ShellImpl extends Shell {
         try {
             if (!isAlive())
                 return;
-            LibUtils.log(TAG, "run_commands");
+            ShellUtils.log(TAG, "run_commands");
             for (String command : commands) {
                 STDIN.write((command + suffix).getBytes("UTF-8"));
                 STDIN.flush();
-                LibUtils.log(INTAG, command);
+                ShellUtils.log(INTAG, command);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -179,7 +179,7 @@ class ShellImpl extends Shell {
         try {
             if (!isAlive())
                 return;
-            LibUtils.log(TAG, "run_sync_output");
+            ShellUtils.log(TAG, "run_sync_output");
             outGobbler.begin(output);
             if (error != null)
                 errGobbler.begin(error);
@@ -202,8 +202,8 @@ class ShellImpl extends Shell {
 
     private void run_async_task(List<String> output, List<String> error,
                                 Async.Callback callback, Runnable task) {
-        LibUtils.log(TAG, "run_async_task");
-        final Handler handler = LibUtils.onMainThread() ? new Handler() : null;
+        ShellUtils.log(TAG, "run_async_task");
+        final Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
             if (output == null && error == null) {
                 // Without any output request, we simply run the task
@@ -235,7 +235,7 @@ class ShellImpl extends Shell {
 
         @Override
         public void run() {
-            LibUtils.log(TAG, "loadInputStream");
+            ShellUtils.log(TAG, "loadInputStream");
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 int read;
@@ -247,7 +247,7 @@ class ShellImpl extends Shell {
                 // Make sure it flushes the shell
                 STDIN.write('\n');
                 STDIN.flush();
-                LibUtils.log(INTAG, baos);
+                ShellUtils.log(INTAG, baos);
             } catch (IOException e) {
                 e.printStackTrace();
             }

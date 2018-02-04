@@ -19,7 +19,7 @@ package com.topjohnwu.superuser.io;
 import android.support.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.LibUtils;
+import com.topjohnwu.superuser.internal.ShellUtils;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -51,14 +51,17 @@ import java.util.Locale;
  * of using shells, be aware of it.
  * <p>
  * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
- * The shell backed operations rely on the following tools: {@code rm}, {@code rmdir},
- * {@code mv}, {@code ls}, {@code mkdir}, and {@code touch}. These are all available on
- * modern Android versions (tested on Lollipop+), earlier versions might need to install additional
- * {@code busybox} to make things work properly.
+ * The shell backed operations require: {@code rm}, {@code rmdir}, {@code readlink},
+ * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, and for better support, {@code wc}.
+ * The required tools are all available on modern Android versions (tested on Lollipop+),
+ * earlier versions might need to install additional {@code busybox} to make things work properly.
+ * Some operations could have oddities due to the very limited tools available, check the method
+ * descriptions for more info before using it.
  */
 public class SuFile extends File {
 
     private boolean useShell = true;
+    private boolean wc = false;
 
     public SuFile(@NonNull String pathname) {
         super(pathname);
@@ -100,19 +103,25 @@ public class SuFile extends File {
     }
 
     private void checkShell() {
-        // We at least need to be able to rw and also be able to write to parent
-        useShell = (!super.canRead() || !super.canWrite() || !super.getParentFile().canWrite())
-                && Shell.rootAccess();
+        // We at least need to be able to write to parent, and rw if exists
+        useShell = (!super.getParentFile().canWrite() ||
+                super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
+        // Check the tools we have
+        wc = cmdString("which wc") != null;
     }
 
     private List<String> runCmd(String cmd) {
-        return LibUtils.runCmd(Shell.getShell(),
-                cmd.replace("%file%", "'" + getAbsolutePath() + "'"));
+        return ShellUtils.runCmd(Shell.getShell(),
+                cmd.replace("%file%", String.format("\"`readlink -f %s`\"", getAbsolutePath())));
     }
 
     private boolean cmdBoolean(String cmd) {
-        List<String> out = runCmd(cmd + " && echo true || echo false");
-        return LibUtils.isValidOutput(out) && Boolean.parseBoolean(out.get(out.size() - 1));
+        return Boolean.parseBoolean(cmdString(cmd + " && echo true || echo false"));
+    }
+
+    private String cmdString(String cmd) {
+        List<String> out = runCmd(cmd);
+        return ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 
     private class Attributes {
@@ -133,7 +142,7 @@ public class SuFile extends File {
     private Attributes getAttributes() {
         List<String> out = runCmd("ls -ld %file%");
         Attributes a = new Attributes();
-        if (!LibUtils.isValidOutput(out))
+        if (!ShellUtils.isValidOutput(out))
             return a;
         String[] toks = out.get(out.size() - 1).split("\\s+");
         int idx = 0;
@@ -207,6 +216,16 @@ public class SuFile extends File {
 
     @NonNull
     @Override
+    public String getCanonicalPath() throws IOException {
+        if (useShell) {
+            String path = cmdString("echo %file%");
+            return path == null ? getAbsolutePath() : path;
+        }
+        return super.getCanonicalPath();
+    }
+
+    @NonNull
+    @Override
     public SuFile getCanonicalFile() throws IOException {
         return new SuFile(getCanonicalPath());
     }
@@ -246,9 +265,20 @@ public class SuFile extends File {
         return useShell ? getAttributes().time : super.lastModified();
     }
 
+    /**
+     * Returns the length of the file denoted by this abstract pathname.
+     * <p>
+     * Note: If there is no {@code wc} in {@code PATH}, the file size is the value reported from
+     * {@code ls -l}, which will not correctly report the size of special files
+     * (e.g. character/block files).
+     * @return the size in bytes of the underlying file.
+     * @see File#length()
+     */
     @Override
     public long length() {
-        return useShell ? getAttributes().size : super.length();
+        return useShell ?
+                (wc ? Long.parseLong(cmdString("wc -c %file%").split("\\s+")[0]) : getAttributes().size)
+                : super.length();
     }
 
     @Override
@@ -328,7 +358,7 @@ public class SuFile extends File {
     public String[] list() {
         if (useShell && isDirectory()) {
             List<String> out = runCmd("ls %file%");
-            if (!LibUtils.isValidOutput(out))
+            if (!ShellUtils.isValidOutput(out))
                 return null;
             return out.toArray(new String[0]);
         } else {

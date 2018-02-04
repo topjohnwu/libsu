@@ -46,7 +46,7 @@ class StreamGobbler extends Thread {
         if (!isAlive())
             start();
         status = RUNNING;
-        LibUtils.cleanInputStream(in);
+        ShellUtils.cleanInputStream(in);
         writer = out == null ? null : Collections.synchronizedList(out);
         notifyAll();
     }
@@ -59,7 +59,7 @@ class StreamGobbler extends Thread {
     private void output(String s) {
         if (writer != null)
             writer.add(s);
-        LibUtils.log(TAG, s);
+        ShellUtils.log(TAG, s);
     }
 
     @Override

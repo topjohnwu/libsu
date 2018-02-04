@@ -22,7 +22,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.topjohnwu.superuser.internal.Factory;
-import com.topjohnwu.superuser.internal.LibUtils;
+import com.topjohnwu.superuser.internal.ShellUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -294,7 +294,7 @@ public abstract class Shell implements Closeable {
     public static Shell newInstance() {
         Shell shell = null;
 
-        if (!LibUtils.hasFlag(FLAG_NON_ROOT_SHELL) && LibUtils.hasFlag(FLAG_MOUNT_MASTER)) {
+        if (!ShellUtils.hasFlag(FLAG_NON_ROOT_SHELL) && ShellUtils.hasFlag(FLAG_MOUNT_MASTER)) {
             // Try mount master
             try {
                 shell = Factory.createShell("su", "--mount-master");
@@ -304,12 +304,12 @@ public abstract class Shell implements Closeable {
                     shell = null;
             } catch (IOException e) {
                 // Shell initialize failed
-                LibUtils.stackTrace(e);
+                ShellUtils.stackTrace(e);
                 shell = null;
             }
         }
 
-        if (shell == null && !LibUtils.hasFlag(FLAG_NON_ROOT_SHELL)) {
+        if (shell == null && !ShellUtils.hasFlag(FLAG_NON_ROOT_SHELL)) {
             // Try normal root shell
             try {
                 shell = Factory.createShell("su");
@@ -317,7 +317,7 @@ public abstract class Shell implements Closeable {
                     shell = null;
             } catch (IOException e) {
                 // Shell initialize failed
-                LibUtils.stackTrace(e);
+                ShellUtils.stackTrace(e);
                 shell = null;
             }
         }
@@ -328,7 +328,7 @@ public abstract class Shell implements Closeable {
                 shell = Factory.createShell("sh");
             } catch (IOException e) {
                 // Shell initialize failed
-                LibUtils.stackTrace(e);
+                ShellUtils.stackTrace(e);
                 throw new NoShellException();
             }
         }
@@ -352,7 +352,7 @@ public abstract class Shell implements Closeable {
             initShell(shell);
             return shell;
         } catch (IOException e) {
-            LibUtils.stackTrace(e);
+            ShellUtils.stackTrace(e);
             throw new NoShellException();
         }
     }
@@ -393,7 +393,7 @@ public abstract class Shell implements Closeable {
          * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
          */
         public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+            sh(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
         }
 
         /**
@@ -422,7 +422,7 @@ public abstract class Shell implements Closeable {
          * Equivalent to {@link #sh(List, String...)} with root access check before running.
          */
         public static void su(List<String> output, @NonNull String... commands) {
-            su(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
+            su(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
         }
 
         /**
@@ -453,7 +453,7 @@ public abstract class Shell implements Closeable {
          * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
          */
         public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+            loadScript(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
         }
 
         /**
@@ -518,14 +518,14 @@ public abstract class Shell implements Closeable {
          */
         public static void sh(Callback callback, @NonNull String... commands) {
             ArrayList<String> result = new ArrayList<>();
-            sh(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+            sh(result, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
         }
 
         /**
          * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, null, commands).</code></pre>
          */
         public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+            sh(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
         }
 
         /**
@@ -560,14 +560,14 @@ public abstract class Shell implements Closeable {
          */
         public static void su(Callback callback, @NonNull String... commands) {
             ArrayList<String> result = new ArrayList<>();
-            su(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
+            su(result, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
         }
 
         /**
          * Equivalent to {@link #sh(List, String...)} with root access check before running.
          */
         public static void su(List<String> output, @NonNull String... commands) {
-            su(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
+            su(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
         }
 
         /**
@@ -607,14 +607,14 @@ public abstract class Shell implements Closeable {
          */
         public static void loadScript(Callback callback, @NonNull InputStream in) {
             ArrayList<String> result = new ArrayList<>();
-            loadScript(result, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
+            loadScript(result, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
         }
 
         /**
          * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
          */
         public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, LibUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
+            loadScript(output, ShellUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
         }
 
         /**

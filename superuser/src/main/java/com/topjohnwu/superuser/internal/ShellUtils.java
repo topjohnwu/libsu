@@ -28,7 +28,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class LibUtils {
+public final class ShellUtils {
 
     private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
     private static final String UPPER_CASE = LOWER_CASE.toUpperCase();
