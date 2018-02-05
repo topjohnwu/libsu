@@ -19,6 +19,9 @@ package com.topjohnwu.superuser;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,5 +64,17 @@ public final class ShellUtils {
         ArrayList<String> out = new ArrayList<>(1);
         shell.run(out, null, commands);
         return isValidOutput(out) ? out.get(out.size() - 1) : null;
+    }
+
+    public static long pump(InputStream in, OutputStream out) throws IOException {
+        int read;
+        long total = 0;
+        byte buffer[] = new byte[64 * 1024];  /* 64K buffer */
+        while ((read = in.read(buffer)) > 0) {
+            out.write(buffer, 0, read);
+            total += read;
+        }
+        out.flush();
+        return total;
     }
 }

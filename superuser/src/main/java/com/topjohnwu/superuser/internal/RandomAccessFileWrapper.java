@@ -74,6 +74,11 @@ class RandomAccessFileWrapper extends SuRandomAccessFile {
     }
 
     @Override
+    public void setLength(long newLength) throws IOException {
+        raf.setLength(newLength);
+    }
+
+    @Override
     public long length() throws IOException {
         return raf.length();
     }

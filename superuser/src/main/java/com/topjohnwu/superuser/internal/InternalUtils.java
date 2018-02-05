@@ -21,6 +21,7 @@ import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -32,7 +33,7 @@ public final class InternalUtils {
 
     public static void stackTrace(Throwable t) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
-            Log.d("LIBSU", "Error", t);
+            Log.d("LIBSU", "Internal Error", t);
     }
 
     public static boolean onMainThread() {
@@ -44,6 +45,20 @@ public final class InternalUtils {
             while (in.available() != 0)
                 in.skip(in.available());
         } catch (IOException ignored) {}
+    }
+
+    public static void readFully(InputStream in, byte[] b) throws IOException {
+        readFully(in, b, 0, b.length);
+    }
+
+    public static void readFully(InputStream in, byte[] b, int off, int len) throws IOException {
+        int n = 0;
+        while (n < len) {
+            int count = in.read(b, off + n, len - n);
+            if (count < 0)
+                throw new EOFException();
+            n += count;
+        }
     }
 
     public static boolean hasFlag(int flag) {

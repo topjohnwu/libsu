@@ -62,6 +62,7 @@ public class SuFile extends File {
 
     private boolean useShell = true;
     private boolean wc = false;
+    private String absolutePath;
 
     public SuFile(@NonNull String pathname) {
         super(pathname);
@@ -100,6 +101,7 @@ public class SuFile extends File {
     public SuFile(@NonNull File file, boolean shell) {
         super(file.getAbsolutePath());
         useShell = shell;
+        absolutePath = super.getAbsolutePath();
     }
 
     boolean useShell() {
@@ -111,19 +113,22 @@ public class SuFile extends File {
         useShell = (!super.getParentFile().canWrite() ||
                 super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
         if (useShell) {
+            // The absolutePath will not change if using shell
+            absolutePath = super.getAbsolutePath();
             // Check the tools we have
-            wc = ShellUtils.fastCmd("which wc") != null;
+            wc = cmdBoolean("wc -c /dev/null");
         }
     }
 
     private String genCmd(String cmd) {
-        return cmd.replace("%file%",
-                String.format("\"`readlink -f %s`\"", getAbsolutePath()));
+        return cmd
+                .replace("%file%", String.format("\"`readlink -f %s`\"", absolutePath))
+                .replace("%rawfile%", String.format("'%s'", absolutePath));
     }
 
     private boolean cmdBoolean(String cmd) {
         return Boolean.parseBoolean(ShellUtils.fastCmd(
-                genCmd(cmd) + " && echo true || echo false"));
+                genCmd(cmd) + " >/dev/null 2>&1 && echo true || echo false"));
     }
 
     private class Attributes {
@@ -190,7 +195,7 @@ public class SuFile extends File {
 
     @Override
     public boolean createNewFile() throws IOException {
-        return useShell ? cmdBoolean("[ ! -e %file% ] && touch %file%") : super.createNewFile();
+        return useShell ? cmdBoolean("[ ! -e %file% ] && touch %rawfile%") : super.createNewFile();
     }
 
     @Override
@@ -208,6 +213,12 @@ public class SuFile extends File {
     @Override
     public boolean exists() {
         return useShell ? cmdBoolean("[ -e %file% ]") : super.exists();
+    }
+
+    @NonNull
+    @Override
+    public String getAbsolutePath() {
+        return useShell ? absolutePath : super.getAbsolutePath();
     }
 
     @NonNull
@@ -286,12 +297,12 @@ public class SuFile extends File {
 
     @Override
     public boolean mkdir() {
-        return useShell ? cmdBoolean("mkdir %file%") : super.mkdir();
+        return useShell ? cmdBoolean("mkdir %rawfile%") : super.mkdir();
     }
 
     @Override
     public boolean mkdirs() {
-        return useShell ? cmdBoolean("mkdir -p %file%") : super.mkdirs();
+        return useShell ? cmdBoolean("mkdir -p %rawfile%") : super.mkdirs();
     }
 
     @Override

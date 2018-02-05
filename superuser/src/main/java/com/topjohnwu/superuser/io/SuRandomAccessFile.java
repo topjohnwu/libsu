@@ -78,6 +78,8 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
 
     public abstract void seek(long pos) throws IOException;
 
+    public abstract void setLength (long newLength) throws IOException;
+
     public abstract long length() throws IOException;
 
     public abstract long getFilePointer() throws IOException;
