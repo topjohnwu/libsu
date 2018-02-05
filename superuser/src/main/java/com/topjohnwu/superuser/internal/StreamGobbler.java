@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import com.topjohnwu.superuser.ShellUtils;
+
 import java.io.BufferedReader;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -57,7 +59,7 @@ class StreamGobbler extends Thread {
         if (!isAlive())
             start();
         status = RUNNING;
-        InternalUtils.cleanInputStream(in);
+        ShellUtils.cleanInputStream(in);
         writer = out == null ? null : Collections.synchronizedList(out);
         notifyAll();
     }

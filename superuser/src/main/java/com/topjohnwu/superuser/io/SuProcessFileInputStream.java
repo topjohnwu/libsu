@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.io;
 
-import com.topjohnwu.superuser.internal.InternalUtils;
+import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +38,7 @@ public class SuProcessFileInputStream extends FilterInputStream {
                     String.format("[ -e '%s' ] && echo 1 && cat '%s' || echo 0", file, file)});
             in = process.getInputStream();
             byte[] buf = new byte[2];
-            InternalUtils.readFully(in, buf);
+            ShellUtils.readFully(in, buf);
             if (buf[0] == '0') {
                 close();
                 throw new FileNotFoundException("No such file or directory");

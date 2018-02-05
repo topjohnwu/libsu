@@ -16,12 +16,20 @@
 
 package com.topjohnwu.superuser;
 
+import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,5 +84,52 @@ public final class ShellUtils {
         }
         out.flush();
         return total;
+    }
+
+    public static boolean checkSum(String alg, File file, String test) {
+        // Verify checksum
+        try (FileInputStream in = new FileInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance(alg);
+            pump(in, new DigestOutputStream(new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {}
+
+                @Override
+                public void write(@NonNull byte[] b, int off, int len) throws IOException {}
+            }, digest));
+            byte[] chksum = digest.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : chksum) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return TextUtils.equals(sb, test);
+        } catch (NoSuchAlgorithmException | IOException e) {
+            return false;
+        }
+    }
+
+    public static boolean onMainThread() {
+        return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
+    }
+
+    public static void cleanInputStream(InputStream in) {
+        try {
+            while (in.available() != 0)
+                in.skip(in.available());
+        } catch (IOException ignored) {}
+    }
+
+    public static void readFully(InputStream in, byte[] b) throws IOException {
+        readFully(in, b, 0, b.length);
+    }
+
+    public static void readFully(InputStream in, byte[] b, int off, int len) throws IOException {
+        int n = 0;
+        while (n < len) {
+            int count = in.read(b, off + n, len - n);
+            if (count < 0)
+                throw new EOFException();
+            n += count;
+        }
     }
 }

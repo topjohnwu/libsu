@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.internal;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
@@ -58,7 +59,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         shell.lock.lock();
         try {
             // Only busybox dd is usable
-            InternalUtils.cleanInputStream(shell.STDOUT);
+            ShellUtils.cleanInputStream(shell.STDOUT);
             String cmd = String.format(Locale.ROOT,
                     "busybox dd of='%s' bs=1 seek=%d count=%d conv=notrunc 2>/dev/null; echo done",
                     file, fileOff, len);
@@ -69,7 +70,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             shell.STDIN.write(b, off, len);
             shell.STDIN.flush();
             // Wait till the operation is done
-            InternalUtils.readFully(shell.STDOUT, new byte[5]);
+            ShellUtils.readFully(shell.STDOUT, new byte[5]);
         } catch (IOException e) {
             shell.close();
             throw e;
@@ -93,7 +94,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         ShellImpl shell = (ShellImpl) Shell.getShell();
         shell.lock.lock();
         try {
-            InternalUtils.cleanInputStream(shell.STDOUT);
+            ShellUtils.cleanInputStream(shell.STDOUT);
             String cmd = String.format(Locale.ROOT,
                     "dd if='%s' bs=1 skip=%d count=%d 2>/dev/null",
                     file, fileOff, len);
@@ -101,7 +102,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             shell.STDIN.write(cmd.getBytes("UTF-8"));
             shell.STDIN.write('\n');
             shell.STDIN.flush();
-            InternalUtils.readFully(shell.STDOUT, b, off, len);
+            ShellUtils.readFully(shell.STDOUT, b, off, len);
         } catch (IOException e) {
             shell.close();
             throw e;
@@ -130,7 +131,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             shell.STDIN.write('\n');
             shell.STDIN.flush();
             // Wait till the operation is done
-            InternalUtils.readFully(shell.STDOUT, new byte[5]);
+            ShellUtils.readFully(shell.STDOUT, new byte[5]);
         } catch (IOException e) {
             shell.close();
             throw e;

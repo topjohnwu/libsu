@@ -711,6 +711,9 @@ public abstract class Shell implements Closeable {
         initializer.onShellInit(shell);
         if (shell.status >= ROOT_SHELL)
             initializer.onRootShellInit(shell);
+        if (BusyBox.BB_PATH != null) {
+            shell.run(null, null, String.format("export PATH=%s:$PATH", BusyBox.BB_PATH));
+        }
     }
 
     private static Shell getGlobalShell() {

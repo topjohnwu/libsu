@@ -204,7 +204,7 @@ class ShellImpl extends Shell {
     private void run_async_task(List<String> output, List<String> error,
                                 Async.Callback callback, Runnable task) {
         InternalUtils.log(TAG, "run_async_task");
-        final Handler handler = InternalUtils.onMainThread() ? new Handler() : null;
+        final Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
             if (output == null && error == null) {
                 // Without any output request, we simply run the task
