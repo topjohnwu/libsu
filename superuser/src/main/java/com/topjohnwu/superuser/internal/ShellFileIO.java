@@ -39,11 +39,12 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         if (!file.exists()) {
             try {
                 if (!file.createNewFile())
-                    throw new FileNotFoundException();
+                    throw new FileNotFoundException("No such file or directory");
             } catch (IOException e) {
                 if (e instanceof FileNotFoundException)
                     throw (FileNotFoundException) e;
-                throw (FileNotFoundException) new FileNotFoundException().initCause(e);
+                throw (FileNotFoundException)
+                        new FileNotFoundException("No such file or directory").initCause(e);
             }
         }
 
@@ -55,28 +56,22 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     public void write(byte[] b, int off, int len) throws IOException {
         if (off < 0 || len < 0 || off + len > b.length)
             throw new IndexOutOfBoundsException();
-        ShellImpl shell = (ShellImpl) Shell.getShell();
-        shell.lock.lock();
-        try {
+        Throwable t = Shell.getShell().execTask((in, out, err) -> {
             // Only busybox dd is usable
-            ShellUtils.cleanInputStream(shell.STDOUT);
             String cmd = String.format(Locale.ROOT,
                     "busybox dd of='%s' bs=1 seek=%d count=%d conv=notrunc 2>/dev/null; echo done",
                     file, fileOff, len);
             InternalUtils.log(TAG, cmd);
-            shell.STDIN.write(cmd.getBytes("UTF-8"));
-            shell.STDIN.write('\n');
-            shell.STDIN.flush();
-            shell.STDIN.write(b, off, len);
-            shell.STDIN.flush();
+            in.write(cmd.getBytes("UTF-8"));
+            in.write('\n');
+            in.flush();
+            in.write(b, off, len);
+            in.flush();
             // Wait till the operation is done
-            ShellUtils.readFully(shell.STDOUT, new byte[5]);
-        } catch (IOException e) {
-            shell.close();
-            throw e;
-        } finally {
-            shell.lock.unlock();
-        }
+            ShellUtils.readFully(out, new byte[5]);
+        });
+        if (t != null)
+            throw new IOException(t);
         fileOff += len;
         fileSize = Math.max(fileSize, fileOff);
     }
@@ -88,29 +83,23 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         if (len == 0)
             return 0;
         // We cannot read over EOF
-        len = (int) Math.min(len, fileSize - fileOff);
+        int actualLen = (int) Math.min(len, fileSize - fileOff);
         if (len <= 0)
             return -1;
-        ShellImpl shell = (ShellImpl) Shell.getShell();
-        shell.lock.lock();
-        try {
-            ShellUtils.cleanInputStream(shell.STDOUT);
+        Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd if='%s' bs=1 skip=%d count=%d 2>/dev/null",
                     file, fileOff, len);
             InternalUtils.log(TAG, cmd);
-            shell.STDIN.write(cmd.getBytes("UTF-8"));
-            shell.STDIN.write('\n');
-            shell.STDIN.flush();
-            ShellUtils.readFully(shell.STDOUT, b, off, len);
-        } catch (IOException e) {
-            shell.close();
-            throw e;
-        } finally {
-            shell.lock.unlock();
-        }
-        fileOff += len;
-        return len;
+            in.write(cmd.getBytes("UTF-8"));
+            in.write('\n');
+            in.flush();
+            ShellUtils.readFully(out, b, off, actualLen);
+        });
+        if (t != null)
+            throw new IOException(t);
+        fileOff += actualLen;
+        return actualLen;
     }
 
     @Override
@@ -120,24 +109,19 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
 
     @Override
     public void setLength(long newLength) throws IOException {
-        ShellImpl shell = (ShellImpl) Shell.getShell();
-        shell.lock.lock();
-        try {
+        Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd if=/dev/null of='%s' bs=1 seek=%d 2>/dev/null; echo done",
                     file, newLength);
             InternalUtils.log(TAG, cmd);
-            shell.STDIN.write(cmd.getBytes("UTF-8"));
-            shell.STDIN.write('\n');
-            shell.STDIN.flush();
+            in.write(cmd.getBytes("UTF-8"));
+            in.write('\n');
+            in.flush();
             // Wait till the operation is done
-            ShellUtils.readFully(shell.STDOUT, new byte[5]);
-        } catch (IOException e) {
-            shell.close();
-            throw e;
-        } finally {
-            shell.lock.unlock();
-        }
+            ShellUtils.readFully(out, new byte[5]);
+        });
+        if (t != null)
+            throw new IOException(t);
         fileSize = newLength;
     }
 

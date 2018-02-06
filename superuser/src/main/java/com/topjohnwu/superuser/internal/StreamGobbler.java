@@ -19,7 +19,6 @@ package com.topjohnwu.superuser.internal;
 import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.BufferedReader;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,20 +38,10 @@ class StreamGobbler extends Thread {
 
     private int status;
 
-    private class WrapStream extends FilterInputStream {
-
-        WrapStream(InputStream in) {
-            super(in);
-        }
-
-        @Override
-        public void close() throws IOException { /* Never close the actual InputStream */ }
-    }
-
-    public StreamGobbler(InputStream in, CharSequence token) {
+    public StreamGobbler(InputStream in, String token) {
         status = PENDING;
-        this.in = new WrapStream(in);
-        this.token = token.toString();
+        this.in = in;
+        this.token = token;
     }
 
     synchronized void begin(List<String> out) {

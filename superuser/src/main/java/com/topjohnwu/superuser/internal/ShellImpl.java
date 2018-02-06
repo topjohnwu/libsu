@@ -25,7 +25,8 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,15 +40,14 @@ class ShellImpl extends Shell {
     private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
 
-    final Process process;
-    final OutputStream STDIN;
-    final InputStream STDOUT;
-    final InputStream STDERR;
-    final ReentrantLock lock;
-
-    private CharSequence token;
-    private StreamGobbler outGobbler;
-    private StreamGobbler errGobbler;
+    private final ReentrantLock lock;
+    private final String token;
+    private final Process process;
+    private final OutputStream STDIN;
+    private final InputStream STDOUT;
+    private final InputStream STDERR;
+    private final StreamGobbler outGobbler;
+    private final StreamGobbler errGobbler;
 
     ShellImpl(String... cmd) throws IOException {
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
@@ -58,21 +58,60 @@ class ShellImpl extends Shell {
         STDOUT = process.getInputStream();
         STDERR = process.getErrorStream();
 
-        token = ShellUtils.genRandomAlphaNumString(32);
+        token = ShellUtils.genRandomAlphaNumString(32).toString();
         InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(STDOUT, token);
-        errGobbler = new StreamGobbler(STDERR, token);
+        outGobbler = new StreamGobbler(new NoCloseInputStream(STDOUT), token);
+        errGobbler = new StreamGobbler(new NoCloseInputStream(STDERR), token);
 
         lock = new ReentrantLock();
         status = UNKNOWN;
 
-        testShell();
+        BufferedReader br = new BufferedReader(new InputStreamReader(new NoCloseInputStream(STDOUT)));
+
+        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
+        STDIN.flush();
+        String s = br.readLine();
+        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
+            throw new IOException();
+        }
         status = NON_ROOT_SHELL;
 
         try {
-            testRootShell();
+            STDIN.write(("id\n").getBytes("UTF-8"));
+            STDIN.flush();
+            s = br.readLine();
+            if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
+                throw new IOException();
+            }
             status = ROOT_SHELL;
         } catch (IOException ignored) {}
+
+        br.close();
+    }
+
+    private class NoCloseInputStream extends FilterInputStream {
+
+        NoCloseInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public void close() throws IOException {}
+    }
+
+    private class NoCloseOutputStream extends FilterOutputStream {
+
+        NoCloseOutputStream(@NonNull OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            out.write(b, off, len);
+        }
+
+        @Override
+        public void close() throws IOException {}
     }
 
     @Override
@@ -111,111 +150,60 @@ class ShellImpl extends Shell {
     }
 
     @Override
-    public void run(List<String> output, List<String> error,
-                    @NonNull final String... commands) {
-        run_sync_output(output, error, () ->
-                run_commands(output != null, error != null, commands));
-    }
-
-    @Override
-    public void run(List<String> output, List<String> error, Async.Callback callback,
-                    @NonNull final String... commands) {
-        run_async_task(output, error, callback, () ->
-                run_commands(output != null, error != null, commands));
-    }
-
-    @Override
-    public void loadInputStream(List<String> output, List<String> error, @NonNull InputStream in) {
-        run_sync_output(output, error, new LoadInputStream(in));
-    }
-
-    @Override
-    public void loadInputStream(List<String> output, List<String> error, Async.Callback callback,
-                                @NonNull InputStream in) {
-        run_async_task(output, error, callback, new LoadInputStream(in));
-    }
-
-    private void testShell() throws IOException {
-        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
-        STDIN.flush();
-        String s = new BufferedReader(new InputStreamReader(STDOUT)).readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
-            throw new IOException();
-        }
-    }
-
-    private void testRootShell() throws IOException {
-        STDIN.write(("id\n").getBytes("UTF-8"));
-        STDIN.flush();
-        String s = new BufferedReader(new InputStreamReader(STDOUT)).readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
-            throw new IOException();
-        }
-    }
-
-    private void run_commands(boolean stdout, boolean stderr, String... commands) {
-        String suffix = (stdout ? "" : " >/dev/null") + (stderr ? "" : " 2>/dev/null") + "\n";
+    public Throwable execTask(@NonNull Task task) {
         lock.lock();
+        ShellUtils.cleanInputStream(STDOUT);
+        ShellUtils.cleanInputStream(STDERR);
         try {
             if (!isAlive())
-                return;
-            InternalUtils.log(TAG, "run_commands");
-            for (String command : commands) {
-                STDIN.write((command + suffix).getBytes("UTF-8"));
-                STDIN.flush();
-                InternalUtils.log(INTAG, command);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+                return null;
+            task.run(new NoCloseOutputStream(STDIN),
+                    new NoCloseInputStream(STDOUT),
+                    new NoCloseInputStream(STDERR));
+            return null;
+        } catch (Throwable t) {
+            InternalUtils.stackTrace(t);
             try {
                 close();
             } catch (IOException ignored) {}
+            return t;
         } finally {
             lock.unlock();
         }
     }
 
-    private void run_sync_output(List<String> output, List<String> error, Runnable task) {
-        lock.lock();
-        try {
-            if (!isAlive())
-                return;
-            InternalUtils.log(TAG, "run_sync_output");
-            outGobbler.begin(output);
-            if (error != null)
-                errGobbler.begin(error);
-            task.run();
+    @Override
+    public void execSyncTask(List<String> outList, List<String> errList, @NonNull Task task) {
+        execTask((in, out, err) -> {
+            InternalUtils.log(TAG, "runSyncTask");
+            outGobbler.begin(outList);
+            errGobbler.begin(errList);
+            task.run(in, out, err);
             byte[] finalize = String.format("echo %s; echo %s >&2\n", token, token)
                     .getBytes("UTF-8");
-            STDIN.write(finalize);
-            STDIN.flush();
+            in.write(finalize);
+            in.flush();
             outGobbler.waitDone();
             errGobbler.waitDone();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            try {
-                close();
-            } catch (IOException ignored) {}
-        } finally {
-            lock.unlock();
-        }
+        });
     }
 
-    private void run_async_task(List<String> output, List<String> error,
-                                Async.Callback callback, Runnable task) {
-        InternalUtils.log(TAG, "run_async_task");
-        final Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
+    @Override
+    public void execAsyncTask(List<String> outList, List<String> errList,
+                              Async.Callback callback, @NonNull Task task) {
+        Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-            if (output == null && error == null) {
+            InternalUtils.log(TAG, "runAsyncTask");
+            if (outList == null && errList == null) {
                 // Without any output request, we simply run the task
-                task.run();
+                execTask(task);
             } else {
-                run_sync_output(output, error, task);
+                execSyncTask(outList, errList, task);
                 if (callback != null) {
                     Runnable acb = () -> callback.onTaskResult(
-                            output == null ? null : Collections.synchronizedList(output),
-                            error == null ? null : (error == output ? null :
-                                    Collections.synchronizedList(error))
+                            outList == null ? null : Collections.synchronizedList(outList),
+                            errList == null ? null : (errList == outList ? null :
+                                    Collections.synchronizedList(errList))
                     );
                     if (handler == null)
                         acb.run();
@@ -226,33 +214,28 @@ class ShellImpl extends Shell {
         });
     }
 
-    private class LoadInputStream implements Runnable {
-
-        private InputStream in;
-
-        LoadInputStream(InputStream in) {
-            this.in = in;
-        }
-
-        @Override
-        public void run() {
-            InternalUtils.log(TAG, "loadInputStream");
-            try {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                int read;
-                byte buffer[] = new byte[4096];
-                while ((read = in.read(buffer)) > 0)
-                    baos.write(buffer, 0, read);
-                in.close();
-                baos.writeTo(STDIN);
-                // Make sure it flushes the shell
-                STDIN.write('\n');
-                STDIN.flush();
-                InternalUtils.log(INTAG, baos);
-            } catch (IOException e) {
-                e.printStackTrace();
+    @Override
+    protected Task createCmdTask(String... commands) {
+        return (in, out, err) -> {
+            InternalUtils.log(TAG, "runCommands");
+            for (String command : commands) {
+                in.write(command.getBytes("UTF-8"));
+                in.write('\n');
+                in.flush();
+                InternalUtils.log(INTAG, command);
             }
-        }
+        };
     }
 
+    @Override
+    protected Task createLoadStreamTask(InputStream is) {
+        return (in, out, err) -> {
+            InternalUtils.log(TAG, "loadInputStream");
+            ShellUtils.pump(is, in);
+            is.close();
+            // Make sure it flushes the shell
+            in.write('\n');
+            in.flush();
+        };
+    }
 }
