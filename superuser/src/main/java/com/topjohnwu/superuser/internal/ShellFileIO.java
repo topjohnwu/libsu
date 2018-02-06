@@ -57,10 +57,10 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         if (off < 0 || len < 0 || off + len > b.length)
             throw new IndexOutOfBoundsException();
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
-            // Only busybox dd is usable
+            // Writing without truncate is only possible with busybox
             String cmd = String.format(Locale.ROOT,
-                    "busybox dd of='%s' bs=1 seek=%d count=%d conv=notrunc 2>/dev/null; echo done",
-                    file, fileOff, len);
+                    "busybox dd of='%s' obs=%d seek=%d ibs=%d count=1 conv=notrunc 2>/dev/null; echo done",
+                    file, fileOff == 0 ? len : fileOff, fileOff == 0 ? 0 : 1, len);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
@@ -76,6 +76,31 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         fileSize = Math.max(fileSize, fileOff);
     }
 
+    /**
+     * A write implementation that doesn't require busybox if only appending is required.
+     * Very useful when implementing OutputStreams.
+     */
+    void append(byte[] b, int off, int len) throws IOException {
+        if (off < 0 || len < 0 || off + len > b.length)
+            throw new IndexOutOfBoundsException();
+        Throwable t = Shell.getShell().execTask((in, out, err) -> {
+            String cmd = String.format(Locale.ROOT,
+                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo done", len, file);
+            InternalUtils.log(TAG, cmd);
+            in.write(cmd.getBytes("UTF-8"));
+            in.write('\n');
+            in.flush();
+            in.write(b, off, len);
+            in.flush();
+            // Wait till the operation is done
+            ShellUtils.readFully(out, new byte[5]);
+        });
+        if (t != null)
+            throw new IOException(t);
+        fileSize += len;
+        fileOff = fileSize;
+    }
+
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (off < 0 || len < 0 || off + len > b.length)
@@ -84,22 +109,41 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             return 0;
         // We cannot read over EOF
         int actualLen = (int) Math.min(len, fileSize - fileOff);
-        if (len <= 0)
+        if (actualLen <= 0)
             return -1;
+        // Check alignment
+        long gcd = ShellUtils.gcd(fileOff, actualLen);
+        if (gcd >= 512) {
+            // Aligned, directly process it
+            readBlocks(b, off, actualLen, fileOff, gcd);
+        } else {
+            // Unaligned reading is too slow, read full 512-byte blocks and copy those in interest
+            long start = fileOff / 512 * 512;
+            long end = Math.min((fileOff + len + 511) / 512 * 512, fileSize);
+            int startOff = (int) (fileOff - start);
+            int readLen = (int) (end - start);
+            byte[] buf = new byte[readLen];
+            readBlocks(buf, 0, readLen, start, 512);
+            System.arraycopy(buf, startOff, b, off, actualLen);
+        }
+        fileOff += actualLen;
+        return actualLen;
+    }
+
+    private void readBlocks(byte[] b, int off, int len, long fileOff, long bs) throws IOException {
+        /* assert fileOff % bs == 0 */
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd if='%s' bs=1 skip=%d count=%d 2>/dev/null",
-                    file, fileOff, len);
+                    "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null",
+                    file, bs, fileOff / bs, (len + bs - 1) / bs, len);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();
-            ShellUtils.readFully(out, b, off, actualLen);
+            ShellUtils.readFully(out, b, off, len);
         });
         if (t != null)
             throw new IOException(t);
-        fileOff += actualLen;
-        return actualLen;
     }
 
     @Override
@@ -111,8 +155,8 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     public void setLength(long newLength) throws IOException {
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd if=/dev/null of='%s' bs=1 seek=%d 2>/dev/null; echo done",
-                    file, newLength);
+                    "dd if=/dev/null of='%s' bs=%d seek=%d 2>/dev/null; echo done",
+                    file, newLength == 0 ? 1 : newLength, newLength == 0 ? 0 : 1);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
