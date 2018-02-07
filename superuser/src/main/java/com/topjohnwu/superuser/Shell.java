@@ -648,6 +648,13 @@ public abstract class Shell implements Closeable {
     public abstract boolean isAlive();
 
     /**
+     * Return whether a command exists in the shell.
+     * @param cmd the command to test.
+     * @return {@code true} if the command exists.
+     */
+    public abstract boolean testCmd(String cmd);
+
+    /**
      * Execute a {@code Task} with the shell.
      * @param task the desired task.
      * @return the {@link Throwable} thrown in {@link Task#run(List, List, String...)},

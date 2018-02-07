@@ -63,15 +63,14 @@ public final class ShellUtils {
     }
 
     @Nullable
-    public static String fastCmd(String... commands) {
-        return fastCmd(Shell.getShell(), commands);
+    public static String fastCmd(Shell shell, String cmd) {
+        ArrayList<String> out = new ArrayList<>();
+        shell.run(out, null, cmd);
+        return isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 
-    @Nullable
-    public static String fastCmd(Shell shell, String... commands) {
-        ArrayList<String> out = new ArrayList<>(1);
-        shell.run(out, null, commands);
-        return isValidOutput(out) ? out.get(out.size() - 1) : null;
+    public static boolean fastCmdResult(Shell shell, String cmd) {
+        return Boolean.parseBoolean(fastCmd(shell, cmd + " >/dev/null 2>&1 && echo true || echo false"));
     }
 
     public static long pump(InputStream in, OutputStream out) throws IOException {

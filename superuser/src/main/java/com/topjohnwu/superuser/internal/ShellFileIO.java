@@ -147,7 +147,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     }
 
     @Override
-    public void seek(long pos) throws IOException {
+    public void seek(long pos) {
         fileOff = pos;
     }
 
@@ -170,22 +170,22 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     }
 
     @Override
-    public long length() throws IOException {
+    public long length() {
         return fileSize;
     }
 
     @Override
-    public long getFilePointer() throws IOException {
+    public long getFilePointer() {
         return fileOff;
     }
 
     @Override
-    public int skipBytes(int n) throws IOException {
+    public int skipBytes(int n) {
         long skip = Math.min(fileSize, fileOff + n) - fileOff;
         fileOff += skip;
         return (int) skip;
     }
 
     @Override
-    public void close() throws IOException { /* We don't actually hold resources */ }
+    public void close() { /* We don't actually hold resources */ }
 }

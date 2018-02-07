@@ -51,17 +51,19 @@ import java.util.Locale;
  * of using shells, be aware of it.
  * <p>
  * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
- * The shell backed operations require: {@code rm}, {@code rmdir}, {@code readlink},
- * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, and for better support, {@code wc}.
- * The required tools are all available on modern Android versions (tested on Lollipop+),
- * earlier versions might need to install additional {@code busybox} to make things work properly.
+ * The shell backed operations require: {@code rm}, {@code rmdir}, {@code readlink}, {@code mv},
+ * {@code ls}, {@code mkdir}, {@code touch}, or optionally for better support,
+ * {@code blockdev} and {@code stat}.
+ * All required tools are available on modern Android versions (tested on Lollipop+),
+ * older versions might need to install {@code busybox} to make things work properly.
  * Some operations could have oddities due to the very limited tools available, check the method
  * descriptions for more info before using it.
+ * @see com.topjohnwu.superuser.BusyBox
  */
 public class SuFile extends File {
 
     private boolean useShell = true;
-    private boolean wc = false;
+    private boolean stat = false, blockdev = false;
     private String absolutePath;
 
     public SuFile(@NonNull String pathname) {
@@ -115,8 +117,9 @@ public class SuFile extends File {
         if (useShell) {
             // The absolutePath will not change if using shell
             absolutePath = super.getAbsolutePath();
-            // Check the tools we have
-            wc = cmdBoolean("wc -c /dev/null");
+            // Check tools
+            stat = Shell.getShell().testCmd("stat");
+            blockdev = Shell.getShell().testCmd("blockdev");
         }
     }
 
@@ -126,9 +129,12 @@ public class SuFile extends File {
                 .replace("%rawfile%", String.format("'%s'", absolutePath));
     }
 
+    private String cmd(String cmd) {
+        return ShellUtils.fastCmd(Shell.getShell(), genCmd(cmd));
+    }
+
     private boolean cmdBoolean(String cmd) {
-        return Boolean.parseBoolean(ShellUtils.fastCmd(
-                genCmd(cmd) + " >/dev/null 2>&1 && echo true || echo false"));
+        return ShellUtils.fastCmdResult(Shell.getShell(), genCmd(cmd));
     }
 
     private class Attributes {
@@ -147,7 +153,7 @@ public class SuFile extends File {
 
 
     private Attributes getAttributes() {
-        String lsInfo = ShellUtils.fastCmd(genCmd("ls -ld %file%"));
+        String lsInfo = cmd("ls -ld %file%");
         Attributes a = new Attributes();
         if (lsInfo == null)
             return a;
@@ -231,7 +237,7 @@ public class SuFile extends File {
     @Override
     public String getCanonicalPath() throws IOException {
         if (useShell) {
-            String path = ShellUtils.fastCmd(genCmd("echo %file%"));
+            String path = cmd("echo %file%");
             return path == null ? getAbsolutePath() : path;
         }
         return super.getCanonicalPath();
@@ -281,17 +287,17 @@ public class SuFile extends File {
     /**
      * Returns the length of the file denoted by this abstract pathname.
      * <p>
-     * Note: If there is no {@code wc} in {@code PATH}, the file size is the value reported from
-     * {@code ls -l}, which will not correctly report the size of special files
-     * (e.g. character/block files).
+     * Note: If there is no {@code blockdev} and {@code stat} in {@code PATH}, the file size is
+     * the value reported from {@code ls -l}, which will not correctly report the size of block files.
      * @return the size in bytes of the underlying file.
      * @see File#length()
      */
     @Override
     public long length() {
         return useShell ?
-                (wc ? Long.parseLong(ShellUtils.fastCmd(genCmd("wc -c %file%"))
-                        .split("\\s+")[0]) : getAttributes().size)
+                (blockdev && stat ?
+                        Long.parseLong(cmd("[ -b %file% ] && blockdev --getsize64 %file% " +
+                                "|| stat -c '%s' %file%")) : getAttributes().size)
                 : super.length();
     }
 
