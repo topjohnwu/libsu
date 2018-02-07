@@ -36,4 +36,13 @@ public final class Factory {
             throws FileNotFoundException {
         return new RandomAccessFileWrapper(file);
     }
+
+    public static ShellInputStream createShellInputStream(SuFile file) throws FileNotFoundException {
+        return new ShellInputStream(file);
+    }
+
+    public static ShellOutputStream createShellOutputStream(SuFile file, boolean append)
+            throws FileNotFoundException {
+        return new ShellOutputStream(file, append);
+    }
 }
