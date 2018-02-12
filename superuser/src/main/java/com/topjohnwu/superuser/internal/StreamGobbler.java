@@ -82,8 +82,11 @@ class StreamGobbler extends Thread {
                 while ((line = reader.readLine()) != null) {
                     int end = line.lastIndexOf(token);
                     if (end >= 0) {
-                        if (end > 0)
+                        if (end > 0) {
+                            while (line.charAt(end - 1) == 0)
+                                --end;
                             output(line.substring(0, end));
+                        }
                         break;
                     }
                     output(line);
