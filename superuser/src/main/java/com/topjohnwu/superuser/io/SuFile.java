@@ -44,7 +44,7 @@ import java.util.Locale;
  * is writable so we can create/delete the target. If any of the checks doesn't pass, all operations
  * will then be backed with root shell commands instead of the native implementations.
  * If you want to bypass the check and always use the root shell for all methods, use
- * {@link #SuFile(File, boolean)} to construct the instance.
+ * {@link #SuFile(File, boolean)} or {@link #SuFile(String, boolean)} to construct the instance.
  * <p>
  * This class has exact same behavior as a normal {@link File}, however all atomic promises in the
  * parent class does not apply if the actual operations are done via a shell. This is a limitation
@@ -101,9 +101,19 @@ public class SuFile extends File {
      * @param shell whether use shell for operations.
      */
     public SuFile(@NonNull File file, boolean shell) {
-        super(file.getAbsolutePath());
+        this(file.getAbsolutePath(), shell);
+    }
+
+    /**
+     * Create a new {@code SuFile} using a path.
+     * @param pathname the path to the file.
+     * @param shell whether use shell for operations.
+     */
+    public SuFile(@NonNull String pathname, boolean shell) {
+        super(pathname);
         useShell = shell;
-        absolutePath = super.getAbsolutePath();
+        if (useShell)
+            absolutePath = super.getAbsolutePath();
     }
 
     boolean useShell() {
@@ -125,8 +135,8 @@ public class SuFile extends File {
 
     private String genCmd(String cmd) {
         return cmd
-                .replace("%file%", String.format("\"`readlink -f %s`\"", absolutePath))
-                .replace("%rawfile%", String.format("'%s'", absolutePath));
+                .replace("%file%", String.format("'%s'", absolutePath))
+                .replace("%canfile%", String.format("\"`readlink -f %s`\"", absolutePath));
     }
 
     private String cmd(String cmd) {
@@ -153,7 +163,7 @@ public class SuFile extends File {
 
 
     private Attributes getAttributes() {
-        String lsInfo = cmd("ls -ld %file%");
+        String lsInfo = cmd("ls -ld %canfile%");
         Attributes a = new Attributes();
         if (lsInfo == null)
             return a;
@@ -201,7 +211,7 @@ public class SuFile extends File {
 
     @Override
     public boolean createNewFile() throws IOException {
-        return useShell ? cmdBoolean("[ ! -e %file% ] && touch %rawfile%") : super.createNewFile();
+        return useShell ? cmdBoolean("[ ! -e %file% ] && touch %file%") : super.createNewFile();
     }
 
     @Override
@@ -237,7 +247,7 @@ public class SuFile extends File {
     @Override
     public String getCanonicalPath() throws IOException {
         if (useShell) {
-            String path = cmd("echo %file%");
+            String path = cmd("echo %canfile%");
             return path == null ? getAbsolutePath() : path;
         }
         return super.getCanonicalPath();
@@ -297,18 +307,18 @@ public class SuFile extends File {
         return useShell ?
                 (blockdev && stat ?
                         Long.parseLong(cmd("[ -b %file% ] && blockdev --getsize64 %file% " +
-                                "|| stat -c '%s' %file%")) : getAttributes().size)
+                                "|| stat -c '%s' %canfile%")) : getAttributes().size)
                 : super.length();
     }
 
     @Override
     public boolean mkdir() {
-        return useShell ? cmdBoolean("mkdir %rawfile%") : super.mkdir();
+        return useShell ? cmdBoolean("mkdir %file%") : super.mkdir();
     }
 
     @Override
     public boolean mkdirs() {
-        return useShell ? cmdBoolean("mkdir -p %rawfile%") : super.mkdirs();
+        return useShell ? cmdBoolean("mkdir -p %file%") : super.mkdirs();
     }
 
     @Override
@@ -327,7 +337,7 @@ public class SuFile extends File {
                 perm &= ~(b);
             a.perms[i] = (char) (perm + '0');
         }
-        return cmdBoolean("chmod " + new String(a.perms) + " %file%");
+        return cmdBoolean("chmod " + new String(a.perms) + " %canfile%");
     }
 
     @Override
@@ -368,7 +378,7 @@ public class SuFile extends File {
         if (useShell) {
             DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
             String date = df.format(new Date(time));
-            return cmdBoolean("[ -e %file% ] && touch -t " + date + " %file%");
+            return cmdBoolean("[ -e %file% ] && touch -t " + date + " %canfile%");
         } else {
             return super.setLastModified(time);
         }
