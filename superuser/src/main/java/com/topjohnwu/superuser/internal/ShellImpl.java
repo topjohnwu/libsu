@@ -194,8 +194,8 @@ class ShellImpl extends Shell {
     }
 
     @Override
-    public void execSyncTask(List<String> outList, List<String> errList, @NonNull Task task) {
-        execTask((in, out, err) -> {
+    public Throwable execSyncTask(List<String> outList, List<String> errList, @NonNull Task task) {
+        return execTask((in, out, err) -> {
             InternalUtils.log(TAG, "runSyncTask");
             outGobbler.begin(outList);
             errGobbler.begin(errList);
@@ -219,8 +219,8 @@ class ShellImpl extends Shell {
                 // Without any output request, we simply run the task
                 execTask(task);
             } else {
-                execSyncTask(outList, errList, task);
-                if (callback != null) {
+                if (execSyncTask(outList, errList, task) == null && callback != null) {
+                    // Invoke callback if no exceptions occurs and callback is not null
                     Runnable acb = () -> callback.onTaskResult(
                             outList == null ? null : Collections.synchronizedList(outList),
                             errList == null ? null : (errList == outList ? null :

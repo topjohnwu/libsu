@@ -667,8 +667,10 @@ public abstract class Shell implements Closeable {
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
      * @param task the target list.
+     * @return the {@link Throwable} thrown in {@link Task#run(List, List, String...)},
+     *         {@code null} if nothing is thrown.
      */
-    public abstract void execSyncTask(List<String> outList, List<String> errList, @NonNull Task task);
+    public abstract Throwable execSyncTask(List<String> outList, List<String> errList, @NonNull Task task);
 
     /**
      * Execute a {@code Task}, and collect outputs asynchronously.
