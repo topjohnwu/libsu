@@ -68,22 +68,22 @@ public class SuFile extends File {
 
     public SuFile(@NonNull String pathname) {
         super(pathname);
-        checkShell();
+        checkIfUseShell();
     }
 
     public SuFile(String parent, @NonNull String child) {
         super(parent, child);
-        checkShell();
+        checkIfUseShell();
     }
 
     public SuFile(File parent, @NonNull String child) {
         super(parent, child);
-        checkShell();
+        checkIfUseShell();
     }
 
     public SuFile(@NonNull URI uri) {
         super(uri);
-        checkShell();
+        checkIfUseShell();
     }
 
     /**
@@ -92,7 +92,7 @@ public class SuFile extends File {
      */
     public SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        checkShell();
+        checkIfUseShell();
     }
 
     /**
@@ -111,19 +111,22 @@ public class SuFile extends File {
      */
     public SuFile(@NonNull String pathname, boolean shell) {
         super(pathname);
-        useShell = shell;
-        if (useShell)
-            absolutePath = super.getAbsolutePath();
+        useShell = shell && Shell.rootAccess();
+        testShell();
     }
 
     boolean useShell() {
         return useShell;
     }
 
-    private void checkShell() {
+    private void checkIfUseShell() {
         // We at least need to be able to write to parent, and rw if exists
         useShell = (!super.getParentFile().canWrite() ||
                 super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
+        testShell();
+    }
+
+    private void testShell() {
         if (useShell) {
             // The absolutePath will not change if using shell
             absolutePath = super.getAbsolutePath();
