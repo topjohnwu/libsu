@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.support.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
@@ -53,7 +55,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@NonNull byte[] b, int off, int len) throws IOException {
         if (off < 0 || len < 0 || off + len > b.length)
             throw new IndexOutOfBoundsException();
         Throwable t = Shell.getShell().execTask((in, out, err) -> {

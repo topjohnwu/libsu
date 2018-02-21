@@ -27,20 +27,41 @@ import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 
+/**
+ * An {@link java.io.OutputStream} that read files using the global shell instance.
+ * <p>
+ * This class always checks whether using a shell is necessary. If not, it simply opens a new
+ * {@link FileOutputStream}.
+ * <p>
+ * Note: this class is <b>always buffered internally</b>, do not add another layer of
+ * {@link BufferedOutputStream} to add more overhead!
+ */
 public class SuFileOutputStream extends FilterOutputStream {
 
+    /**
+     * @see FileOutputStream#FileOutputStream(String)
+     */
     public SuFileOutputStream(String path) throws FileNotFoundException {
         this(path, false);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(String, boolean)
+     */
     public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        this(new File(path), append);
+        this(new SuFile(path), append);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(File)
+     */
     public SuFileOutputStream(File file) throws FileNotFoundException {
         this(file, false);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(File, boolean)
+     */
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
         super(null);
         SuFile f;

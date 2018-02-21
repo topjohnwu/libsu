@@ -34,6 +34,9 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Some handy utility methods that are used in {@code libsu}.
+ */
 public final class ShellUtils {
 
     private ShellUtils() {}
@@ -43,6 +46,11 @@ public final class ShellUtils {
     private static final String NUMBERS = "0123456789";
     private static final String ALPHANUM = LOWER_CASE + UPPER_CASE + NUMBERS;
 
+    /**
+     * Generate a random string containing only alphabet and numbers.
+     * @param length the length of the desired random string.
+     * @return the random string.
+     */
     public static CharSequence genRandomAlphaNumString(int length) {
         SecureRandom random = new SecureRandom();
         StringBuilder builder = new StringBuilder();
@@ -52,6 +60,11 @@ public final class ShellUtils {
         return builder;
     }
 
+    /**
+     * Test whether the list is {@code null} or empty or all elements are empty strings.
+     * @param out the output of a shell command.
+     * @return {@code false} if the list is {@code null} or empty or all elements are empty strings.
+     */
     public static boolean isValidOutput(List<String> out) {
         if (out != null && out.size() != 0) {
             // Check if all empty
@@ -62,6 +75,12 @@ public final class ShellUtils {
         return false;
     }
 
+    /**
+     * Run a single line command and get a single line output.
+     * @param shell a shell instance.
+     * @param cmd the single line command.
+     * @return the last line of the output of the command, {@code null} if no output is available.
+     */
     @Nullable
     public static String fastCmd(Shell shell, String cmd) {
         ArrayList<String> out = new ArrayList<>();
@@ -69,10 +88,23 @@ public final class ShellUtils {
         return isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 
+    /**
+     * Run a single line command and return whether the command returns 0 (success).
+     * @param shell a shell instance.
+     * @param cmd the single line command.
+     * @return {@code true} if the command succeed.
+     */
     public static boolean fastCmdResult(Shell shell, String cmd) {
         return Boolean.parseBoolean(fastCmd(shell, cmd + " >/dev/null 2>&1 && echo true || echo false"));
     }
 
+    /**
+     * Pump all data from an {@link InputStream} to an {@link OutputStream}.
+     * @param in source.
+     * @param out target.
+     * @return the total bytes transferred.
+     * @throws IOException when any read/write operations throws an error.
+     */
     public static long pump(InputStream in, OutputStream out) throws IOException {
         int read;
         long total = 0;
@@ -85,7 +117,14 @@ public final class ShellUtils {
         return total;
     }
 
-    public static boolean checkSum(String alg, File file, String test) {
+    /**
+     * Check the checksum of a file using a specific algorithm and compare it with a reference.
+     * @param alg the algorithm name used in {@link MessageDigest#getInstance(String)}.
+     * @param file the file to be tested.
+     * @param reference the reference checksum.
+     * @return {@code true} if the file's checksum matches reference.
+     */
+    public static boolean checkSum(String alg, File file, String reference) {
         // Verify checksum
         try (FileInputStream in = new FileInputStream(file)) {
             MessageDigest digest = MessageDigest.getInstance(alg);
@@ -101,16 +140,24 @@ public final class ShellUtils {
             for (byte b : chksum) {
                 sb.append(String.format("%02x", b & 0xff));
             }
-            return TextUtils.equals(sb, test);
+            return TextUtils.equals(sb, reference);
         } catch (NoSuchAlgorithmException | IOException e) {
             return false;
         }
     }
 
+    /**
+     * Check if current thread is main thread.
+     * @return {@code true} if the current thread is the main thread.
+     */
     public static boolean onMainThread() {
         return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
     }
 
+    /**
+     * Discard all data currently available in an {@link InputStream}.
+     * @param in the {@link InputStream} to be cleaned.
+     */
     public static void cleanInputStream(InputStream in) {
         try {
             while (in.available() != 0)
@@ -118,10 +165,22 @@ public final class ShellUtils {
         } catch (IOException ignored) {}
     }
 
+    /**
+     * Same as {@code readFully(in, b, 0, b.length)}
+     */
     public static void readFully(InputStream in, byte[] b) throws IOException {
         readFully(in, b, 0, b.length);
     }
 
+    /**
+     * Read exactly len bytes from the {@link InputStream}.
+     * @param in source.
+     * @param b the byte array to store the data.
+     * @param off the start offset in the data.
+     * @param len the number of bytes to be read.
+     * @throws EOFException if this stream reaches the end before reading all the bytes.
+     * @throws IOException if an I/O error occurs.
+     */
     public static void readFully(InputStream in, byte[] b, int off, int len) throws IOException {
         int n = 0;
         while (n < len) {
@@ -132,6 +191,12 @@ public final class ShellUtils {
         }
     }
 
+    /**
+     * Get the greatest common divisor of 2 integers with binary algorithm.
+     * @param u an integer.
+     * @param v an integer.
+     * @return the greatest common divisor.
+     */
     public static long gcd(long u, long v) {
         if (u == 0) return v;
         if (v == 0) return u;

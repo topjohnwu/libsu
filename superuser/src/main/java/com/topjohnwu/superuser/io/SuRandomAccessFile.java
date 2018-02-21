@@ -28,6 +28,23 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+/**
+ * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.
+ * <p>
+ * This class always checks whether using a shell is necessary. If not, it simply opens a new
+ * {@link java.io.RandomAccessFile} with mode {@code "rw"} and behaves as a wrapper.
+ * <p>
+ * File random access via shell is extremely limited, each I/O operation comes with a relatively
+ * large overhead. For optimal performance, please consider using {@link SuFileInputStream} and
+ * {@link SuFileOutputStream}, since these classes are specifically optimized for I/O using
+ * shell commands.
+ * <p>
+ * Note: All write/writeXXX commands <b>require</b> {@code busybox} to work properly, as currently
+ * no existing Android version ships with a command {@code dd} that supports {@code notrunc} option.
+ * If you need root file output but unwilling to use {@code busybox}, please use
+ * {@link SuFileOutputStream} as it uses a special workaround that does not require {@code busybox}.
+ * @see java.io.RandomAccessFile
+ */
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
 
     public static SuRandomAccessFile open(String path) throws FileNotFoundException {

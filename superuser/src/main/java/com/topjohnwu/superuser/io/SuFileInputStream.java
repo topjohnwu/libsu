@@ -24,12 +24,27 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 
+/**
+ * An {@link java.io.InputStream} that read files using the global shell instance.
+ * <p>
+ * This class always checks whether using a shell is necessary. If not, it simply opens a new
+ * {@link FileInputStream}.
+ * <p>
+ * Note: this class is <b>always buffered internally</b>, do not add another layer of
+ * {@link BufferedInputStream} to add more overhead!
+ */
 public class SuFileInputStream extends FilterInputStream {
 
+    /**
+     * @see FileInputStream#FileInputStream(String)
+     */
     public SuFileInputStream(String path) throws FileNotFoundException {
         this(new SuFile(path));
     }
 
+    /**
+     * @see FileInputStream#FileInputStream(File)
+     */
     public SuFileInputStream(File file) throws FileNotFoundException {
         super(null);
         SuFile f;

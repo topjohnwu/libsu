@@ -301,7 +301,7 @@ public class SuFile extends File {
      * Returns the length of the file denoted by this abstract pathname.
      * <p>
      * Note: If there is no {@code blockdev} and {@code stat} in {@code PATH}, the file size is
-     * the value reported from {@code ls -l}, which will not correctly report the size of block files.
+     * the value reported from {@code ls -ld}, which will not correctly report the size of block files.
      * @return the size in bytes of the underlying file.
      * @see File#length()
      */

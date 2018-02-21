@@ -19,18 +19,36 @@ package com.topjohnwu.superuser.io;
 import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 
+/**
+ * An {@link java.io.InputStream} that read files by opening a new root process.
+ * <p>
+ * The difference between this class and {@link SuFileInputStream} is that this class does not
+ * use a shell to do the I/O operations; instead it directly creates a new process to read the file.
+ * In most cases, {@link SuFileInputStream} is sufficient; however if you expect a very high I/O
+ * throughput (e.g. dumping large partitions), this class is created for this purpose.
+ * <p>
+ * Note: this class is <b>always buffered internally</b>, do not add another layer of
+ * {@link java.io.BufferedInputStream} to add more overhead!
+ */
 public class SuProcessFileInputStream extends FilterInputStream {
 
     private Process process;
 
+    /**
+     * @see FileInputStream#FileInputStream(String)
+     */
     public SuProcessFileInputStream(String path) throws FileNotFoundException {
         this(new File(path));
     }
 
+    /**
+     * @see FileInputStream#FileInputStream(File)
+     */
     public SuProcessFileInputStream(File file) throws FileNotFoundException {
         super(null);
         try {

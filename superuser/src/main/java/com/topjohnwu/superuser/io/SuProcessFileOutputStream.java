@@ -22,26 +22,50 @@ import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * An {@link java.io.OutputStream} that write files by opening a new root process.
+ * <p>
+ * The difference between this class and {@link SuFileOutputStream} is that this class does not
+ * use a shell to do the I/O operations; instead it directly creates a new process to write the file.
+ * In most cases, {@link SuFileOutputStream} is sufficient; however if you expect a very high I/O
+ * throughput (e.g. restoring large partitions), this class is created for this purpose.
+ * <p>
+ * Note: this class is <b>always buffered internally</b>, do not add another layer of
+ * {@link java.io.BufferedOutputStream} to add more overhead!
+ */
 public class SuProcessFileOutputStream extends FilterOutputStream {
 
     private Process process;
 
+    /**
+     * @see FileOutputStream#FileOutputStream(String)
+     */
     public SuProcessFileOutputStream(String path) throws FileNotFoundException {
         this(path, false);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(String, boolean)
+     */
     public SuProcessFileOutputStream(String path, boolean append) throws FileNotFoundException {
         this(new File(path), append);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(File)
+     */
     public SuProcessFileOutputStream(File file) throws FileNotFoundException {
         this(file, false);
     }
 
+    /**
+     * @see FileOutputStream#FileOutputStream(File, boolean)
+     */
     public SuProcessFileOutputStream(File file, boolean append) throws FileNotFoundException {
         super(null);
         try {

@@ -64,7 +64,7 @@ class RandomAccessFileWrapper extends SuRandomAccessFile {
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@NonNull byte[] b, int off, int len) throws IOException {
         raf.write(b, off, len);
     }
 
