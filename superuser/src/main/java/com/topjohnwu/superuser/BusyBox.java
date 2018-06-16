@@ -64,8 +64,8 @@ public final class BusyBox {
      */
     public static File BB_PATH = null;
 
-    private static final String ARM_MD5 = "f80d231ec4820c712c00e64f07f66f21";
-    private static final String X86_MD5 = "391612ae11978e3d35a429b0729e8317";
+    private static final String ARM_MD5 = "482cb744785ad638cf68931164853c71";
+    private static final String X86_MD5 = "db75965c82d90b45777cbd6d114f6b47";
 
     /**
      * Setup a busybox environment using the bundled busybox binaries.
