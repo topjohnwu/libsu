@@ -111,18 +111,22 @@ public class SuFile extends File {
         this(pathname);
     }
 
-    private String genCmd(String cmd) {
-        return cmd
-                .replace("//file//", "'" + getAbsolutePath() + "'")
-                .replace("//canfile//", "\"`readlink -f '" + getAbsolutePath() + "'`\"");
+    private String[] genCmd(String cmd) {
+        String setup;
+        if (cmd.contains("$CFILE")) {
+            setup = String.format("FILE='%s';CFILE=\"`readlink -f '%s'`\"", getAbsolutePath(), getAbsolutePath());
+        } else {
+            setup = String.format("FILE='%s'", getAbsolutePath());
+        }
+        return new String[] { setup, cmd, "FILE=; CFILE=" };
     }
 
-    private String cmd(String cmd) {
-        return ShellUtils.fastCmd(genCmd(cmd));
+    private String cmd(String c) {
+        return ShellUtils.fastCmd(genCmd(c));
     }
 
-    private boolean cmdBoolean(String cmd) {
-        return ShellUtils.fastCmdResult(genCmd(cmd));
+    private boolean cmdBoolean(String c) {
+        return Boolean.parseBoolean(cmd(c + " >/dev/null 2>&1 && echo true || echo false"));
     }
 
     private static class Attributes {
@@ -141,7 +145,7 @@ public class SuFile extends File {
 
 
     private Attributes getAttributes() {
-        String lsInfo = cmd("ls -ld //canfile//");
+        String lsInfo = cmd("ls -ld \"$CFILE\"");
         Attributes a = new Attributes();
         if (lsInfo == null)
             return a;
@@ -174,31 +178,31 @@ public class SuFile extends File {
 
     @Override
     public boolean canExecute() {
-        return cmdBoolean("[ -x //file// ]");
+        return cmdBoolean("[ -x \"$FILE\" ]");
     }
 
     @Override
     public boolean canRead() {
-        return cmdBoolean("[ -r //file// ]");
+        return cmdBoolean("[ -r \"$FILE\" ]");
     }
 
     @Override
     public boolean canWrite() {
-        return cmdBoolean("[ -w //file// ]");
+        return cmdBoolean("[ -w \"$FILE\" ]");
     }
 
     @Override
     public boolean createNewFile() {
-        return cmdBoolean("[ ! -e //file// ] && touch //file//");
+        return cmdBoolean("[ ! -e \"$FILE\" ] && touch \"$FILE\"");
     }
 
     @Override
     public boolean delete() {
-        return cmdBoolean("rm -f //file// || rmdir -f //file//");
+        return cmdBoolean("rm -f \"$FILE\" || rmdir -f \"$FILE\"");
     }
 
     public boolean deleteRecursive() {
-        return cmdBoolean("rm -rf //file//");
+        return cmdBoolean("rm -rf \"$FILE\"");
     }
 
     @Override
@@ -206,7 +210,7 @@ public class SuFile extends File {
 
     @Override
     public boolean exists() {
-        return cmdBoolean("[ -e //file// ]");
+        return cmdBoolean("[ -e \"$FILE\" ]");
     }
 
     @NonNull
@@ -217,14 +221,14 @@ public class SuFile extends File {
 
     @NonNull
     @Override
-    public String getCanonicalPath() throws IOException {
-        String path = cmd("echo //canfile//");
+    public String getCanonicalPath() {
+        String path = cmd("echo \"$CFILE\"");
         return path == null ? getAbsolutePath() : path;
     }
 
     @NonNull
     @Override
-    public SuFile getCanonicalFile() throws IOException {
+    public SuFile getCanonicalFile() {
         return new SuFile(getCanonicalPath());
     }
 
@@ -250,12 +254,12 @@ public class SuFile extends File {
 
     @Override
     public boolean isDirectory() {
-        return cmdBoolean("[ -d //file// ]");
+        return cmdBoolean("[ -d \"$FILE\" ]");
     }
 
     @Override
     public boolean isFile() {
-        return cmdBoolean("[ -f //file// ]");
+        return cmdBoolean("[ -f \"$FILE\" ]");
     }
 
     @Override
@@ -274,23 +278,23 @@ public class SuFile extends File {
     @Override
     public long length() {
         return (blockdev && stat ? Long.parseLong(
-                cmd("[ -b //file// ] && blockdev --getsize64 //file// || stat -c '%s' //canfile//"))
+                cmd("[ -b \"$FILE\" ] && blockdev --getsize64 \"$FILE\" || stat -c '%s' \"$CFILE\""))
                 : getAttributes().size);
     }
 
     @Override
     public boolean mkdir() {
-        return cmdBoolean("mkdir //file//");
+        return cmdBoolean("mkdir \"$FILE\"");
     }
 
     @Override
     public boolean mkdirs() {
-        return cmdBoolean("mkdir -p //file//");
+        return cmdBoolean("mkdir -p \"$FILE\"");
     }
 
     @Override
     public boolean renameTo(File dest) {
-        return cmdBoolean("mv -f //file// '" + dest.getAbsolutePath() + "'");
+        return cmdBoolean("mv -f \"$FILE\" '" + dest.getAbsolutePath() + "'");
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
@@ -303,7 +307,7 @@ public class SuFile extends File {
                 perm &= ~(b);
             a.perms[i] = (char) (perm + '0');
         }
-        return cmdBoolean("chmod " + new String(a.perms) + " //canfile//");
+        return cmdBoolean("chmod " + new String(a.perms) + " \"$CFILE\"");
     }
 
     @Override
@@ -340,12 +344,12 @@ public class SuFile extends File {
     public boolean setLastModified(long time) {
         DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
         String date = df.format(new Date(time));
-        return cmdBoolean("[ -e //file// ] && touch -t " + date + " //canfile//");
+        return cmdBoolean("[ -e \"$FILE\" ] && touch -t " + date + " \"$CFILE\"");
     }
 
     @Override
     public String[] list() {
-        List<String> out = Shell.Sync.su(genCmd("ls //file//"));
+        List<String> out = Shell.Sync.su(genCmd("ls \"$FILE\""));
         if (!ShellUtils.isValidOutput(out))
             return null;
         return out.toArray(new String[0]);

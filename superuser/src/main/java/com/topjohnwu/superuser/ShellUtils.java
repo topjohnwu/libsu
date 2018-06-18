@@ -82,25 +82,25 @@ public final class ShellUtils {
     }
 
     /**
-     * Run a single line command with the global shell and get a single line output.
-     * @param cmd the single line command.
+     * Run commands with the global shell and get a single line output.
+     * @param cmds the commands.
      * @return the last line of the output of the command, {@code null} if no output is available.
      */
     @Nullable
-    public static String fastCmd(String cmd) {
-        return fastCmd(Shell.getShell(), cmd);
+    public static String fastCmd(String... cmds) {
+        return fastCmd(Shell.getShell(), cmds);
     }
 
     /**
-     * Run a single line command and get a single line output.
+     * Run commands and get a single line output.
      * @param shell a shell instance.
-     * @param cmd the single line command.
+     * @param cmds the commands.
      * @return the last line of the output of the command, {@code null} if no output is available.
      */
     @Nullable
-    public static String fastCmd(Shell shell, String cmd) {
+    public static String fastCmd(Shell shell, String... cmds) {
         ArrayList<String> out = new ArrayList<>();
-        shell.run(out, null, cmd);
+        shell.run(out, null, cmds);
         return isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 
