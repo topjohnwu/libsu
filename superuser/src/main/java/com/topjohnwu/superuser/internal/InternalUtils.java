@@ -16,6 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
@@ -37,5 +38,15 @@ public final class InternalUtils {
 
     public static boolean hasFlag(int flags, int flag) {
         return (flags & flag) != 0;
+    }
+
+    public static Context getContext() {
+        try {
+            return (Context) Class.forName("android.app.ActivityThread")
+                    .getMethod("currentApplication").invoke(null);
+        } catch (Exception e) {
+            return null;
+        }
+
     }
 }

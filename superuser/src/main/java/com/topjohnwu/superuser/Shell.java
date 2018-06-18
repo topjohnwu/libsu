@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -172,7 +174,8 @@ public abstract class Shell implements Closeable {
     
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
-    private static Initializer initializer = new Initializer();
+    private static Initializer initializer = null;
+    private static Class<? extends Initializer> initClass = null;
 
     /* **************************************
     * Static utility / configuration methods
@@ -190,12 +193,24 @@ public abstract class Shell implements Closeable {
     }
 
     /**
+     * @deprecated
      * Set a desired {@code Initializer}.
      * @see Initializer
      * @param init the desired initializer.
      */
+    @Deprecated
     public static void setInitializer(@NonNull Initializer init) {
         initializer = init;
+    }
+
+    /**
+     * Set a desired {@code Initializer}.
+     * @see Initializer
+     * @param init the class of the desired initializer.
+     *             <strong>If it is a nested class, it MUST be a static nested class!!</strong>
+     */
+    public static void setInitializer(@NonNull Class<? extends Initializer> init) {
+        initClass = init;
     }
 
     /**
@@ -289,7 +304,8 @@ public abstract class Shell implements Closeable {
      * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
      * since it may return the result of any of the 3 possible methods.
      * @return a new {@code Shell} instance.
-     * @throws NoShellException impossible to construct {@code Shell} instance.
+     * @throws NoShellException impossible to construct {@code Shell} instance, or initialization
+     * failed when using the {@link Initializer} set in {@link #setInitializer(Class)}.
      */
     @NonNull
     public static Shell newInstance() {
@@ -344,7 +360,8 @@ public abstract class Shell implements Closeable {
      * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
      *                 a new {@link Process}.
      * @return a new {@code Shell} instance.
-     * @throws NoShellException the provided command cannot create a new Unix shell.
+     * @throws NoShellException the provided command cannot create a {@code Shell} instance, or
+     * initialization failed when using the {@link Initializer} set in {@link #setInitializer(Class)}.
      */
     @NonNull
     public static Shell newInstance(String... commands) {
@@ -777,8 +794,23 @@ public abstract class Shell implements Closeable {
     * ***********************/
 
     private static void initShell(Shell shell) {
-        BusyBox.init(shell);
-        initializer.init(shell);
+        Initializer init = null;
+        if (initClass != null) {
+            try {
+                // Force enabling the default constructor as it might be private
+                Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
+                ic.setAccessible(true);
+                init = ic.newInstance();
+            } catch (Exception e) {
+                InternalUtils.stackTrace(e);
+            }
+        } else if (initializer != null) {
+            init = initializer;
+        }
+        if (init == null)
+            init = new Initializer();
+        if (!init.init(shell))
+            throw new NoShellException();
     }
 
     private static Shell getGlobalShell() {
@@ -880,39 +912,83 @@ public abstract class Shell implements Closeable {
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
      * is constructed, subclass this class, add your own implementation, and register it with
-     * {@link #setInitializer(Initializer)}.
-     * The concept is a bit like {@code .bashrc} a specific script/command will run when the shell
+     * {@link #setInitializer(Class)}.
+     * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up.
-     * A {@code Shell} instance will be passed to the two callbacks, please directly call the low level
-     * APIs on the instance. <strong>DO NOT</strong> call the methods in {@link Shell.Sync} or
-     * {@link Shell.Async}, since the global shell is not setup yet, calling the high level
-     * APIs will end up in an infinite loop of creating new {@code Shell} and calling the initializer.
      * <p>
-     * The {@link #onShellInit(Shell)} will be called as soon as the {@code Shell} is constructed
-     * and tested as a valid shell. {@link #onRootShellInit(Shell)} will only be called after the
+     * The {@link #onShellInit(Context, Shell)} will be called as soon as the {@code Shell} is constructed
+     * and tested as a valid shell. {@link #onRootShellInit(Context, Shell)} will only be called after the
      * {@code Shell} passes the internal root shell test. In short, a non-root shell will only
-     * be initialized with {@link #onShellInit(Shell)}, while a root shell will be initialized with
-     * both {@link #onShellInit(Shell)} and {@link #onRootShellInit(Shell)}.
+     * be initialized with {@link #onShellInit(Context, Shell)}, while a root shell will be initialized with
+     * both {@link #onShellInit(Context, Shell)} and {@link #onRootShellInit(Context, Shell)}.
+     * Please directly call the low level APIs on the passed in {@code Shell} instance within these
+     * two callbacks. <strong>DO NOT</strong> use methods in {@link Shell.Sync} or
+     * {@link Shell.Async}. The global shell is not set yet, calling these high level APIs
+     * will end up in an infinite loop of creating new {@code Shell} and calling the initializer.
+     * <p>
+     * An initializer will be constructed and the callbacks will be invoked each time a new
+     * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
+     * access resources within the APK (e.g. shell scripts).
      */
     public static class Initializer {
+
         /**
+         * @deprecated
          * Called when a new shell is constructed.
-         * The default implementation is NOP.
          * @param shell the newly constructed shell.
          */
+        @Deprecated
         public void onShellInit(@NonNull Shell shell) {}
 
         /**
-         * Called when a new shell has passed the internal root tests.
-         * The default implementation is NOP.
-         * @param shell the newly constructed shell that passes internal root tests.
+         * Called when a new shell is constructed.
+         * Do not call the super method; the default implementation is only for backwards compatibility.
+         * @param context the application context.
+         * @param shell the newly constructed shell.
+         * @return {@code false} when the initialization fails, otherwise {@code true}
+         * @throws Exception any exception thrown is the same as returning {@code false}.
          */
+        public boolean onShellInit(Context context, @NonNull Shell shell) throws Exception {
+            // Backwards compatibility
+            onShellInit(shell);
+            return true;
+        }
+
+        /**
+         * @deprecated
+         * Called when a new shell is constructed and passed the internal root tests.
+         * @param shell the newly constructed shell.
+         */
+        @Deprecated
         public void onRootShellInit(@NonNull Shell shell) {}
 
-        private void init(Shell shell) {
-            onShellInit(shell);
-            if (shell.status >= ROOT_SHELL)
-                onRootShellInit(shell);
+        /**
+         * Called when a new shell is constructed and passed the internal root tests.
+         * Do not call the super method; the default implementation is only for backwards compatibility.
+         * @param context the application context.
+         * @param shell the newly constructed shell.
+         * @return {@code false} when the initialization fails, otherwise {@code true}
+         * @throws Exception any exception thrown is the same as returning {@code false}.
+         */
+        public boolean onRootShellInit(Context context, @NonNull Shell shell) throws Exception {
+            // Backwards compatibility
+            onRootShellInit(shell);
+            return true;
+        }
+
+        private boolean init(Shell shell) {
+            Context context = InternalUtils.getContext();
+            try {
+                if (!onShellInit(context, shell))
+                    return false;
+                if (shell.status >= ROOT_SHELL && !onRootShellInit(context, shell))
+                    return false;
+                BusyBox.init(shell);
+            } catch (Exception e) {
+                InternalUtils.stackTrace(e);
+                return false;
+            }
+            return true;
         }
 
     }

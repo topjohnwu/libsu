@@ -35,7 +35,7 @@ retrolambda {
 }
 
 task javadoc(type: Javadoc) {
-    failOnError  false
+    failOnError false
     title = 'libsu API'
     exclude '**/internal/**'
     source = android.sourceSets.main.java.sourceFiles
@@ -44,6 +44,7 @@ task javadoc(type: Javadoc) {
     destinationDir = file('../docs/')
     options.links('https://docs.oracle.com/javase/8/docs/api/')
     options.links('https://developer.android.com/reference/')
+    options.noDeprecated = true
 
 }
 
