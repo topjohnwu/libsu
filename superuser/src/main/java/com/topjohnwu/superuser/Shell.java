@@ -777,12 +777,8 @@ public abstract class Shell implements Closeable {
     * ***********************/
 
     private static void initShell(Shell shell) {
-        if (BusyBox.BB_PATH != null) {
-            shell.run(null, null, "export PATH=" + BusyBox.BB_PATH + ":$PATH");
-        }
-        initializer.onShellInit(shell);
-        if (shell.status >= ROOT_SHELL)
-            initializer.onRootShellInit(shell);
+        BusyBox.init(shell);
+        initializer.init(shell);
     }
 
     private static Shell getGlobalShell() {
@@ -912,6 +908,12 @@ public abstract class Shell implements Closeable {
          * @param shell the newly constructed shell that passes internal root tests.
          */
         public void onRootShellInit(@NonNull Shell shell) {}
+
+        private void init(Shell shell) {
+            onShellInit(shell);
+            if (shell.status >= ROOT_SHELL)
+                onRootShellInit(shell);
+        }
 
     }
 

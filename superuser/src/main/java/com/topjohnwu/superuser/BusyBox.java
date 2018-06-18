@@ -66,6 +66,8 @@ public final class BusyBox {
 
     private static final String ARM_MD5 = "482cb744785ad638cf68931164853c71";
     private static final String X86_MD5 = "db75965c82d90b45777cbd6d114f6b47";
+    private static final int APPLET_NUM = 339;
+    private static boolean isInternalBusyBox = false;
 
     /**
      * Setup a busybox environment using the bundled busybox binaries.
@@ -83,6 +85,7 @@ public final class BusyBox {
      * @param context a {@link Context} of the current app.
      */
     public static void setup(Context context) {
+        isInternalBusyBox = true;
         Context de = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
                 ? context.createDeviceProtectedStorageContext() : context;
         BB_PATH = new File(de.getFilesDir().getParentFile(), "busybox");
@@ -102,14 +105,15 @@ public final class BusyBox {
                 e.printStackTrace();
             }
             bb.setExecutable(true);
-            try {
-                Process p = Runtime.getRuntime().exec(bb + " --install -s " + BB_PATH);
-                p.waitFor();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        }
+    }
+
+    static void init(Shell shell) {
+        if (BB_PATH != null) {
+            if (isInternalBusyBox && BB_PATH.listFiles().length != APPLET_NUM + 1) {
+                shell.run(null, null, BB_PATH + "/busybox --install -s " + BB_PATH);
             }
+            shell.run(null, null, "export PATH=" + BB_PATH + ":$PATH");
         }
     }
 }
