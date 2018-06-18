@@ -48,21 +48,19 @@ import java.io.IOException;
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
 
     public static SuRandomAccessFile open(String path) throws FileNotFoundException {
-        return open(new SuFile(path));
+        return open(new File(path));
     }
 
     public static SuRandomAccessFile open(File file) throws FileNotFoundException {
-        SuFile f;
-        if (file instanceof SuFile)
-            f = (SuFile) file;
-        else
-            f = new SuFile(file);
-        if (f.useShell()) {
-            // Use shell file io
-            return Factory.createShellFileIO(f);
+        if (! (file instanceof SuFile)) {
+            try {
+                return Factory.createRandomAccessFileWrapper(file);
+            } catch (FileNotFoundException e) {
+                return Factory.createShellFileIO(new SuFile(file));
+            }
+
         } else {
-            // Create a wrapper over normal RandomAccessFile
-            return Factory.createRandomAccessFileWrapper(f);
+            return Factory.createShellFileIO((SuFile) file);
         }
     }
 

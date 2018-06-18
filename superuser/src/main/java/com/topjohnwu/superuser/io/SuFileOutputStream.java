@@ -49,7 +49,7 @@ public class SuFileOutputStream extends FilterOutputStream {
      * @see FileOutputStream#FileOutputStream(String, boolean)
      */
     public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        this(new SuFile(path), append);
+        this(new File(path), append);
     }
 
     /**
@@ -64,17 +64,17 @@ public class SuFileOutputStream extends FilterOutputStream {
      */
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
         super(null);
-        SuFile f;
-        if (file instanceof SuFile)
-            f = (SuFile) file;
-        else
-            f = new SuFile(file);
-        if (f.useShell()) {
-            // Use shell file io
-            out = new BufferedOutputStream(Factory.createShellOutputStream(f, append), 4 * 1024 * 1024);
+        if (! (file instanceof SuFile)) {
+            try {
+                // Try normal FileOutputStream
+                out = new BufferedOutputStream(new FileOutputStream(file, append));
+            } catch (FileNotFoundException e) {
+                out = new BufferedOutputStream(
+                        Factory.createShellOutputStream(new SuFile(file), append), 4 * 1024 * 1024);
+            }
         } else {
-            // Normal file output
-            out = new BufferedOutputStream(new FileOutputStream(f, append));
+            out = new BufferedOutputStream(
+                    Factory.createShellOutputStream((SuFile) file, append), 4 * 1024 * 1024);
         }
     }
 

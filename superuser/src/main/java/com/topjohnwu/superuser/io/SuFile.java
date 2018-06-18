@@ -38,53 +38,25 @@ import java.util.Locale;
  * A {@link File} implementation with root access.
  * <p>
  * This class is meant to be used just like a normal {@link File}, so developers can access files
- * via root shells without messing with command-lines. When a new {@code SuFile} is constructed, it
- * will first check whether the abstract pathname is accessible without root privileges. The
- * checks are: whether the process have rw permission to the path, and whether the parent directory
- * is writable so we can create/delete the target. If any of the checks doesn't pass, all operations
- * will then be backed with root shell commands instead of the native implementations.
- * If you want to bypass the check and always use the root shell for all methods, use
- * {@link #SuFile(File, boolean)} or {@link #SuFile(String, boolean)} to construct the instance.
+ * via root shells without messing with command-lines.
  * <p>
- * This class has exact same behavior as a normal {@link File}, however all atomic promises in the
- * parent class does not apply if the actual operations are done via a shell. This is a limitation
- * of using shells, be aware of it.
+ * This class has the exact same behavior as a normal {@link File}, however non of the operations
+ * are atomic. This is a limitation of using shells, be aware of it.
  * <p>
- * If a root shell is required, it will get a {@code Shell} instance via {@link Shell#getShell()}.
- * The shell backed operations require: {@code rm}, {@code rmdir}, {@code readlink}, {@code mv},
+ * The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
+ * The methods of this class require: {@code rm}, {@code rmdir}, {@code readlink}, {@code mv},
  * {@code ls}, {@code mkdir}, {@code touch}, or optionally for better support,
  * {@code blockdev} and {@code stat}.
  * All required tools are available on modern Android versions (tested on Lollipop+),
  * older versions might need to install {@code busybox} to make things work properly.
- * Some operations could have oddities due to the very limited tools available, check the method
- * descriptions for more info before using it.
+ * Some operations could have oddities without busybox due to the very limited tools available,
+ * check the method descriptions for more info before using it.
  * @see com.topjohnwu.superuser.BusyBox
  */
 public class SuFile extends File {
 
-    private boolean useShell = true;
-    private boolean stat = false, blockdev = false;
-    private String absolutePath;
-
-    public SuFile(@NonNull String pathname) {
-        super(pathname);
-        checkIfUseShell();
-    }
-
-    public SuFile(String parent, @NonNull String child) {
-        super(parent, child);
-        checkIfUseShell();
-    }
-
-    public SuFile(File parent, @NonNull String child) {
-        super(parent, child);
-        checkIfUseShell();
-    }
-
-    public SuFile(@NonNull URI uri) {
-        super(uri);
-        checkIfUseShell();
-    }
+    private static int shellHash = -1;
+    private static boolean stat, blockdev;
 
     /**
      * Create a new {@code SuFile} using the path of the given {@code File}.
@@ -92,54 +64,57 @@ public class SuFile extends File {
      */
     public SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        checkIfUseShell();
+        Shell shell = Shell.getShell();
+        if (shell.hashCode() != shellHash) {
+            shellHash = shell.hashCode();
+            // Check tools
+            stat = ShellUtils.fastCmdResult(shell, "command -v stat");
+            blockdev = ShellUtils.fastCmdResult(shell, "command -v blockdev");
+        }
+    }
+
+    public SuFile(@NonNull String pathname) {
+        this(new File(pathname));
+    }
+
+    public SuFile(String parent, @NonNull String child) {
+        this(new File(parent, child));
+    }
+
+    public SuFile(File parent, @NonNull String child) {
+        this(new File(parent, child));
+    }
+
+    public SuFile(@NonNull URI uri) {
+        this(new File(uri));
     }
 
     /**
+     * @deprecated
      * Create a new {@code SuFile} using the path of the given {@code File}.
      * @param file the base file.
      * @param shell whether use shell for operations.
      */
+    @Deprecated
     public SuFile(@NonNull File file, boolean shell) {
-        this(file.getAbsolutePath(), shell);
+        this(file);
     }
 
     /**
+     * @deprecated
      * Create a new {@code SuFile} using a path.
      * @param pathname the path to the file.
      * @param shell whether use shell for operations.
      */
+    @Deprecated
     public SuFile(@NonNull String pathname, boolean shell) {
-        super(pathname);
-        useShell = shell && Shell.rootAccess();
-        testShell();
-    }
-
-    boolean useShell() {
-        return useShell;
-    }
-
-    private void checkIfUseShell() {
-        // We at least need to be able to write to parent, and rw if exists
-        useShell = (!super.getParentFile().canWrite() ||
-                super.exists() && (!super.canRead() || !super.canWrite())) && Shell.rootAccess();
-        testShell();
-    }
-
-    private void testShell() {
-        if (useShell) {
-            // The absolutePath will not change if using shell
-            absolutePath = super.getAbsolutePath();
-            // Check tools
-            stat = ShellUtils.fastCmdResult("command -v stat");
-            blockdev = ShellUtils.fastCmdResult("command -v blockdev");
-        }
+        this(pathname);
     }
 
     private String genCmd(String cmd) {
         return cmd
-                .replace("//file//", "'" + absolutePath + "'")
-                .replace("//canfile//", "\"`readlink -f " + absolutePath + "`\"");
+                .replace("//file//", "'" + getAbsolutePath() + "'")
+                .replace("//canfile//", "\"`readlink -f '" + getAbsolutePath() + "'`\"");
     }
 
     private String cmd(String cmd) {
@@ -150,7 +125,7 @@ public class SuFile extends File {
         return ShellUtils.fastCmdResult(genCmd(cmd));
     }
 
-    private class Attributes {
+    private static class Attributes {
         char[] perms = new char[3];
         String owner = "";
         String group = "";
@@ -199,27 +174,27 @@ public class SuFile extends File {
 
     @Override
     public boolean canExecute() {
-        return useShell ? cmdBoolean("[ -x //file// ]") : super.canExecute();
+        return cmdBoolean("[ -x //file// ]");
     }
 
     @Override
     public boolean canRead() {
-        return useShell ? exists() : super.canRead();
+        return cmdBoolean("[ -r //file// ]");
     }
 
     @Override
     public boolean canWrite() {
-        return useShell ? exists() : super.canWrite();
+        return cmdBoolean("[ -w //file// ]");
     }
 
     @Override
-    public boolean createNewFile() throws IOException {
-        return useShell ? cmdBoolean("[ ! -e //file// ] && touch //file//") : super.createNewFile();
+    public boolean createNewFile() {
+        return cmdBoolean("[ ! -e //file// ] && touch //file//");
     }
 
     @Override
     public boolean delete() {
-        return useShell ? cmdBoolean("rm -f //file// || rmdir -f //file//") : super.delete();
+        return cmdBoolean("rm -f //file// || rmdir -f //file//");
     }
 
     public boolean deleteRecursive() {
@@ -231,29 +206,20 @@ public class SuFile extends File {
 
     @Override
     public boolean exists() {
-        return useShell ? cmdBoolean("[ -e //file// ]") : super.exists();
-    }
-
-    @NonNull
-    @Override
-    public String getAbsolutePath() {
-        return useShell ? absolutePath : super.getAbsolutePath();
+        return cmdBoolean("[ -e //file// ]");
     }
 
     @NonNull
     @Override
     public SuFile getAbsoluteFile() {
-        return new SuFile(getAbsolutePath());
+        return this;
     }
 
     @NonNull
     @Override
     public String getCanonicalPath() throws IOException {
-        if (useShell) {
-            String path = cmd("echo //canfile//");
-            return path == null ? getAbsolutePath() : path;
-        }
-        return super.getCanonicalPath();
+        String path = cmd("echo //canfile//");
+        return path == null ? getAbsolutePath() : path;
     }
 
     @NonNull
@@ -269,32 +235,32 @@ public class SuFile extends File {
 
     @Override
     public long getFreeSpace() {
-        return useShell ? Long.MAX_VALUE : super.getFreeSpace();
+        return Long.MAX_VALUE;
     }
 
     @Override
     public long getTotalSpace() {
-        return useShell ? Long.MAX_VALUE : super.getTotalSpace();
+        return Long.MAX_VALUE;
     }
 
     @Override
     public long getUsableSpace() {
-        return useShell ? Long.MAX_VALUE : super.getUsableSpace();
+        return Long.MAX_VALUE;
     }
 
     @Override
     public boolean isDirectory() {
-        return useShell ? cmdBoolean("[ -d //file// ]") : super.isDirectory();
+        return cmdBoolean("[ -d //file// ]");
     }
 
     @Override
     public boolean isFile() {
-        return useShell ? cmdBoolean("[ -f //file// ]") : super.isFile();
+        return cmdBoolean("[ -f //file// ]");
     }
 
     @Override
     public long lastModified() {
-        return useShell ? getAttributes().time : super.lastModified();
+        return getAttributes().time;
     }
 
     /**
@@ -307,27 +273,24 @@ public class SuFile extends File {
      */
     @Override
     public long length() {
-        return useShell ?
-                (blockdev && stat ?
-                        Long.parseLong(cmd("[ -b //file// ] && blockdev --getsize64 //file// " +
-                                "|| stat -c '%s' //canfile//")) : getAttributes().size)
-                : super.length();
+        return (blockdev && stat ? Long.parseLong(
+                cmd("[ -b //file// ] && blockdev --getsize64 //file// || stat -c '%s' //canfile//"))
+                : getAttributes().size);
     }
 
     @Override
     public boolean mkdir() {
-        return useShell ? cmdBoolean("mkdir //file//") : super.mkdir();
+        return cmdBoolean("mkdir //file//");
     }
 
     @Override
     public boolean mkdirs() {
-        return useShell ? cmdBoolean("mkdir -p //file//") : super.mkdirs();
+        return cmdBoolean("mkdir -p //file//");
     }
 
     @Override
     public boolean renameTo(File dest) {
-        return useShell ? cmdBoolean("mv -f //file// '" + dest.getAbsolutePath() + "'")
-                : super.renameTo(dest);
+        return cmdBoolean("mv -f //file// '" + dest.getAbsolutePath() + "'");
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
@@ -345,20 +308,17 @@ public class SuFile extends File {
 
     @Override
     public boolean setExecutable(boolean executable, boolean ownerOnly) {
-        return useShell ? setPerms(executable, ownerOnly, 0x1)
-                : super.setExecutable(executable, ownerOnly);
+        return setPerms(executable, ownerOnly, 0x1);
     }
 
     @Override
     public boolean setReadable(boolean readable, boolean ownerOnly) {
-        return useShell ? setPerms(readable, ownerOnly, 0x4)
-                : super.setReadable(readable, ownerOnly);
+        return setPerms(readable, ownerOnly, 0x4);
     }
 
     @Override
     public boolean setWritable(boolean writable, boolean ownerOnly) {
-        return useShell ? setPerms(writable, ownerOnly, 0x2)
-                : super.setWritable(writable, ownerOnly);
+        return setPerms(writable, ownerOnly, 0x2);
     }
 
     @Override
@@ -378,25 +338,17 @@ public class SuFile extends File {
      */
     @Override
     public boolean setLastModified(long time) {
-        if (useShell) {
-            DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
-            String date = df.format(new Date(time));
-            return cmdBoolean("[ -e //file// ] && touch -t " + date + " //canfile//");
-        } else {
-            return super.setLastModified(time);
-        }
+        DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
+        String date = df.format(new Date(time));
+        return cmdBoolean("[ -e //file// ] && touch -t " + date + " //canfile//");
     }
 
     @Override
     public String[] list() {
-        if (useShell && isDirectory()) {
-            List<String> out = Shell.Sync.su(genCmd("ls //file//"));
-            if (!ShellUtils.isValidOutput(out))
-                return null;
-            return out.toArray(new String[0]);
-        } else {
-            return super.list();
-        }
+        List<String> out = Shell.Sync.su(genCmd("ls //file//"));
+        if (!ShellUtils.isValidOutput(out))
+            return null;
+        return out.toArray(new String[0]);
     }
 
     @Override
