@@ -50,8 +50,6 @@ class ShellImpl extends Shell {
     private final StreamGobbler outGobbler;
     private final StreamGobbler errGobbler;
 
-    private HashMap<String, Boolean> cmds;
-
     ShellImpl(String... cmd) throws IOException {
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
@@ -90,7 +88,6 @@ class ShellImpl extends Shell {
         } catch (IOException ignored) {}
 
         br.close();
-        cmds = new HashMap<>();
     }
 
     private class NoCloseInputStream extends FilterInputStream {
@@ -151,23 +148,6 @@ class ShellImpl extends Shell {
             // Process is still running
             return true;
         }
-    }
-
-    @Override
-    public boolean testCmd(String cmd) {
-        Boolean b = cmds.get(cmd);
-        if (b != null)
-            return b;
-
-        String paths = ShellUtils.fastCmd(this, "echo $PATH");
-        for (String path : paths.split(":")) {
-            if (ShellUtils.fastCmdResult(this, String.format("[ -x '%s/%s' ]", path, cmd))) {
-                cmds.put(cmd, true);
-                return true;
-            }
-        }
-        cmds.put(cmd, false);
-        return false;
     }
 
     @Override

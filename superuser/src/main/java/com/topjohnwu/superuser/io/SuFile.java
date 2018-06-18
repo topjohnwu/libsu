@@ -131,8 +131,8 @@ public class SuFile extends File {
             // The absolutePath will not change if using shell
             absolutePath = super.getAbsolutePath();
             // Check tools
-            stat = Shell.getShell().testCmd("stat");
-            blockdev = Shell.getShell().testCmd("blockdev");
+            stat = ShellUtils.fastCmdResult("command -v stat");
+            blockdev = ShellUtils.fastCmdResult("command -v blockdev");
         }
     }
 
@@ -143,11 +143,11 @@ public class SuFile extends File {
     }
 
     private String cmd(String cmd) {
-        return ShellUtils.fastCmd(Shell.getShell(), genCmd(cmd));
+        return ShellUtils.fastCmd(genCmd(cmd));
     }
 
     private boolean cmdBoolean(String cmd) {
-        return ShellUtils.fastCmdResult(Shell.getShell(), genCmd(cmd));
+        return ShellUtils.fastCmdResult(genCmd(cmd));
     }
 
     private class Attributes {

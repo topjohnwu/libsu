@@ -36,6 +36,12 @@ import java.util.List;
 
 /**
  * Some handy utility methods that are used in {@code libsu}.
+ * <p>
+ * These methods are for internal use. I personally find them pretty handy, so I gathered them here.
+ * However, since these are meant to be used internally, they are not stable APIs.
+ * I would change them without too much consideration if needed. Also, these methods are not well
+ * tested for public usage, many might not handle some edge cases correctly.
+ * <heavy>You have been warned!!</heavy>
  */
 public final class ShellUtils {
 
@@ -76,6 +82,16 @@ public final class ShellUtils {
     }
 
     /**
+     * Run a single line command with the global shell and get a single line output.
+     * @param cmd the single line command.
+     * @return the last line of the output of the command, {@code null} if no output is available.
+     */
+    @Nullable
+    public static String fastCmd(String cmd) {
+        return fastCmd(Shell.getShell(), cmd);
+    }
+
+    /**
      * Run a single line command and get a single line output.
      * @param shell a shell instance.
      * @param cmd the single line command.
@@ -86,6 +102,15 @@ public final class ShellUtils {
         ArrayList<String> out = new ArrayList<>();
         shell.run(out, null, cmd);
         return isValidOutput(out) ? out.get(out.size() - 1) : null;
+    }
+
+    /**
+     * Run a single line command with the global shell and return whether the command returns 0 (success).
+     * @param cmd the single line command.
+     * @return {@code true} if the command succeed.
+     */
+    public static boolean fastCmdResult(String cmd) {
+        return fastCmdResult(Shell.getShell(), cmd);
     }
 
     /**
