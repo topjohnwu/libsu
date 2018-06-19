@@ -42,30 +42,73 @@ class ShellImpl extends Shell {
     private final ReentrantLock lock;
     private final String token;
     private final Process process;
-    private final OutputStream STDIN;
-    private final InputStream STDOUT;
-    private final InputStream STDERR;
+    private final NoCloseOutputStream STDIN;
+    private final NoCloseInputStream STDOUT;
+    private final NoCloseInputStream STDERR;
     private final StreamGobbler outGobbler;
     private final StreamGobbler errGobbler;
+
+    private static class NoCloseInputStream extends FilterInputStream {
+
+        private NoCloseInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public void close() {}
+
+        private void close0() throws IOException {
+            in.close();
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            close0();
+        }
+    }
+
+    private static class NoCloseOutputStream extends FilterOutputStream {
+
+        private NoCloseOutputStream(@NonNull OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            out.write(b, off, len);
+        }
+
+        @Override
+        public void close() {}
+
+        private void close0() throws IOException {
+            out.close();
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            close0();
+        }
+    }
 
     ShellImpl(String... cmd) throws IOException {
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
 
         process = Runtime.getRuntime().exec(cmd);
-        STDIN = process.getOutputStream();
-        STDOUT = process.getInputStream();
-        STDERR = process.getErrorStream();
+        STDIN = new NoCloseOutputStream(process.getOutputStream());
+        STDOUT = new NoCloseInputStream(process.getInputStream());
+        STDERR = new NoCloseInputStream(process.getErrorStream());
 
         token = ShellUtils.genRandomAlphaNumString(32).toString();
         InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(new NoCloseInputStream(STDOUT), token);
-        errGobbler = new StreamGobbler(new NoCloseInputStream(STDERR), token);
+        outGobbler = new StreamGobbler(STDOUT, token);
+        errGobbler = new StreamGobbler(STDERR, token);
 
         lock = new ReentrantLock();
         status = UNKNOWN;
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(new NoCloseInputStream(STDOUT)));
+        BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
 
         STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
         STDIN.flush();
@@ -88,31 +131,6 @@ class ShellImpl extends Shell {
         br.close();
     }
 
-    private static class NoCloseInputStream extends FilterInputStream {
-
-        NoCloseInputStream(InputStream in) {
-            super(in);
-        }
-
-        @Override
-        public void close() {}
-    }
-
-    private static class NoCloseOutputStream extends FilterOutputStream {
-
-        NoCloseOutputStream(@NonNull OutputStream out) {
-            super(out);
-        }
-
-        @Override
-        public void write(@NonNull byte[] b, int off, int len) throws IOException {
-            out.write(b, off, len);
-        }
-
-        @Override
-        public void close() {}
-    }
-
     @Override
     protected void finalize() throws Throwable {
         close();
@@ -126,9 +144,9 @@ class ShellImpl extends Shell {
         status = UNINT;
         outGobbler.interrupt();
         errGobbler.interrupt();
-        STDIN.close();
-        STDERR.close();
-        STDOUT.close();
+        STDIN.close0();
+        STDERR.close0();
+        STDOUT.close0();
         process.destroy();
     }
 
@@ -156,9 +174,7 @@ class ShellImpl extends Shell {
         try {
             if (!isAlive())
                 return null;
-            task.run(new NoCloseOutputStream(STDIN),
-                    new NoCloseInputStream(STDOUT),
-                    new NoCloseInputStream(STDERR));
+            task.run(STDIN, STDOUT, STDERR);
             return null;
         } catch (Throwable t) {
             InternalUtils.stackTrace(t);
