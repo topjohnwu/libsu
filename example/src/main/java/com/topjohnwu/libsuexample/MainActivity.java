@@ -59,6 +59,12 @@ public class MainActivity extends Activity {
                             public void onTaskResult(List<String> out, List<String> err) {
                                 Log.d(ExampleApp.TAG, "in_async_callback");
                             }
+
+                            @Override
+                            public void onTaskError(Throwable err) {
+                                Log.d(ExampleApp.TAG, "async_callback_error");
+                                err.printStackTrace();
+                            }
                         },
                         input.getText().toString());
                 input.setText("");

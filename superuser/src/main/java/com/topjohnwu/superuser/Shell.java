@@ -493,14 +493,15 @@ public abstract class Shell implements Closeable {
          * When an asynchronous shell operation is done, it will pass over the result of the output
          * to {@link #onTaskResult(List, List)}. If both outputs are null, then the callback will
          * not be called.
-         * The callback will always run on the main thread.
+         * When an error occurs, {@link #onTaskError(Throwable)} will be invoked.
+         * All callbacks will always run on the main thread.
          * <p>
          * The two lists passed to the callback are wrapped with
          * {@link Collections#synchronizedList(List)}.
          */
         public interface Callback {
             /**
-             * The method that will be called when asynchronous shell operation is done.
+             * The callback that will be invoked when asynchronous shell operation is done.
              * If {@code out == err}, then {@code err} will be {@code null}.
              * This means if {@link #FLAG_REDIRECT_STDERR} is set, the output of STDERR would be
              * stored in {@code out}, {@code err} will be {@code null}, unless explicitly passed
@@ -509,6 +510,12 @@ public abstract class Shell implements Closeable {
              * @param err the list that stores the output of STDERR.
              */
             void onTaskResult(@Nullable List<String> out, @Nullable List<String> err);
+
+            /**
+             * The callback when asynchronous shell operation throws an error.
+             * @param err the {@code Throwable} thrown in the task.
+             */
+            void onTaskError(@NonNull Throwable err);
         }
 
         /* *************************************
@@ -720,9 +727,10 @@ public abstract class Shell implements Closeable {
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
      * @param commands the commands to run in the shell.
+     * @return the {@link Throwable} thrown while running the commands, {@code null} if nothing is thrown.
      */
-    public void run(List<String> outList, List<String> errList, @NonNull String... commands) {
-        execSyncTask(outList, errList, createCmdTask(commands));
+    public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
+        return execSyncTask(outList, errList, createCmdTask(commands));
     }
 
     /**
@@ -741,7 +749,7 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Synchronously load an input stream to the shell and stores outputs to the two lists.
+     * Synchronously load an inputstream to the shell and stores outputs to the two lists.
      * <p>
      * This command is useful for loading a script stored in the APK. An InputStream can be opened
      * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
@@ -751,9 +759,10 @@ public abstract class Shell implements Closeable {
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
      * @param in the InputStream to load
+     * @return the {@link Throwable} thrown while loading inputstream , {@code null} if nothing is thrown.
      */
-    public void loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-        execSyncTask(outList, errList, createLoadStreamTask(in));
+    public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
+        return execSyncTask(outList, errList, createLoadStreamTask(in));
     }
 
     /**

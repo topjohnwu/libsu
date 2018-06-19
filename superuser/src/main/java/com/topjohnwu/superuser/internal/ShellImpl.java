@@ -208,17 +208,24 @@ class ShellImpl extends Shell {
                               Async.Callback callback, @NonNull Task task) {
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
             InternalUtils.log(TAG, "runAsyncTask");
+            Throwable t;
             if (outList == null && errList == null) {
                 // Without any output request, we simply run the task
-                execTask(task);
+                t = execTask(task);
+                if (callback != null && t != null)
+                    UiThreadHandler.run(() -> callback.onTaskError(t));
             } else {
-                if (execSyncTask(outList, errList, task) == null && callback != null) {
-                    // Invoke callback if no exceptions occurs and callback is not null
-                    UiThreadHandler.run(() -> callback.onTaskResult(
-                            outList == null ? null : Collections.synchronizedList(outList),
-                            errList == null ? null : (errList == outList ? null :
-                                    Collections.synchronizedList(errList))
-                    ));
+                t = execSyncTask(outList, errList, task);
+                if (callback != null) {
+                    if (t == null) {
+                        UiThreadHandler.run(() -> callback.onTaskResult(
+                                outList == null ? null : Collections.synchronizedList(outList),
+                                errList == null ? null : (errList == outList ? null :
+                                        Collections.synchronizedList(errList))
+                        ));
+                    } else {
+                        UiThreadHandler.run(() -> callback.onTaskError(t));
+                    }
                 }
             }
         });
