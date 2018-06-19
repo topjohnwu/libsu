@@ -280,10 +280,7 @@ public abstract class Shell implements Closeable {
             callback.onShell(shell);
         } else {
             // Else we add it to the queue and call the callback when we get a Shell
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-                Shell s = getShell();
-                callback.onShell(s);
-            });
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> callback.onShell(getShell()));
         }
     }
 
@@ -496,14 +493,10 @@ public abstract class Shell implements Closeable {
          * When an asynchronous shell operation is done, it will pass over the result of the output
          * to {@link #onTaskResult(List, List)}. If both outputs are null, then the callback will
          * not be called.
-         * <p>
-         * Similar to {@link CallbackList}, when the asynchronous operation is initialized on the
-         * main thread, the callback will also be run on the main thread. So updating the UI
-         * in the callbacks are allowed.
+         * The callback will always run on the main thread.
          * <p>
          * The two lists passed to the callback are wrapped with
-         * {@link Collections#synchronizedList(List)}, so the developer can iterate the list without
-         * worrying about {@link java.util.ConcurrentModificationException}.
+         * {@link Collections#synchronizedList(List)}.
          */
         public interface Callback {
             /**

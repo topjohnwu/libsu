@@ -96,7 +96,7 @@ public class MainActivity extends Activity {
         @Override
         public void clear() {
             super.clear();
-            handler.post(() -> console.setText(""));
+            runOnUiThread(() -> console.setText(""));
         }
     }
 
@@ -116,9 +116,9 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public void clear() {
+        public synchronized void clear() {
             builder = new StringBuilder();
-            handler.post(() -> console.setText(""));
+            runOnUiThread(() -> console.setText(""));
         }
     }
 }

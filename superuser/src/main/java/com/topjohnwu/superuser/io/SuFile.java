@@ -24,7 +24,6 @@ import com.topjohnwu.superuser.ShellUtils;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.ParseException;

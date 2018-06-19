@@ -17,7 +17,6 @@
 package com.topjohnwu.superuser.internal;
 
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
@@ -32,7 +31,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -90,17 +88,17 @@ class ShellImpl extends Shell {
         br.close();
     }
 
-    private class NoCloseInputStream extends FilterInputStream {
+    private static class NoCloseInputStream extends FilterInputStream {
 
         NoCloseInputStream(InputStream in) {
             super(in);
         }
 
         @Override
-        public void close() throws IOException {}
+        public void close() {}
     }
 
-    private class NoCloseOutputStream extends FilterOutputStream {
+    private static class NoCloseOutputStream extends FilterOutputStream {
 
         NoCloseOutputStream(@NonNull OutputStream out) {
             super(out);
@@ -112,7 +110,7 @@ class ShellImpl extends Shell {
         }
 
         @Override
-        public void close() throws IOException {}
+        public void close() {}
     }
 
     @Override
@@ -192,7 +190,6 @@ class ShellImpl extends Shell {
     @Override
     public void execAsyncTask(List<String> outList, List<String> errList,
                               Async.Callback callback, @NonNull Task task) {
-        Handler handler = ShellUtils.onMainThread() ? new Handler() : null;
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
             InternalUtils.log(TAG, "runAsyncTask");
             if (outList == null && errList == null) {
@@ -201,15 +198,11 @@ class ShellImpl extends Shell {
             } else {
                 if (execSyncTask(outList, errList, task) == null && callback != null) {
                     // Invoke callback if no exceptions occurs and callback is not null
-                    Runnable acb = () -> callback.onTaskResult(
+                    UiThreadHandler.run(() -> callback.onTaskResult(
                             outList == null ? null : Collections.synchronizedList(outList),
                             errList == null ? null : (errList == outList ? null :
                                     Collections.synchronizedList(errList))
-                    );
-                    if (handler == null)
-                        acb.run();
-                    else
-                        handler.post(acb);
+                    ));
                 }
             }
         });
