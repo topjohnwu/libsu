@@ -6,11 +6,15 @@ An Android library that provides APIs to a Unix (root) shell.
 
 Some poorly coded applications requests a new shell (call `su`, or worse `su -c <commands>`) for every single command, which is very inefficient. This library makes sharing a single, globally shared shell session in Android applications super easy: developers won't have to bother about concurrency issues, and with a rich selection of both synchronous and asynchronous APIs, it is much easier to create a powerful root app.
 
-This library bundles with full featured `busybox` binaries. App developers can easily setup and create an internal `busybox` environment with the built-in helper method without relying on potentially flawed (or even no) external `busybox`. If you don't need the additional `busybox` binaries and willing to minimize APK size, [Proguard](https://developer.android.com/studio/build/shrink-code.html) is smart enough to remove the binaries for you.
+This library bundles with full featured `busybox` binaries. App developers can easily setup and create an internal `busybox` environment with the built-in helper method without relying on potentially flawed (or even no) external `busybox`.
 
 `libsu` also comes with a whole suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on all files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
 
 One complex Android application using `libsu` for all root related operations is [Magisk Manager](https://github.com/topjohnwu/MagiskManager).
+
+## Changelog
+
+[Link to Changelog](./CHANGELOG.md)
 
 ## Download
 ```java
@@ -18,7 +22,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.topjohnwu:libsu:1.1.1'
+    implementation 'com.github.topjohnwu:libsu:1.2.0'
 }
 ```
 
@@ -26,7 +30,7 @@ dependencies {
 
 ### Setup
 Subclass `Shell.ContainerApp` and use it as your `Application`.  
-Set flags, initializers, or busybox as soon as possible:
+Set flags, initializers as soon as possible:
 
 ```java
 public class ExampleApp extends Shell.ContainerApp {
@@ -36,8 +40,6 @@ public class ExampleApp extends Shell.ContainerApp {
         // Set flags
         Shell.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.verboseLogging(BuildConfig.DEBUG);
-        // Use internal busybox
-        BusyBox.setup(this);
     }
 }
 ```
@@ -45,7 +47,6 @@ public class ExampleApp extends Shell.ContainerApp {
 Specify the custom Application in `AndroidManifest.xml`
 
 ```xml
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     ...>
     <application
@@ -83,6 +84,10 @@ Shell.Async.su(new Shell.Async.Callback() {
     @Override
     public void onTaskResult(List<String> out, List<String> err) {
         /* Do something with the result */
+    }
+    @Override
+    public void onTaskError(Throwable err) {
+        /* Throwable thrown, handle the error */
     }
 }, "cat /proc/mounts");
 
@@ -122,20 +127,20 @@ if (logs.exists()) {
 Initialize the shell with custom `Shell.Initializer`, similar to what `.bashrc` will do.
 
 ```java
-Shell.setInitializer(new Shell.Initializer() {
+Shell.setInitializer(ExampleInitializer.class);
+
+class ExampleInitializer extends Shell.Initializer {
     @Override
-    public void onRootShellInit(@NonNull Shell shell) {
-        /* Construct the initializer within Application if you need Context reference
-         * like the example below (getResources()). Application contexts won't leak memory, but
-         * Activities do! */
-        try (InputStream bashrc = getResources().openRawResource(R.raw.bashrc)) {
+    public boolean onRootShellInit(Context context, Shell shell) throws IOException {
+        // Use internal busybox
+        BusyBox.setup(context);
+        try (InputStream bashrc = context.getResources().openRawResource(R.raw.bashrc)) {
             // Load a script from raw resources
             shell.loadInputStream(null, null, bashrc);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        return true;
     }
-});
+}
 ```
 
 ## Documentation
