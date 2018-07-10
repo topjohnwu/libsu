@@ -18,8 +18,6 @@ package com.topjohnwu.superuser.internal;
 
 import android.support.annotation.NonNull;
 
-import com.topjohnwu.superuser.io.SuFile;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,7 +26,7 @@ class ShellOutputStream extends OutputStream {
 
     private ShellFileIO io;
 
-    ShellOutputStream(SuFile file, boolean append) throws FileNotFoundException {
+    ShellOutputStream(ShellFile file, boolean append) throws FileNotFoundException {
         if (!append)
             file.delete();
 

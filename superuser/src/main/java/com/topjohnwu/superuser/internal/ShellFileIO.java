@@ -20,7 +20,6 @@ import android.support.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
-import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
 import java.io.FileNotFoundException;
@@ -31,11 +30,11 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
 
     private static final String TAG = "SHELLIO";
 
-    private SuFile file;
+    private ShellFile file;
     private long fileOff;
     private long fileSize;
 
-    ShellFileIO(SuFile file) throws FileNotFoundException {
+    ShellFileIO(ShellFile file) throws FileNotFoundException {
         this.file = file;
 
         if (!file.exists()) {

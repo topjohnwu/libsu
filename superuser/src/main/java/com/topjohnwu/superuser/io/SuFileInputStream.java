@@ -47,15 +47,15 @@ public class SuFileInputStream extends FilterInputStream {
      */
     public SuFileInputStream(File file) throws FileNotFoundException {
         super(null);
-        if (! (file instanceof SuFile)) {
+        if (file instanceof SuFile && ((SuFile) file).isSU()) {
+            in = Factory.createShellInputStream(((SuFile) file).getShellFile());
+        } else {
             try {
                 // Try normal FileInputStream
                 in = new BufferedInputStream(new FileInputStream(file));
             } catch (FileNotFoundException e) {
-                in = Factory.createShellInputStream(new SuFile(file));
+                in = Factory.createShellInputStream(Factory.createShellFile(file));
             }
-        } else {
-            in = Factory.createShellInputStream((SuFile) file);
         }
     }
 }

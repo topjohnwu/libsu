@@ -16,31 +16,32 @@
 
 package com.topjohnwu.superuser.io;
 
+import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ShellUtils;
+import com.topjohnwu.superuser.internal.Factory;
+import com.topjohnwu.superuser.internal.ShellFile;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.net.URL;
+import java.nio.file.Path;
 
 /**
  * A {@link File} implementation with root access.
  * <p>
- * This class is meant to be used just like a normal {@link File}, so developers can access files
- * via root shells without messing with command-lines.
+ * Without root access in the global shell, this class is simply just a wrapper around {@link File}.
+ * However, when root is available, all methods will be backed by commands executing via the
+ * global root shell.
  * <p>
  * This class has the exact same behavior as a normal {@link File}, however non of the operations
- * are atomic. This is a limitation of using shells, be aware of it.
+ * are atomic if backed with shell commands. This is a limitation of using shells, be aware of it.
  * <p>
  * The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
  * The methods of this class require: {@code rm}, {@code rmdir}, {@code readlink}, {@code mv},
@@ -53,22 +54,20 @@ import java.util.Locale;
  * @see com.topjohnwu.superuser.BusyBox
  */
 public class SuFile extends File {
-
-    private static int shellHash = -1;
-    private static boolean stat, blockdev;
+    private File f;
 
     /**
      * Create a new {@code SuFile} using the path of the given {@code File}.
      * @param file the base file.
      */
     public SuFile(@NonNull File file) {
-        super(file.getAbsolutePath());
-        Shell shell = Shell.getShell();
-        if (shell.hashCode() != shellHash) {
-            shellHash = shell.hashCode();
-            // Check tools
-            stat = ShellUtils.fastCmdResult(shell, "command -v stat");
-            blockdev = ShellUtils.fastCmdResult(shell, "command -v blockdev");
+        super("");
+        if (file instanceof SuFile) {
+            f = ((SuFile) file).f;
+        } else if (file instanceof ShellFile || !Shell.rootAccess()) {
+            f = file;
+        } else {
+            f = Factory.createShellFile(file);
         }
     }
 
@@ -110,160 +109,110 @@ public class SuFile extends File {
         this(pathname);
     }
 
-    private String[] genCmd(String cmd) {
-        String setup;
-        if (cmd.contains("$CFILE")) {
-            setup = String.format("FILE='%s';CFILE=\"`readlink -f '%s'`\"", getAbsolutePath(), getAbsolutePath());
-        } else {
-            setup = String.format("FILE='%s'", getAbsolutePath());
-        }
-        return new String[] { setup, cmd, "FILE=; CFILE=" };
+    boolean isSU() {
+        return f instanceof ShellFile;
     }
 
-    private String cmd(String c) {
-        return ShellUtils.fastCmd(genCmd(c));
+    ShellFile getShellFile() {
+        return (ShellFile) f;
     }
 
-    private boolean cmdBoolean(String c) {
-        return Boolean.parseBoolean(cmd(c + " >/dev/null 2>&1 && echo true || echo false"));
-    }
-
-    private static class Attributes {
-        char[] perms = new char[3];
-        String owner = "";
-        String group = "";
-        long size = 0L;
-        long time = 0L;
-
-        @Override
-        public String toString() {
-            return String.format(Locale.US,
-                    "%s %s.%s %d %d", new String(perms), owner, group, size, time);
-        }
-    }
-
-
-    private Attributes getAttributes() {
-        String lsInfo = cmd("ls -ld \"$CFILE\"");
-        Attributes a = new Attributes();
-        if (lsInfo == null)
-            return a;
-        String[] toks = lsInfo.split("\\s+");
-        int idx = 0;
-        for (int i = 0; i < 9; i += 3) {
-            int perm = 0;
-            if (toks[idx].charAt(i + 1) != '-')
-                perm |= 0x4;
-            if (toks[idx].charAt(i + 2) != '-')
-                perm |= 0x2;
-            if (toks[idx].charAt(i + 3) != '-')
-                perm |= 0x1;
-            a.perms[i / 3] = (char) (perm + '0');
-        }
-        ++idx;
-        // There might be links info, we don't want it
-        if (toks.length > 7)
-            ++idx;
-        a.owner = toks[idx++];
-        a.group = toks[idx++];
-        a.size = Long.parseLong(toks[idx++]);
-        try {
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
-            a.time = df.parse(toks[idx++] + " " + toks[idx++]).getTime();
-        } catch (ParseException ignored) {}
-
-        return a;
+    @NonNull
+    @Override
+    public String getName() {
+        return f.getName();
     }
 
     @Override
-    public boolean canExecute() {
-        return cmdBoolean("[ -x \"$FILE\" ]");
+    public String getParent() {
+        return f.getParent();
     }
 
     @Override
-    public boolean canRead() {
-        return cmdBoolean("[ -r \"$FILE\" ]");
+    public SuFile getParentFile() {
+        return new SuFile(f.getParentFile());
+    }
+
+    @NonNull
+    @Override
+    public String getPath() {
+        return f.getPath();
     }
 
     @Override
-    public boolean canWrite() {
-        return cmdBoolean("[ -w \"$FILE\" ]");
+    public boolean isAbsolute() {
+        return f.isAbsolute();
     }
 
+    @NonNull
     @Override
-    public boolean createNewFile() {
-        return cmdBoolean("[ ! -e \"$FILE\" ] && touch \"$FILE\"");
-    }
-
-    @Override
-    public boolean delete() {
-        return cmdBoolean("rm -f \"$FILE\" || rmdir -f \"$FILE\"");
-    }
-
-    public boolean deleteRecursive() {
-        return cmdBoolean("rm -rf \"$FILE\"");
-    }
-
-    @Override
-    public void deleteOnExit() {}
-
-    @Override
-    public boolean exists() {
-        return cmdBoolean("[ -e \"$FILE\" ]");
+    public String getAbsolutePath() {
+        return f.getAbsolutePath();
     }
 
     @NonNull
     @Override
     public SuFile getAbsoluteFile() {
-        return this;
+        return new SuFile(f.getAbsoluteFile());
     }
 
     @NonNull
     @Override
-    public String getCanonicalPath() {
-        String path = cmd("echo \"$CFILE\"");
-        return path == null ? getAbsolutePath() : path;
+    public String getCanonicalPath() throws IOException {
+        return f.getCanonicalPath();
     }
 
     @NonNull
     @Override
-    public SuFile getCanonicalFile() {
-        return new SuFile(getCanonicalPath());
+    public SuFile getCanonicalFile() throws IOException {
+        return new SuFile(f.getCanonicalFile());
     }
 
     @Override
-    public SuFile getParentFile() {
-        return new SuFile(getParent());
+    @Deprecated
+    public URL toURL() throws MalformedURLException {
+        return f.toURL();
+    }
+
+    @NonNull
+    @Override
+    public URI toURI() {
+        return f.toURI();
     }
 
     @Override
-    public long getFreeSpace() {
-        return Long.MAX_VALUE;
+    public boolean canRead() {
+        return f.canRead();
     }
 
     @Override
-    public long getTotalSpace() {
-        return Long.MAX_VALUE;
+    public boolean canWrite() {
+        return f.canWrite();
     }
 
     @Override
-    public long getUsableSpace() {
-        return Long.MAX_VALUE;
+    public boolean exists() {
+        return f.exists();
     }
 
     @Override
     public boolean isDirectory() {
-        return cmdBoolean("[ -d \"$FILE\" ]");
+        return f.isDirectory();
     }
 
     @Override
     public boolean isFile() {
-        return cmdBoolean("[ -f \"$FILE\" ]");
+        return f.isFile();
+    }
+
+    @Override
+    public boolean isHidden() {
+        return f.isHidden();
     }
 
     @Override
     public long lastModified() {
-        return getAttributes().time;
+        return f.lastModified();
     }
 
     /**
@@ -276,57 +225,73 @@ public class SuFile extends File {
      */
     @Override
     public long length() {
-        return (blockdev && stat ? Long.parseLong(
-                cmd("[ -b \"$FILE\" ] && blockdev --getsize64 \"$FILE\" || stat -c '%s' \"$CFILE\""))
-                : getAttributes().size);
+        return f.length();
+    }
+
+    @Override
+    public boolean createNewFile() {
+        try {
+            return f.createNewFile();
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean delete() {
+        return f.delete();
+    }
+
+    @Override
+    public void deleteOnExit() {
+        f.deleteOnExit();
+    }
+
+    @Override
+    public String[] list() {
+        return f.list();
+    }
+
+    @Override
+    public String[] list(FilenameFilter filter) {
+        return f.list(filter);
+    }
+
+    private SuFile[] trans(File[] list) {
+        SuFile ret[] = new SuFile[list.length];
+        for (int i = 0; i < list.length; ++i)
+            ret[i] = new SuFile(list[i]);
+        return ret;
+    }
+
+    @Override
+    public SuFile[] listFiles() {
+        return trans(f.listFiles());
+    }
+
+    @Override
+    public SuFile[] listFiles(FilenameFilter filter) {
+        return trans(f.listFiles(filter));
+    }
+
+    @Override
+    public SuFile[] listFiles(FileFilter filter) {
+        return trans(f.listFiles(filter));
     }
 
     @Override
     public boolean mkdir() {
-        return cmdBoolean("mkdir \"$FILE\"");
+        return f.mkdir();
     }
 
     @Override
     public boolean mkdirs() {
-        return cmdBoolean("mkdir -p \"$FILE\"");
+        return f.mkdirs();
     }
 
     @Override
     public boolean renameTo(File dest) {
-        return cmdBoolean("mv -f \"$FILE\" '" + dest.getAbsolutePath() + "'");
-    }
-
-    private boolean setPerms(boolean set, boolean ownerOnly, int b) {
-        Attributes a = getAttributes();
-        for (int i = 0; i < a.perms.length; ++i) {
-            int perm = a.perms[i] - '0';
-            if (set && (!ownerOnly || i == 0))
-                perm |= b;
-            else
-                perm &= ~(b);
-            a.perms[i] = (char) (perm + '0');
-        }
-        return cmdBoolean("chmod " + new String(a.perms) + " \"$CFILE\"");
-    }
-
-    @Override
-    public boolean setExecutable(boolean executable, boolean ownerOnly) {
-        return setPerms(executable, ownerOnly, 0x1);
-    }
-
-    @Override
-    public boolean setReadable(boolean readable, boolean ownerOnly) {
-        return setPerms(readable, ownerOnly, 0x4);
-    }
-
-    @Override
-    public boolean setWritable(boolean writable, boolean ownerOnly) {
-        return setPerms(writable, ownerOnly, 0x2);
-    }
-
-    @Override
-    public boolean setReadOnly() {
-        return setWritable(false, false) && setExecutable(false, false);
+        return f.renameTo(dest);
     }
 
     /**
@@ -341,68 +306,88 @@ public class SuFile extends File {
      */
     @Override
     public boolean setLastModified(long time) {
-        DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
-        String date = df.format(new Date(time));
-        return cmdBoolean("[ -e \"$FILE\" ] && touch -t " + date + " \"$CFILE\"");
+        return f.setLastModified(time);
     }
 
     @Override
-    public String[] list() {
-        List<String> out = Shell.Sync.su(genCmd("ls \"$FILE\""));
-        if (!ShellUtils.isValidOutput(out))
-            return null;
-        return out.toArray(new String[0]);
+    public boolean setReadOnly() {
+        return f.setReadOnly();
     }
 
     @Override
-    public String[] list(FilenameFilter filter) {
-        String names[] = list();
-        if ((names == null) || (filter == null)) {
-            return names;
-        }
-        List<String> v = new ArrayList<>();
-        for (String name : names) {
-            if (filter.accept(this, name)) {
-                v.add(name);
-            }
-        }
-        return v.toArray(new String[v.size()]);
+    public boolean setWritable(boolean writable, boolean ownerOnly) {
+        return f.setWritable(writable, ownerOnly);
     }
 
     @Override
-    public SuFile[] listFiles() {
-        String[] ss = list();
-        if (ss == null) return null;
-        int n = ss.length;
-        SuFile[] fs = new SuFile[n];
-        for (int i = 0; i < n; i++) {
-            fs[i] = new SuFile(this, ss[i]);
-        }
-        return fs;
+    public boolean setWritable(boolean writable) {
+        return f.setWritable(writable);
     }
 
     @Override
-    public SuFile[] listFiles(FilenameFilter filter) {
-        String[] ss = list(filter);
-        if (ss == null) return null;
-        int n = ss.length;
-        SuFile[] fs = new SuFile[n];
-        for (int i = 0; i < n; i++) {
-            fs[i] = new SuFile(this, ss[i]);
-        }
-        return fs;
+    public boolean setReadable(boolean readable, boolean ownerOnly) {
+        return f.setReadable(readable, ownerOnly);
     }
 
     @Override
-    public SuFile[] listFiles(FileFilter filter) {
-        String ss[] = list();
-        if (ss == null) return null;
-        ArrayList<SuFile> files = new ArrayList<>();
-        for (String s : ss) {
-            SuFile f = new SuFile(this, s);
-            if ((filter == null) || filter.accept(f))
-                files.add(f);
-        }
-        return files.toArray(new SuFile[files.size()]);
+    public boolean setReadable(boolean readable) {
+        return f.setReadable(readable);
+    }
+
+    @Override
+    public boolean setExecutable(boolean executable, boolean ownerOnly) {
+        return f.setExecutable(executable, ownerOnly);
+    }
+
+    @Override
+    public boolean setExecutable(boolean executable) {
+        return f.setExecutable(executable);
+    }
+
+    @Override
+    public boolean canExecute() {
+        return f.canExecute();
+    }
+
+    @Override
+    public long getTotalSpace() {
+        return f.getTotalSpace();
+    }
+
+    @Override
+    public long getFreeSpace() {
+        return f.getFreeSpace();
+    }
+
+    @Override
+    public long getUsableSpace() {
+        return f.getUsableSpace();
+    }
+
+    @Override
+    public int compareTo(File pathname) {
+        return f.compareTo(pathname);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return f.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return f.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return f.toString();
+    }
+
+    @NonNull
+    @Override
+    @RequiresApi(Build.VERSION_CODES.O)
+    public Path toPath() {
+        return f.toPath();
     }
 }
