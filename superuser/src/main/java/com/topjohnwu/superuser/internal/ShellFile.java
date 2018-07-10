@@ -59,11 +59,11 @@ public class ShellFile extends File {
     private String[] genCmd(String cmd) {
         String setup;
         if (cmd.contains("$CFILE")) {
-            setup = String.format("FILE='%s';CFILE=\"`readlink -f '%s'`\"", getAbsolutePath(), getAbsolutePath());
+            setup = String.format("FILE='%s';CFILE=\"`readlink -f \"$FILE\"`\"", getAbsolutePath());
         } else {
             setup = String.format("FILE='%s'", getAbsolutePath());
         }
-        return new String[] { setup, cmd, "FILE=; CFILE=" };
+        return new String[] { setup, cmd, "FILE=;CFILE=" };
     }
 
     private String cmd(String c) {
