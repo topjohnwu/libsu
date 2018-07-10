@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.io;
 
 import android.support.annotation.NonNull;
 
+import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.Factory;
 
 import java.io.BufferedOutputStream;
@@ -73,6 +74,8 @@ public class SuFileOutputStream extends FilterOutputStream {
                 // Try normal FileOutputStream
                 out = new BufferedOutputStream(new FileOutputStream(file, append));
             } catch (FileNotFoundException e) {
+                if (!Shell.rootAccess())
+                    throw e;
                 out = new BufferedOutputStream(
                         Factory.createShellOutputStream(Factory.createShellFile(file), append),
                         4 * 1024 * 1024);
