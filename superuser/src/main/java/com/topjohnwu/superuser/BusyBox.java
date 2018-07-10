@@ -108,12 +108,14 @@ public final class BusyBox {
         }
     }
 
-    static void init(Shell shell) {
+    static boolean init(Shell shell) {
         if (BB_PATH != null) {
             if (isInternalBusyBox && BB_PATH.listFiles().length != APPLET_NUM + 1) {
                 shell.run(null, null, BB_PATH + "/busybox --install -s " + BB_PATH);
             }
             shell.run(null, null, "export PATH=" + BB_PATH + ":$PATH");
+            return true;
         }
+        return false;
     }
 }

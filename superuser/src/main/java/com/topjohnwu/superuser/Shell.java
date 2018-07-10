@@ -916,10 +916,18 @@ public abstract class Shell implements Closeable {
      * {@code Shell} passes the internal root shell test. In short, a non-root shell will only
      * be initialized with {@link #onShellInit(Context, Shell)}, while a root shell will be initialized with
      * both {@link #onShellInit(Context, Shell)} and {@link #onRootShellInit(Context, Shell)}.
-     * Please directly call the low level APIs on the passed in {@code Shell} instance within these
-     * two callbacks. <strong>DO NOT</strong> use methods in {@link Shell.Sync} or
-     * {@link Shell.Async}. The global shell is not set yet, calling these high level APIs
-     * will end up in an infinite loop of creating new {@code Shell} and calling the initializer.
+     * <p>
+     * Note:
+     * <ul>
+     *     <li>Please directly call the low level APIs on the passed in {@code Shell} instance within
+     *     these two callbacks. <strong>DO NOT</strong> use methods in {@link Shell.Sync} or
+     *     {@link Shell.Async}. The global shell is not set yet, calling these high level APIs
+     *     will end up in an infinite loop of creating new {@code Shell} and calling the initializer.</li>
+     *     <li>If you want the initializer to run in a BusyBox environment, call
+     *     {@link BusyBox#setup(Context)} or set {@link BusyBox#BB_PATH} before any shell will
+     *     be constructed.</li>
+     * </ul>
+     *
      * <p>
      * An initializer will be constructed and the callbacks will be invoked each time a new
      * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
@@ -976,9 +984,13 @@ public abstract class Shell implements Closeable {
             try {
                 if (!onShellInit(context, shell))
                     return false;
-                if (shell.status >= ROOT_SHELL && !onRootShellInit(context, shell))
-                    return false;
-                BusyBox.init(shell);
+                if (shell.status >= ROOT_SHELL) {
+                    boolean bbInit = BusyBox.init(shell);
+                    if (!onRootShellInit(context, shell))
+                        return false;
+                    if (!bbInit)
+                        BusyBox.init(shell);
+                }
             } catch (Exception e) {
                 InternalUtils.stackTrace(e);
                 return false;

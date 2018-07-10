@@ -13,6 +13,8 @@ public class ExampleApp extends Shell.ContainerApp {
     @Override
     public void onCreate() {
         super.onCreate();
+        // Use internal busybox
+        BusyBox.setup(this);
         // Set flags
         Shell.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.verboseLogging(BuildConfig.DEBUG);
@@ -24,8 +26,6 @@ public class ExampleApp extends Shell.ContainerApp {
         @Override
         public boolean onShellInit(Context context, Shell shell) {
             Log.d(TAG, "onShellInit");
-            // Use internal busybox
-            BusyBox.setup(context);
             return true;
         }
 
