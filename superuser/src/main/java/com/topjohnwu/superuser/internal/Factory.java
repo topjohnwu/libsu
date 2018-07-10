@@ -26,13 +26,26 @@ public final class Factory {
         return new ShellImpl(cmd);
     }
 
-    public static ShellFileIO createShellFileIO(ShellFile file) throws FileNotFoundException {
-        return new ShellFileIO(file);
+    public static ShellFileIO createShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
+        String internalMode;
+        switch (mode) {
+            case "r":
+                internalMode = "r";
+                break;
+            case "rw":
+            case "rws":
+            case "rwd":
+                internalMode = "rw";
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + mode);
+        }
+        return new ShellFileIO(file, internalMode);
     }
 
-    public static RandomAccessFileWrapper createRandomAccessFileWrapper(File file)
+    public static RandomAccessFileWrapper createRandomAccessFileWrapper(File file, String mode)
             throws FileNotFoundException {
-        return new RandomAccessFileWrapper(file);
+        return new RandomAccessFileWrapper(file, mode);
     }
 
     public static ShellInputStream createShellInputStream(ShellFile file) throws FileNotFoundException {

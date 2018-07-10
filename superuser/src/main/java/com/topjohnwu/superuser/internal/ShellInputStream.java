@@ -30,7 +30,7 @@ class ShellInputStream extends InputStream {
     private int bufOff;
 
     ShellInputStream(ShellFile file) throws FileNotFoundException {
-        io = new ShellFileIO(file);
+        io = new ShellFileIO(file, "r");
         buf = new byte[4 * 1024 * 1024];
         count = 0;
         bufOff = 0;

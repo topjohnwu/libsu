@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.internal;
 
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
@@ -30,27 +31,31 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
 
     private static final String TAG = "SHELLIO";
 
-    private ShellFile file;
+    private String path;
     private long fileOff;
     private long fileSize;
 
-    ShellFileIO(ShellFile file) throws FileNotFoundException {
-        this.file = file;
-
-        if (!file.exists()) {
-            try {
-                if (!file.createNewFile())
-                    throw new FileNotFoundException("No such file or directory");
-            } catch (IOException e) {
-                if (e instanceof FileNotFoundException)
-                    throw (FileNotFoundException) e;
-                throw (FileNotFoundException)
-                        new FileNotFoundException("No such file or directory").initCause(e);
-            }
-        }
-
+    ShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
+        path = file.getPath();
         fileOff = 0L;
-        fileSize = file.length();
+        if (TextUtils.equals(mode, "r")) {
+            // Read
+            if (!file.exists())
+                throw new FileNotFoundException("No such file or directory");
+            fileSize = file.length();
+        } else if (TextUtils.equals(mode, "w")) {
+            // Write
+            if (!file.clear())
+                throw new FileNotFoundException("No such file or directory");
+            fileSize = 0L;
+        } else if (TextUtils.equals(mode, "rw")) {
+            // Random rw
+            if (!file.exists() && !file.createNewFile())
+                throw new FileNotFoundException("No such file or directory");
+            fileSize = file.length();
+        } else {
+            throw new IllegalArgumentException("Illegal mode: " + mode);
+        }
     }
 
     @Override
@@ -61,7 +66,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             // Writing without truncate is only possible with busybox
             String cmd = String.format(Locale.ROOT,
                     "busybox dd of='%s' obs=%d seek=%d ibs=%d count=1 conv=notrunc 2>/dev/null; echo done",
-                    file, fileOff == 0 ? len : fileOff, fileOff == 0 ? 0 : 1, len);
+                    path, fileOff == 0 ? len : fileOff, fileOff == 0 ? 0 : 1, len);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
@@ -86,7 +91,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             throw new IndexOutOfBoundsException();
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo done", len, file);
+                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo done", len, path);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
@@ -136,7 +141,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null",
-                    file, bs, fileOff / bs, (len + bs - 1) / bs, len);
+                    path, bs, fileOff / bs, (len + bs - 1) / bs, len);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
@@ -157,7 +162,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
         Throwable t = Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd if=/dev/null of='%s' bs=%d seek=%d 2>/dev/null; echo done",
-                    file, newLength == 0 ? 1 : newLength, newLength == 0 ? 0 : 1);
+                    path, newLength == 0 ? 1 : newLength, newLength == 0 ? 0 : 1);
             InternalUtils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');

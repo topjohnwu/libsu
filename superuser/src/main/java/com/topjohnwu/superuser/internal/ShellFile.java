@@ -146,6 +146,10 @@ public class ShellFile extends File {
         return cmdBoolean("rm -f \"$FILE\" || rmdir -f \"$FILE\"");
     }
 
+    boolean clear() {
+        return cmdBoolean("echo -n > \"$FILE\"");
+    }
+
     public boolean deleteRecursive() {
         return cmdBoolean("rm -rf \"$FILE\"");
     }

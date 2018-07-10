@@ -29,8 +29,8 @@ class RandomAccessFileWrapper extends SuRandomAccessFile {
 
     private RandomAccessFile raf;
 
-    RandomAccessFileWrapper(File file) throws FileNotFoundException {
-        raf = new RandomAccessFile(file, "rw");
+    RandomAccessFileWrapper(File file, String mode) throws FileNotFoundException {
+        raf = new RandomAccessFile(file, mode);
     }
 
     @Override

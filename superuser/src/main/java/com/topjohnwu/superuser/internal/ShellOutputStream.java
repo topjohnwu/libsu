@@ -27,10 +27,7 @@ class ShellOutputStream extends OutputStream {
     private ShellFileIO io;
 
     ShellOutputStream(ShellFile file, boolean append) throws FileNotFoundException {
-        if (!append)
-            file.delete();
-
-        io = new ShellFileIO(file);
+        io = new ShellFileIO(file, append ? "rw" : "w");
     }
 
     @Override

@@ -32,35 +32,59 @@ import java.io.IOException;
  * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.
  * <p>
  * This class always checks whether using a shell is necessary. If not, it simply opens a new
- * {@link java.io.RandomAccessFile} with mode {@code "rw"} and behaves as a wrapper.
+ * {@link java.io.RandomAccessFile} and behaves as a wrapper.
  * <p>
  * File random access via shell is extremely limited, each I/O operation comes with a relatively
  * large overhead. For optimal performance, please consider using {@link SuFileInputStream} and
  * {@link SuFileOutputStream}, since these classes are specifically optimized for I/O using
  * shell commands.
  * <p>
- * Note: All write/writeXXX commands <b>require</b> {@code busybox} to work properly, as currently
+ * Note: All write/writeXXX commands <b>require</b> BusyBox to work properly, as currently
  * no existing Android version ships with a command {@code dd} that supports {@code notrunc} option.
  * If you need root file output but unwilling to use {@code busybox}, please use
- * {@link SuFileOutputStream} as it uses a special workaround that does not require {@code busybox}.
+ * {@link SuFileOutputStream} as it uses a special workaround that does not require BusyBox.
  * @see java.io.RandomAccessFile
  */
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
 
+    /**
+     * @deprecated
+     */
+    @Deprecated
     public static SuRandomAccessFile open(String path) throws FileNotFoundException {
-        return open(new File(path));
+        return open(new File(path), "rw");
     }
 
+    /**
+     * @deprecated
+     */
+    @Deprecated
     public static SuRandomAccessFile open(File file) throws FileNotFoundException {
+        return open(file, "rw");
+    }
+
+    /**
+     * @see java.io.RandomAccessFile#RandomAccessFile(File, String)
+     * @param file the file object.
+     * @param mode the access mode.
+     *             Note: {@code rws}, {@code rwd} behaves exactly the same as {@code rw}
+     * @return an instance of {@link SuRandomAccessFile}.
+     * @throws FileNotFoundException
+     */
+    public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile && ((SuFile) file).isSU()) {
-            return Factory.createShellFileIO(((SuFile) file).getShellFile());
+            return Factory.createShellFileIO(((SuFile) file).getShellFile(), mode);
         } else {
             try {
-                return Factory.createRandomAccessFileWrapper(file);
+                return Factory.createRandomAccessFileWrapper(file, mode);
             } catch (FileNotFoundException e) {
-                return Factory.createShellFileIO(Factory.createShellFile(file));
+                return Factory.createShellFileIO(Factory.createShellFile(file), mode);
             }
         }
+    }
+
+    public static SuRandomAccessFile open(String path, String mode) throws FileNotFoundException {
+        return open(new File(path), mode);
     }
 
     @Override
