@@ -1,3 +1,23 @@
+# 1.3.0
+
+### Incompatible API Changes
+- `execSyncTask`, `execAsyncTask`, `createCmdTask`, and `createLoadStreamTask` is removed from the non-static APIs of `Shell`. These are implementation details that weren't supposed to be part of the API
+
+
+### Behavior Changes
+- `open` of `SuRandomAccessFile` now supports a new parameter, `mode`, just like the constructor of `RandomAccessFile`
+  - Deprecate: `SuRandomAccessFile.open(File)`  
+    Recommend: `SuRandomAccessFile.open(File, String)`
+  - Deprecate: `SuRandomAccessFile.open(String)`  
+    Recommend: `SuRandomAccessFile.open(String, String)`
+- `onRootShellInit` of `Shell.Initializer` can now run in BusyBox environment if `BusyBox.setup(Context)` is invoked or `BusyBox.BB_PATH` is set before any `Shell` will be constructed
+- `SuFile` will become a wrapper around standard `File` if no root is available
+- `SuFileInputStream` and `SuFileOutputStream` will throw `FileNotFoundException` when no root is available, and opening with standard `FileInputStream` / `FileOutputStream` throws `FileNotFoundException`
+- `Shell` will not be forcibly closed when an `Exception` is thrown in `Shell.Task.run`
+
+### Improvements
+- The `minSdkVersion` of `libsu` is actually 11, changed accordingly
+
 # 1.2.0
 
 ### Incompatible API Changes
