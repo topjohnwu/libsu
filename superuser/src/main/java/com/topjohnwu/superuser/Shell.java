@@ -654,9 +654,9 @@ public abstract class Shell implements Closeable {
         }
     }
 
-    /* *************************
-    * Low level implementations
-    * **************************/
+    /* ***************
+     * Non-static APIs
+     * ****************/
 
     /**
      * Return whether the {@code Shell} is still alive.
@@ -673,47 +673,9 @@ public abstract class Shell implements Closeable {
     public abstract Throwable execTask(@NonNull Task task);
 
     /**
-     * Execute a {@code Task}, and collect outputs synchronously.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param task the target list.
-     * @return the {@link Throwable} thrown in {@link Task#run(List, List, String...)},
-     *         {@code null} if nothing is thrown.
-     */
-    public abstract Throwable execSyncTask(List<String> outList, List<String> errList, @NonNull Task task);
-
-    /**
-     * Execute a {@code Task}, and collect outputs asynchronously.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param callback invoked when the task is done.
-     * @param task the target list.
-     */
-    public abstract void execAsyncTask(List<String> outList, List<String> errList,
-                                       Async.Callback callback, @NonNull Task task);
-
-    /**
-     * Create a task that executes shell commands.
-     * @param commands the commands to be exectuted.
-     * @return the created {@code Task}.
-     */
-    protected abstract Task createCmdTask(String... commands);
-
-    /**
-     * Create a task that loads {@code InputStream}.
-     * @param is the {@link InputStream} to be loaded.
-     * @return the created {@code Task}.
-     */
-    protected abstract Task createLoadStreamTask(InputStream is);
-
-    /* ***************
-    * Non-static APIs
-    * ****************/
-
-    /**
      * Get the status of the shell.
      * @return the status of the shell.
-     *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL},
+     *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL}, or
      *         {@link #ROOT_MOUNT_MASTER}
      */
     public int getStatus() {
@@ -722,31 +684,23 @@ public abstract class Shell implements Closeable {
 
     /**
      * Synchronously run commands and stores outputs to the two lists.
-     * <p>
-     * Simply performs {@code execSyncTask(outList, errList, createCmdTask(commands))}
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
      * @param commands the commands to run in the shell.
      * @return the {@link Throwable} thrown while running the commands, {@code null} if nothing is thrown.
      */
-    public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
-        return execSyncTask(outList, errList, createCmdTask(commands));
-    }
+    public abstract Throwable run(List<String> outList, List<String> errList, @NonNull String... commands);
 
     /**
      * Asynchronously run commands, stores outputs to the two lists, and call the callback when
-     * all commands are ran and the outputs are done.
-     * <p>
-     * Simply performs {@code execAsyncTask(outList, errList, callback, createCmdTask(commands))}
+     * all commands are done.
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param callback the callback when all commands are ran and the outputs are done.
+     * @param callback the callback when all commands are done.
      * @param commands the commands to run in the shell.
      */
-    public void run(List<String> outList, List<String> errList,
-                    Async.Callback callback, @NonNull String... commands) {
-        execAsyncTask(outList, errList, callback, createCmdTask(commands));
-    }
+    public abstract void run(List<String> outList, List<String> errList,
+                    Async.Callback callback, @NonNull String... commands);
 
     /**
      * Synchronously load an inputstream to the shell and stores outputs to the two lists.
@@ -754,35 +708,27 @@ public abstract class Shell implements Closeable {
      * This command is useful for loading a script stored in the APK. An InputStream can be opened
      * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
      * with {@link android.content.res.Resources#openRawResource(int)}.
-     * <p>
-     * Simply performs {@code execSyncTask(outList, errList, createLoadStreamTask(in))}
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
      * @param in the InputStream to load
      * @return the {@link Throwable} thrown while loading inputstream , {@code null} if nothing is thrown.
      */
-    public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-        return execSyncTask(outList, errList, createLoadStreamTask(in));
-    }
+    public abstract Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in);
 
     /**
      * Asynchronously load an input stream to the shell, stores outputs to the two lists, and call
-     * the callback when the InputStream is loaded and the outputs are done.
+     * the callback when the execution is done.
      * <p>
      * This command is useful for loading a script stored in the APK. An InputStream can be opened
      * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
      * with {@link android.content.res.Resources#openRawResource(int)}.
-     * <p>
-     * Simply performs {@code execAsyncTask(outList, errList, callback, createLoadStreamTask(in))}
      * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
      * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param callback the callback when the InputStream is loaded and the outputs are done.
+     * @param callback the callback when the execution is done.
      * @param in the InputStream to load
      */
-    public void loadInputStream(List<String> outList, List<String> errList,
-                                Async.Callback callback, @NonNull InputStream in) {
-        execAsyncTask(outList, errList, callback, createLoadStreamTask(in));
-    }
+    public abstract void loadInputStream(List<String> outList, List<String> errList,
+                                Async.Callback callback, @NonNull InputStream in);
 
     /* **********************
     * Private helper methods

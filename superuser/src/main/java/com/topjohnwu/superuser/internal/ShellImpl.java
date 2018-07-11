@@ -169,6 +169,7 @@ class ShellImpl extends Shell {
     @Override
     public Throwable execTask(@NonNull Task task) {
         lock.lock();
+        InternalUtils.log(TAG, "execTask");
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
         try {
@@ -187,72 +188,111 @@ class ShellImpl extends Shell {
         }
     }
 
-    @Override
-    public Throwable execSyncTask(List<String> outList, List<String> errList, @NonNull Task task) {
-        return execTask((in, out, err) -> {
-            InternalUtils.log(TAG, "runSyncTask");
-            outGobbler.begin(outList);
-            errGobbler.begin(errList);
-            task.run(in, out, err);
-            byte[] finalize = String.format("echo %s; echo %s >&2\n", token, token)
-                    .getBytes("UTF-8");
-            in.write(finalize);
-            in.flush();
-            outGobbler.waitDone();
-            errGobbler.waitDone();
-        });
-    }
-
-    @Override
-    public void execAsyncTask(List<String> outList, List<String> errList,
-                              Async.Callback callback, @NonNull Task task) {
+    private void asyncExecTask(Async.Callback cb, OutputGobblingTask task) {
         AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-            InternalUtils.log(TAG, "runAsyncTask");
-            Throwable t;
-            if (outList == null && errList == null) {
-                // Without any output request, we simply run the task
-                t = execTask(task);
-                if (callback != null && t != null)
-                    UiThreadHandler.run(() -> callback.onTaskError(t));
+            InternalUtils.log(TAG, "asyncExecTask");
+            Throwable t = execTask(task);
+            if (cb == null)
+                return;
+            if (t == null) {
+                UiThreadHandler.run(() -> cb.onTaskResult(task.getOut(), task.getErr()));
             } else {
-                t = execSyncTask(outList, errList, task);
-                if (callback != null) {
-                    if (t == null) {
-                        UiThreadHandler.run(() -> callback.onTaskResult(
-                                outList == null ? null : Collections.synchronizedList(outList),
-                                errList == null ? null : (errList == outList ? null :
-                                        Collections.synchronizedList(errList))
-                        ));
-                    } else {
-                        UiThreadHandler.run(() -> callback.onTaskError(t));
-                    }
-                }
+                UiThreadHandler.run(() -> cb.onTaskError(t));
             }
         });
     }
 
     @Override
-    protected Task createCmdTask(String... commands) {
-        return (in, out, err) -> {
-            InternalUtils.log(TAG, "runCommands");
+    public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
+        return execTask(new CommandTask(outList, errList, commands));
+    }
+
+    @Override
+    public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
+        asyncExecTask(callback, new CommandTask(outList, errList, commands));
+    }
+
+    @Override
+    public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
+        return execTask(new InputStreamTask(outList, errList, in));
+    }
+
+    @Override
+    public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
+        asyncExecTask(callback, new InputStreamTask(outList, errList, in));
+    }
+
+    private abstract class OutputGobblingTask implements Task {
+
+        private List<String> out, err;
+
+        OutputGobblingTask(List<String> outList, List<String> errList) {
+            out = outList;
+            err = errList;
+        }
+
+        @Override
+        public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws Exception {
+            InternalUtils.log(TAG, "OutputGobblingTask");
+            outGobbler.begin(out);
+            errGobbler.begin(err);
+            handleInput(stdin);
+            byte[] end = String.format("echo %s; echo %s >&2\n", token, token).getBytes("UTF-8");
+            stdin.write(end);
+            stdin.flush();
+            outGobbler.waitDone();
+            errGobbler.waitDone();
+        }
+
+        private List<String> getOut() {
+            return out == null ? null : Collections.synchronizedList(out);
+        }
+
+        private List<String> getErr() {
+            return err == null ? null : (err == out ? null : Collections.synchronizedList(err));
+        }
+
+        protected abstract void handleInput(OutputStream in) throws IOException;
+    }
+
+    private class CommandTask extends OutputGobblingTask {
+
+        private String commands[];
+
+        private CommandTask(List<String> out, List<String> err, String... cmds) {
+            super(out, err);
+            commands = cmds;
+        }
+
+        @Override
+        protected void handleInput(OutputStream in) throws IOException {
+            InternalUtils.log(TAG, "CommandTask");
             for (String command : commands) {
                 in.write(command.getBytes("UTF-8"));
                 in.write('\n');
                 in.flush();
                 InternalUtils.log(INTAG, command);
             }
-        };
+        }
     }
 
-    @Override
-    protected Task createLoadStreamTask(InputStream is) {
-        return (in, out, err) -> {
-            InternalUtils.log(TAG, "loadInputStream");
+    private class InputStreamTask extends OutputGobblingTask {
+
+        private InputStream is;
+
+        private InputStreamTask(List<String> out, List<String> err, InputStream in) {
+            super(out, err);
+            is = in;
+        }
+
+        @Override
+        protected void handleInput(OutputStream in) throws IOException {
+            InternalUtils.log(TAG, "InputStreamTask");
             ShellUtils.pump(is, in);
             is.close();
             // Make sure it flushes the shell
             in.write('\n');
             in.flush();
-        };
+        }
     }
 }
