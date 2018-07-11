@@ -179,9 +179,6 @@ class ShellImpl extends Shell {
             return null;
         } catch (Throwable t) {
             InternalUtils.stackTrace(t);
-            try {
-                close();
-            } catch (IOException ignored) {}
             return t;
         } finally {
             lock.unlock();

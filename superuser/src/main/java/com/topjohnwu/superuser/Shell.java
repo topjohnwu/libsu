@@ -798,7 +798,7 @@ public abstract class Shell implements Closeable {
          * @param stdin the STDIN of the shell.
          * @param stdout the STDOUT of the shell.
          * @param stderr the STDERR of the shell.
-         * @throws Exception any exception thrown will cause the shell be shutdown immediately.
+         * @throws Exception
          */
         void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws Exception;
     }
