@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 class ShellImpl extends Shell {
@@ -150,7 +148,6 @@ class ShellImpl extends Shell {
         process.destroy();
     }
 
-
     @Override
     public boolean isAlive() {
         // If status is unknown, it is not alive
@@ -167,86 +164,101 @@ class ShellImpl extends Shell {
     }
 
     @Override
-    public Throwable execTask(@NonNull Task task) {
+    public void execTask(@NonNull Task task) throws IOException {
         lock.lock();
-        InternalUtils.log(TAG, "execTask");
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
         try {
             if (!isAlive())
-                return null;
+                return;
             task.run(STDIN, STDOUT, STDERR);
-            return null;
-        } catch (Throwable t) {
-            InternalUtils.stackTrace(t);
-            return t;
         } finally {
             lock.unlock();
         }
     }
 
-    private void asyncExecTask(Async.Callback cb, OutputGobblingTask task) {
-        AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-            InternalUtils.log(TAG, "asyncExecTask");
-            Throwable t = execTask(task);
-            if (cb == null)
-                return;
-            if (t == null) {
-                UiThreadHandler.run(() -> cb.onTaskResult(task.getOut(), task.getErr()));
-            } else {
-                UiThreadHandler.run(() -> cb.onTaskError(t));
+    @Override
+    public Job newJob(String... cmds) {
+        return new JobImpl(new CommandTask(cmds));
+    }
+
+    @Override
+    public Job newJob(InputStream in) {
+        return new JobImpl(new InputStreamTask(in));
+    }
+
+    private class JobImpl extends Job {
+
+        private ResultCallback cb;
+        private Output out;
+        private OutputGobblingTask task;
+
+        private JobImpl(OutputGobblingTask t) {
+            task = t;
+            cb = null;
+            out = null;
+        }
+
+        @Override
+        public Output exec() {
+            InternalUtils.log(TAG, "exec");
+            if (out == null)
+                out = new Output(null, null);
+            task.setOut(out);
+            try {
+                execTask(task);
+            } catch (IOException e) {
+                InternalUtils.stackTrace(e);
+                return null;
             }
-        });
-    }
+            return out;
+        }
 
-    @Override
-    public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
-        return execTask(new CommandTask(outList, errList, commands));
-    }
+        @Override
+        public void enqueue() {
+            InternalUtils.log(TAG, "enqueue");
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+                exec();
+                if (cb != null)
+                    UiThreadHandler.run(() -> cb.onResult(out));
+            });
+        }
 
-    @Override
-    public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
-        asyncExecTask(callback, new CommandTask(outList, errList, commands));
-    }
+        @Override
+        public Job to(Output out) {
+            this.out = out;
+            return this;
+        }
 
-    @Override
-    public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-        return execTask(new InputStreamTask(outList, errList, in));
-    }
-
-    @Override
-    public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
-        asyncExecTask(callback, new InputStreamTask(outList, errList, in));
+        @Override
+        public Job onResult(ResultCallback cb) {
+            this.cb = cb;
+            return this;
+        }
     }
 
     private abstract class OutputGobblingTask implements Task {
 
-        private List<String> out, err;
-
-        OutputGobblingTask(List<String> outList, List<String> errList) {
-            out = outList;
-            err = errList;
-        }
+        private Output out;
 
         @Override
-        public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws Exception {
-            InternalUtils.log(TAG, "OutputGobblingTask");
-            outGobbler.begin(out);
-            errGobbler.begin(err);
+        public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
+            outGobbler.begin(out.getOut());
+            errGobbler.begin(out.getErr());
             handleInput(stdin);
             byte[] end = String.format("echo %s; echo %s >&2\n", token, token).getBytes("UTF-8");
             stdin.write(end);
             stdin.flush();
-            outGobbler.waitDone();
-            errGobbler.waitDone();
+            try {
+                outGobbler.waitDone();
+                errGobbler.waitDone();
+            } catch (InterruptedException e) {
+                InternalUtils.stackTrace(e);
+            }
         }
 
-        private List<String> getOut() {
-            return out == null ? null : Collections.synchronizedList(out);
-        }
-
-        private List<String> getErr() {
-            return err == null ? null : (err == out ? null : Collections.synchronizedList(err));
+        private void setOut(Output output) {
+            out = output;
         }
 
         protected abstract void handleInput(OutputStream in) throws IOException;
@@ -256,8 +268,7 @@ class ShellImpl extends Shell {
 
         private String commands[];
 
-        private CommandTask(List<String> out, List<String> err, String... cmds) {
-            super(out, err);
+        private CommandTask(String... cmds) {
             commands = cmds;
         }
 
@@ -277,8 +288,7 @@ class ShellImpl extends Shell {
 
         private InputStream is;
 
-        private InputStreamTask(List<String> out, List<String> err, InputStream in) {
-            super(out, err);
+        private InputStreamTask(InputStream in) {
             is = in;
         }
 

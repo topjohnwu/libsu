@@ -99,8 +99,10 @@ public final class ShellUtils {
      */
     @Nullable
     public static String fastCmd(Shell shell, String... cmds) {
-        ArrayList<String> out = new ArrayList<>();
-        shell.run(out, null, cmds);
+        List<String> out = shell.newJob(cmds)
+                .to(new Shell.Output(new ArrayList<>(), null))
+                .exec()
+                .getOut();
         return isValidOutput(out) ? out.get(out.size() - 1) : null;
     }
 

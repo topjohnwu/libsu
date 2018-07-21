@@ -22,6 +22,7 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.topjohnwu.superuser.internal.DeprecatedApiShim;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 
@@ -31,8 +32,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -380,277 +379,28 @@ public abstract class Shell implements Closeable {
         return getShell().status > NON_ROOT_SHELL;
     }
 
+
+    /* ***************************
+     * Deprecated High Level APIs
+     * ***************************/
+
     /**
-     * High level API for synchronous operations
+     * @deprecated
      */
-    public final static class Sync {
-
+    @Deprecated
+    public final static class Sync extends DeprecatedApiShim.Sync {
         private Sync() {}
-
-        /* ************************************
-        * Global static synchronous shell APIs
-        * *************************************/
-
-        /**
-         * Equivalent to {@code sh(new ArrayList<String>(), commands)} with the new ArrayList
-         * returned when all commands are done.
-         * @return the result of the commands.
-         */
-        @NonNull
-        public static ArrayList<String> sh(@NonNull String... commands) {
-            ArrayList<String> result = new ArrayList<>();
-            sh(result, commands);
-            return result;
-        }
-
-        /**
-         * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, commands).</code></pre>
-         * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
-         */
-        public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
-        }
-
-        /**
-         * Get a shell from {@link #getShell()} and call {@link #run(List, List, String...)}.
-         * @see #run(List, List, String...)
-         */
-        public static void sh(List<String> output, List<String> error, @NonNull String... commands) {
-            syncWrapper(false, output, error, commands);
-        }
-
-        /* *****************************************
-        * Global static synchronous root shell APIs
-        * ******************************************/
-
-        /**
-         * Equivalent to {@link #sh(String...)} with root access check before running.
-         */
-        @NonNull
-        public static ArrayList<String> su(@NonNull String... commands) {
-            ArrayList<String> result = new ArrayList<>();
-            su(result, commands);
-            return result;
-        }
-
-        /**
-         * Equivalent to {@link #sh(List, String...)} with root access check before running.
-         */
-        public static void su(List<String> output, @NonNull String... commands) {
-            su(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, commands);
-        }
-
-        /**
-         * Equivalent to {@link #sh(List, List, String...)} with root access check before running.
-         */
-        public static void su(List<String> output, List<String> error, @NonNull String... commands) {
-            syncWrapper(true, output, error, commands);
-        }
-
-        /* *****************************************
-        * Global static loadScript synchronous APIs
-        * ******************************************/
-
-        /**
-         * Equivalent to {@code loadScript(new ArrayList<String>(), in)} with the new ArrayList
-         * returned after the script finish running.
-         * @return the result of the script loaded from the InputStream.
-         */
-        @NonNull
-        public static ArrayList<String> loadScript(@NonNull InputStream in) {
-            ArrayList<String> result = new ArrayList<>();
-            loadScript(result, in);
-            return result;
-        }
-
-        /**
-         * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
-         * @param output if {@link #FLAG_REDIRECT_STDERR} is set, STDERR outputs will also be stored here.
-         */
-        public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
-        }
-
-        /**
-         * Get a shell from {@link #getShell()} and call {@link #loadInputStream(List, List, InputStream)}.
-         * @see #loadInputStream(List, List, InputStream)
-         */
-        public static void loadScript(List<String> output, List<String> error, @NonNull InputStream in) {
-            getShell().loadInputStream(output, error, in);
-        }
     }
 
     /**
-     * High level API for asynchronous operations
+     * @deprecated
      */
-    public final static class Async {
-
+    @Deprecated
+    public final static class Async extends DeprecatedApiShim.Async {
         private Async() {}
-
-        /**
-         * The callback when an asynchronous shell operation is done.
-         * <p>
-         * When an asynchronous shell operation is done, it will pass over the result of the output
-         * to {@link #onTaskResult(List, List)}. If both outputs are null, then the callback will
-         * not be called.
-         * When an error occurs, {@link #onTaskError(Throwable)} will be invoked.
-         * All callbacks will always run on the main thread.
-         * <p>
-         * The two lists passed to the callback are wrapped with
-         * {@link Collections#synchronizedList(List)}.
-         */
         public interface Callback {
-            /**
-             * The callback that will be invoked when asynchronous shell operation is done.
-             * If {@code out == err}, then {@code err} will be {@code null}.
-             * This means if {@link #FLAG_REDIRECT_STDERR} is set, the output of STDERR would be
-             * stored in {@code out}, {@code err} will be {@code null}, unless explicitly passed
-             * a different list to store STDERR while request.
-             * @param out the list that stores the output of STDOUT.
-             * @param err the list that stores the output of STDERR.
-             */
             void onTaskResult(@Nullable List<String> out, @Nullable List<String> err);
-
-            /**
-             * The callback when asynchronous shell operation throws an error.
-             * @param err the {@code Throwable} thrown in the task.
-             */
             void onTaskError(@NonNull Throwable err);
-        }
-
-        /* *************************************
-        * Global static asynchronous shell APIs
-        * **************************************/
-
-        /**
-         * Equivalent to {@code sh(null, null, null, commands)}.
-         */
-        public static void sh(@NonNull String... commands) {
-            sh(null, null, null, commands);
-        }
-
-        /**
-         * Equivalent to <pre><code>output = new ArrayList&#60;String&#62;(); sh(output, REDIRECT_STDERR &#63; output : null, callback, commands).</code></pre>
-         * <p>
-         * This method is useful if you only need a callback after the commands are done.
-         */
-        public static void sh(Callback callback, @NonNull String... commands) {
-            ArrayList<String> result = new ArrayList<>();
-            sh(result, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
-        }
-
-        /**
-         * Equivalent to <pre><code>sh(output, REDIRECT_STDERR &#63; output : null, null, commands).</code></pre>
-         */
-        public static void sh(List<String> output, @NonNull String... commands) {
-            sh(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
-        }
-
-        /**
-         * Equivalent to {@code sh(output, error, null, commands)}.
-         */
-        public static void sh(List<String> output, List<String> error, @NonNull String... commands) {
-            sh(output, error, null, commands);
-        }
-
-        /**
-         * Get a shell with {@link #getShell(GetShellCallback)} and call
-         * {@link #run(List, List, Shell.Async.Callback, String...)}.
-         * @see #run(List, List, Shell.Async.Callback, String...)
-         */
-        public static void sh(List<String> output, List<String> error, Callback callback, @NonNull String... commands) {
-            asyncWrapper(false, output, error, callback, commands);
-        }
-
-        /* ******************************************
-        * Global static asynchronous root shell APIs
-        * *******************************************/
-
-        /**
-         * Equivalent to {@link #sh(String...)} with root access check before running.
-         */
-        public static void su(@NonNull String... commands) {
-            su(null, null, null, commands);
-        }
-
-        /**
-         * Equivalent to {@link #sh(Shell.Async.Callback, String...)} with root access check before running.
-         */
-        public static void su(Callback callback, @NonNull String... commands) {
-            ArrayList<String> result = new ArrayList<>();
-            su(result, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, commands);
-        }
-
-        /**
-         * Equivalent to {@link #sh(List, String...)} with root access check before running.
-         */
-        public static void su(List<String> output, @NonNull String... commands) {
-            su(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, null, commands);
-        }
-
-        /**
-         * Equivalent to {@link #sh(List, List, String...)} with root access check before running.
-         */
-        public static void su(List<String> output, List<String> error, @NonNull String... commands) {
-            su(output, error, null, commands);
-        }
-
-        /**
-         * Equivalent to {@link #sh(List, List, Callback, String...)} with root access check before running.
-         */
-        public static void su(List<String> output, List<String> error, Callback callback,
-                              @NonNull String... commands) {
-            asyncWrapper(true, output, error, callback, commands);
-        }
-
-        /* ******************************************
-        * Global static loadScript asynchronous APIs
-        * *******************************************/
-
-        /**
-         * Equivalent to {@code loadScript(null, null, null, in)}.
-         */
-        public static void loadScript(InputStream in) {
-            loadScript(null, null, null, in);
-        }
-
-        /**
-         * Equivalent to <pre><code>output = new ArrayList&#60;String&#62;(); loadScript(output, REDIRECT_STDERR &#63; output : null, callback, in).</code></pre>
-         * <p>
-         * This method is useful if you only need a callback after the script finish running.
-         * <p>
-         * Note: when the {@link Callback#onTaskResult(List, List)} of the callback is called,
-         * the second parameter will always be null. If {@link #FLAG_REDIRECT_STDERR} is set, the
-         * output of STDERR will be stored in the first parameter.
-         */
-        public static void loadScript(Callback callback, @NonNull InputStream in) {
-            ArrayList<String> result = new ArrayList<>();
-            loadScript(result, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? result : null, callback, in);
-        }
-
-        /**
-         * Equivalent to <pre><code>loadScript(output, REDIRECT_STDERR &#63; output : null, in).</code></pre>
-         */
-        public static void loadScript(List<String> output, @NonNull InputStream in) {
-            loadScript(output, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? output : null, in);
-        }
-
-        /**
-         * Equivalent to {@code loadScript(output, error, null, in)}.
-         */
-        public static void loadScript(List<String> output, List<String> error,
-                                      @NonNull InputStream in) {
-            loadScript(output, error, null, in);
-        }
-
-        /**
-         * Get a shell with {@link #getShell(GetShellCallback)} and call
-         * {@link #loadInputStream(List, List, Shell.Async.Callback, InputStream)}.
-         * @see #loadInputStream(List, List, Shell.Async.Callback, InputStream)
-         */
-        public static void loadScript(List<String> output, List<String> error, Callback callback,
-                                      @NonNull InputStream in) {
-            getShell().loadInputStream(output, error, callback, in);
         }
     }
 
@@ -667,10 +417,12 @@ public abstract class Shell implements Closeable {
     /**
      * Execute a {@code Task} with the shell.
      * @param task the desired task.
-     * @return the {@link Throwable} thrown in {@link Task#run(List, List, String...)},
-     *         {@code null} if nothing is thrown.
      */
-    public abstract Throwable execTask(@NonNull Task task);
+    public abstract void execTask(@NonNull Task task) throws IOException;
+
+    public abstract Job newJob(String... cmds);
+
+    public abstract Job newJob(InputStream in);
 
     /**
      * Get the status of the shell.
@@ -681,54 +433,6 @@ public abstract class Shell implements Closeable {
     public int getStatus() {
         return status;
     }
-
-    /**
-     * Synchronously run commands and stores outputs to the two lists.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param commands the commands to run in the shell.
-     * @return the {@link Throwable} thrown while running the commands, {@code null} if nothing is thrown.
-     */
-    public abstract Throwable run(List<String> outList, List<String> errList, @NonNull String... commands);
-
-    /**
-     * Asynchronously run commands, stores outputs to the two lists, and call the callback when
-     * all commands are done.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param callback the callback when all commands are done.
-     * @param commands the commands to run in the shell.
-     */
-    public abstract void run(List<String> outList, List<String> errList,
-                    Async.Callback callback, @NonNull String... commands);
-
-    /**
-     * Synchronously load an inputstream to the shell and stores outputs to the two lists.
-     * <p>
-     * This command is useful for loading a script stored in the APK. An InputStream can be opened
-     * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
-     * with {@link android.content.res.Resources#openRawResource(int)}.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param in the InputStream to load
-     * @return the {@link Throwable} thrown while loading inputstream , {@code null} if nothing is thrown.
-     */
-    public abstract Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in);
-
-    /**
-     * Asynchronously load an input stream to the shell, stores outputs to the two lists, and call
-     * the callback when the execution is done.
-     * <p>
-     * This command is useful for loading a script stored in the APK. An InputStream can be opened
-     * from assets with {@link android.content.res.AssetManager#open(String)} or from raw resources
-     * with {@link android.content.res.Resources#openRawResource(int)}.
-     * @param outList the list storing STDOUT outputs. {@code null} to ignore outputs.
-     * @param errList the list storing STDERR outputs. {@code null} to ignore outputs.
-     * @param callback the callback when the execution is done.
-     * @param in the InputStream to load
-     */
-    public abstract void loadInputStream(List<String> outList, List<String> errList,
-                                Async.Callback callback, @NonNull InputStream in);
 
     /* **********************
     * Private helper methods
@@ -767,24 +471,6 @@ public abstract class Shell implements Closeable {
         return shell;
     }
 
-    private static void syncWrapper(boolean root, List<String> output,
-                                    List<String> error, String... commands) {
-        Shell shell = getShell();
-        if (root && shell.status == NON_ROOT_SHELL)
-            return;
-        shell.run(output, error, commands);
-    }
-
-    private static void asyncWrapper(boolean root, List<String> output,
-                                     List<String> error, Async.Callback callback,
-                                     String... commands) {
-        getShell(shell -> {
-            if (root && shell.status == NON_ROOT_SHELL)
-                return;
-            shell.run(output, error, callback, commands);
-        });
-    }
-
     /* **********
     * Subclasses
     * ***********/
@@ -798,9 +484,43 @@ public abstract class Shell implements Closeable {
          * @param stdin the STDIN of the shell.
          * @param stdout the STDOUT of the shell.
          * @param stderr the STDERR of the shell.
-         * @throws Exception
+         * @throws IOException I/O errors when doing operations on stdin/out/err
          */
-        void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws Exception;
+        void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException;
+    }
+
+    public static class Output {
+
+        protected List<String> out;
+        protected List<String> err;
+
+        public Output(List<String> outList) {
+            this(outList, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? outList : null);
+        }
+
+        public Output(List<String> outList, List<String> errList) {
+            out = outList;
+            err = errList;
+        }
+
+        public List<String> getOut() {
+            return out;
+        }
+
+        public List<String> getErr() {
+            return err;
+        }
+    }
+
+    public interface ResultCallback {
+        void onResult(Output out);
+    }
+
+    public abstract static class Job {
+        public abstract Job to(Output out);
+        public abstract Job onResult(ResultCallback cb);
+        public abstract Output exec();
+        public abstract void enqueue();
     }
 
     /**
