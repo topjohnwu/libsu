@@ -434,6 +434,13 @@ public abstract class Shell implements Closeable {
         return status;
     }
 
+    /**
+     * @return whether the shell is a root shell.
+     */
+    public boolean isRoot() {
+        return status >= ROOT_SHELL;
+    }
+
     /* **********************
     * Private helper methods
     * ***********************/
@@ -575,13 +582,8 @@ public abstract class Shell implements Closeable {
      * is constructed, subclass this class, add your own implementation, and register it with
      * {@link #setInitializer(Class)}.
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
-     * starts up.
-     * <p>
-     * The {@link #onShellInit(Context, Shell)} will be called as soon as the {@code Shell} is constructed
-     * and tested as a valid shell. {@link #onRootShellInit(Context, Shell)} will only be called after the
-     * {@code Shell} passes the internal root shell test. In short, a non-root shell will only
-     * be initialized with {@link #onShellInit(Context, Shell)}, while a root shell will be initialized with
-     * both {@link #onShellInit(Context, Shell)} and {@link #onRootShellInit(Context, Shell)}.
+     * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
+     * constructed and tested as a valid shell.
      * <p>
      * Note:
      * <ul>
@@ -603,20 +605,14 @@ public abstract class Shell implements Closeable {
 
         /**
          * @deprecated
-         * Called when a new shell is constructed.
-         * @param shell the newly constructed shell.
          */
         @Deprecated
         public void onShellInit(@NonNull Shell shell) {}
 
         /**
-         * Called when a new shell is constructed.
-         * Do not call the super method; the default implementation is only for backwards compatibility.
-         * @param context the application context.
-         * @param shell the newly constructed shell.
-         * @return {@code false} when the initialization fails, otherwise {@code true}
-         * @throws Exception any exception thrown is the same as returning {@code false}.
+         * @deprecated
          */
+        @Deprecated
         public boolean onShellInit(Context context, @NonNull Shell shell) throws Exception {
             // Backwards compatibility
             onShellInit(shell);
@@ -625,43 +621,42 @@ public abstract class Shell implements Closeable {
 
         /**
          * @deprecated
-         * Called when a new shell is constructed and passed the internal root tests.
-         * @param shell the newly constructed shell.
          */
         @Deprecated
         public void onRootShellInit(@NonNull Shell shell) {}
 
         /**
-         * Called when a new shell is constructed and passed the internal root tests.
-         * Do not call the super method; the default implementation is only for backwards compatibility.
-         * @param context the application context.
-         * @param shell the newly constructed shell.
-         * @return {@code false} when the initialization fails, otherwise {@code true}
-         * @throws Exception any exception thrown is the same as returning {@code false}.
+         * @deprecated
          */
+        @Deprecated
         public boolean onRootShellInit(Context context, @NonNull Shell shell) throws Exception {
             // Backwards compatibility
             onRootShellInit(shell);
             return true;
         }
 
-        private boolean init(Shell shell) {
-            Context context = InternalUtils.getContext();
+        /**
+         * Called when a new shell is constructed.
+         * Do not call the super method; the default implementation is only for backwards compatibility.
+         * @param context the application context.
+         * @param shell the newly constructed shell.
+         * @return {@code false} when the initialization fails, otherwise {@code true}
+         */
+        public boolean onInit(Context context, @NonNull Shell shell) {
             try {
-                if (!onShellInit(context, shell))
-                    return false;
-                if (shell.status >= ROOT_SHELL) {
-                    boolean bbInit = BusyBox.init(shell);
-                    if (!onRootShellInit(context, shell))
-                        return false;
-                    if (!bbInit)
-                        BusyBox.init(shell);
-                }
+                onShellInit(context, shell);
+                if (shell.isRoot())
+                    onRootShellInit(context, shell);
             } catch (Exception e) {
-                InternalUtils.stackTrace(e);
                 return false;
             }
             return true;
+        }
+
+        private boolean init(Shell shell) {
+            if (shell.isRoot())
+                BusyBox.init(shell);
+            return onInit(InternalUtils.getContext(), shell);
         }
 
     }

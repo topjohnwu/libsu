@@ -23,15 +23,10 @@ public class ExampleApp extends Shell.ContainerApp {
 
     // Demonstrate Shell.Initializer
     private static class ExampleInitializer extends Shell.Initializer {
-        @Override
-        public boolean onShellInit(Context context, Shell shell) {
-            Log.d(TAG, "onShellInit");
-            return true;
-        }
 
         @Override
-        public boolean onRootShellInit(Context context, Shell shell) {
-            Log.d(TAG, "onRootShellInit");
+        public boolean onInit(Context context, Shell shell) {
+            Log.d(TAG, "onInit");
             return true;
         }
     }
