@@ -16,9 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellContainerApp;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -27,8 +30,36 @@ import java.util.List;
 import static com.topjohnwu.superuser.Shell.FLAG_REDIRECT_STDERR;
 import static com.topjohnwu.superuser.Shell.NON_ROOT_SHELL;
 
-public class DeprecatedApiShim {
-    public static class Sync {
+public abstract class ShellCompat {
+
+    protected static Shell.Initializer initializer = null;
+
+    @Deprecated
+    public abstract Throwable run(List<String> outList, List<String> errList, @NonNull String... commands);
+
+    @Deprecated
+    public abstract void run(List<String> outList, List<String> errList,
+                             Shell.Async.Callback callback, @NonNull String... commands);
+
+    @Deprecated
+    public abstract Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in);
+
+    @Deprecated
+    public abstract void loadInputStream(List<String> outList, List<String> errList,
+                                         Shell.Async.Callback callback, @NonNull InputStream in);
+
+    @Deprecated
+    public static void setInitializer(@NonNull Shell.Initializer init) {
+        initializer = init;
+    }
+
+    @Deprecated
+    public static class ContainerApp extends ShellContainerApp {}
+
+    @Deprecated
+    public final static class Sync {
+
+        private Sync() {}
 
         @NonNull
         public static ArrayList<String> sh(@NonNull String... commands) {
@@ -72,11 +103,19 @@ public class DeprecatedApiShim {
         }
 
         public static void loadScript(List<String> output, List<String> error, @NonNull InputStream in) {
-            Shell.getShell().newJob(in).to(new Shell.Output(output, error)).exec();
+            Shell.getShell().loadInputStream(output, error, in);
         }
     }
 
-    public static class Async {
+    @Deprecated
+    public final static class Async {
+
+        private Async() {}
+
+        public interface Callback {
+            void onTaskResult(@Nullable List<String> out, @Nullable List<String> err);
+            void onTaskError(@NonNull Throwable err);
+        }
 
         public static void sh(@NonNull String... commands) {
             sh(null, null, null, commands);
@@ -142,12 +181,40 @@ public class DeprecatedApiShim {
 
         public static void loadScript(List<String> output, List<String> error,
                                       Shell.Async.Callback callback, @NonNull InputStream in) {
-            Shell.getShell(shell -> {
-                Shell.Job job = shell.newJob(in).to(new Shell.Output(output, error));
-                if (callback != null)
-                    job.onResult(out -> callback.onTaskResult(out.getOut(), out.getErr()));
-                job.enqueue();
-            });
+            Shell.getShell(shell -> shell.loadInputStream(output, error, callback, in));
+        }
+    }
+
+    protected static class InitializerCompat {
+        @Deprecated
+        public void onShellInit(@NonNull Shell shell) {}
+
+        @Deprecated
+        public boolean onShellInit(Context context, @NonNull Shell shell) throws Exception {
+            // Backwards compatibility
+            onShellInit(shell);
+            return true;
+        }
+
+        @Deprecated
+        public void onRootShellInit(@NonNull Shell shell) {}
+
+        @Deprecated
+        public boolean onRootShellInit(Context context, @NonNull Shell shell) throws Exception {
+            // Backwards compatibility
+            onRootShellInit(shell);
+            return true;
+        }
+
+        public boolean onInit(Context context, @NonNull Shell shell) {
+            try {
+                onShellInit(context, shell);
+                if (shell.isRoot())
+                    onRootShellInit(context, shell);
+            } catch (Exception e) {
+                return false;
+            }
+            return true;
         }
     }
 
@@ -156,7 +223,7 @@ public class DeprecatedApiShim {
         Shell shell = Shell.getShell();
         if (root && shell.getStatus() == NON_ROOT_SHELL)
             return;
-        shell.newJob(commands).to(new Shell.Output(output, error)).exec();
+        shell.run(output, error, commands);
     }
 
     private static void asyncWrapper(boolean root, List<String> output,
@@ -165,10 +232,7 @@ public class DeprecatedApiShim {
         Shell.getShell(shell -> {
             if (root && shell.getStatus() == NON_ROOT_SHELL)
                 return;
-            Shell.Job job = shell.newJob(commands).to(new Shell.Output(output, error));
-            if (callback != null)
-                job.onResult(out -> callback.onTaskResult(out.getOut(), out.getErr()));
-            job.enqueue();
+            shell.run(output, error, callback, commands);
         });
     }
 }

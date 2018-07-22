@@ -5,8 +5,9 @@ import android.util.Log;
 
 import com.topjohnwu.superuser.BusyBox;
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellContainerApp;
 
-public class ExampleApp extends Shell.ContainerApp {
+public class ExampleApp extends ShellContainerApp {
 
     public static final String TAG = "EXAMPLE";
 

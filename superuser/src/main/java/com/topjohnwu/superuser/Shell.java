@@ -16,16 +16,15 @@
 
 package com.topjohnwu.superuser;
 
-import android.app.Application;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.topjohnwu.superuser.internal.DeprecatedApiShim;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.NOPJob;
+import com.topjohnwu.superuser.internal.ShellCompat;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -39,72 +38,46 @@ import java.util.List;
 /**
  * A class providing an API to an interactive (root) shell.
  * <p>
- * This class can be put into 3 categories: the static methods, which are some utility functions;
- * the methods in {@link Sync} and {@link Async}, which are high level APIs using the global
- * {@code Shell} instance; the instance methods, which are low level APIs interacting with the invoking
- * {@code Shell} instance.
+ * This class can be put into 3 categories: the static utility/configuration functions;
+ * the static {@code sh(...)}/{@code su(...)} high level APIs using the global {@code Shell} instance;
+ * and the lower level API instance methods interacting with the invoking {@code Shell} instance.
  * <p>
  * A {@code Shell} instance consists of a Unix shell process along with 2 additional threads to
  * gobble through STDOUT and STDERR. The process itself and the 2 worker threads are always running
  * in the background as long as the {@code Shell} instance exists unless an error occurs.
  * <p>
- * Creating a new root shell is an expensive operation, so the best practice for any root app is to
- * create a single shell session and share it across the application. This class is designed with
- * this concept in mind, and provides a very easy way to share shell sessions. One of the challenges
- * in sharing a shell session is synchronization, as a single shell can only do tasks serially. This
- * class does all the heavy lifting under-the-hood, providing consistent output and synchronization.
- * In multi-thread environments or using the asynchronous APIs in this class, the shell and
- * all callbacks are all handled with concurrency in mind, so all tasks will be queued internally.
- * <p>
- * A global shell means it needs a container to store the {@code Shell} instance.
+ * Tp share shells means the {@code Shell} instance would need a container.
  * Generally, most developers would want to have the {@code Shell} instance shared globally
  * across the application. In that case, the developer can directly subclass the the readily
- * available {@link ContainerApp} (which extends {@link Application}) and the setup is all done.
- * If it is impossible to subclass {@link ContainerApp}, or for some reason one would
- * want to store the {@code Shell} instance somewhere else, the developer would need to manually
- * create a volatile field in the target class for storing the {@code Shell} instance, implement the
- * {@link Container} interface to expose the new field, and finally register the container as a
- * global container in its constructor by calling {@link #setContainer(Container)}. If no
- * {@link Container} is setup, every shell related methods (including {@link #rootAccess()})
- * will respawn a new shell process, which is very inefficient.
- * <p>
- * The reason behind this design is to let the {@code Shell} instance live along with the life
- * cycle of the target class. The {@code Shell} class statically stores a {@link WeakReference}
- * of the registered container, which means the container could be garbage collected if applicable.
- * For example, one decides to store the {@code Shell} instance in an {@link android.app.Activity}.
- * When the {@code Activity} is constructed, it shall register itself as the global
- * {@link Container}. All root commands will be executed via the single {@code Shell}
- * instance stored in a field of the activity as long as the activity is alive. When the activity
- * is terminated (e.g. the user leaves the activity), the garbage collector will do its job and close
- * the root shell, and at the same time the reference to the container will also be removed.
+ * available {@link ShellContainerApp}, or assign {@code com.topjohnwu.superuser.ShellContainerApp}
+ * in {@code <application>} of {@code Manifest.xml}, and the setup is all done.
+ * If it is impossible to subclass {@link ShellContainerApp}, or for some reason one would
+ * want to store the {@code Shell} instance somewhere else, check the documentation of
+ * {@link Container} for more info. If no {@link Container} is registered, every shell related methods
+ * (including {@link #rootAccess()}) will respawn a new shell process, which is very inefficient.
+ * The {@code Shell} class stores a {@link WeakReference} of the registered container
+ * so the container could be garbage collected to prevent memory leak if you decide to
+ * store {@code Shell} in places like {@link android.app.Activity}.
  * <p>
  * Once a global {@link Container} is registered, use {@link #getShell()} (synchronously) or
  * {@link #getShell(GetShellCallback)} (asynchronously) to get the global {@code Shell} instance.
- * However in most cases, developers do not need to get a {@code Shell} instance; instead use
- * the helper methods in {@link Sync} and {@link Async}, as they all use the global
- * shell and provides a higher level API.
+ * However in most cases, developers do not need a {@code Shell} instance; instead call
+ * {@code sh(...)}/{@code su(...)} as they use the global shell and provides a higher level API.
  * One thing worth mentioning: {@code sh(...)} and {@code su(...)} behaves exactly the same, the
- * only difference is that {@code su(...)} methods will only run if the underlying {@code Shell}
- * is a root shell. This also means that {@code sh(...)} will run in a root environment if the
- * global shell is actually a root shell.
+ * only difference is that {@code su(...)} will only run if the underlying {@code Shell}
+ * is a root shell. Be aware that {@code sh(...)} will still run in a root environment if the
+ * global shell is a root shell.
  * <p>
- * The {@link Async} class hosts all asynchronous helper methods, and they are all
- * guaranteed to return immediately: it will get shell asynchronously and run commands
- * asynchronously. All asynchronous tasks are queued and executed with Android's native
- * {@link AsyncTask#THREAD_POOL_EXECUTOR}, so threads and execution is managed along with all other
- * {@link AsyncTask} by the system.
- * Asynchronous APIs are useful when the developer just wants to run commands and does not care the
- * output at all ({@link Async#su(String...)}). One can register a {@link Async.Callback}
- * when the asynchronous task is done, the outputs will be passed to the callback. Furthermore,
- * since the output is updated asynchronously, a more advanced callback could be done with the help
- * of {@link CallbackList}: {@link CallbackList#onAddElement(Object)} will be invoked every time a
- * new line is outputted.
+ * When you run a {@link Job} in a background thread or calling {@link Job#enqueue()}, you can
+ * access the output reactively by using a more advanced callback with {@link CallbackList}:
+ * {@link CallbackList#onAddElement(Object)} will be invoked on the main thread every time the shell
+ * outputs a new line.
  * <p>
  * Developers can check the example that came along with the library, it demonstrates many features
  * the library has to offer.
  */
 
-public abstract class Shell implements Closeable {
+public abstract class Shell extends ShellCompat implements Closeable {
 
     /**
      * Shell status: Unknown. One possible result of {@link #getStatus()}.
@@ -151,17 +124,13 @@ public abstract class Shell implements Closeable {
     /**
      * If set, STDERR outputs will be stored in STDOUT outputs.
      * <p>
-     * Note: This flag affects all methods in {@link Sync} {@link Async} except:
+     * Note: This flag only affects the following:
      * <ul>
-     *     <li>{@link Sync#sh(List, List, String...)}</li>
-     *     <li>{@link Sync#su(List, List, String...)}</li>
-     *     <li>{@link Sync#loadScript(List, List, InputStream)}</li>
-     *     <li>{@link Async#sh(List, List, String...)}</li>
-     *     <li>{@link Async#sh(List, List, Shell.Async.Callback, String...)}</li>
-     *     <li>{@link Async#su(List, List, String...)}</li>
-     *     <li>{@link Async#su(List, List, Shell.Async.Callback, String...)}</li>
-     *     <li>{@link Async#loadScript(List, List, InputStream)}</li>
-     *     <li>{@link Async#loadScript(List, List, Shell.Async.Callback, InputStream)}</li>
+     *     <li>{@link #sh(String...)}</li>
+     *     <li>{@link #su(String...)}</li>
+     *     <li>{@link #sh(InputStream)}</li>
+     *     <li>{@link #su(InputStream)}</li>
+     *     <li>{@link Output#Output(List)}</li>
      * </ul>
      * <p>
      * Constant value {@value}.
@@ -175,7 +144,6 @@ public abstract class Shell implements Closeable {
     
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
-    private static Initializer initializer = null;
     private static Class<? extends Initializer> initClass = null;
 
     /* **************************************
@@ -191,17 +159,6 @@ public abstract class Shell implements Closeable {
      */
     public static void setContainer(@Nullable Container container) {
         weakContainer = new WeakReference<>(container);
-    }
-
-    /**
-     * @deprecated
-     * Set a desired {@code Initializer}.
-     * @see Initializer
-     * @param init the desired initializer.
-     */
-    @Deprecated
-    public static void setInitializer(@NonNull Initializer init) {
-        initializer = init;
     }
 
     /**
@@ -378,32 +335,7 @@ public abstract class Shell implements Closeable {
      * @return {@code true} if the global shell has root access.
      */
     public static boolean rootAccess() {
-        return getShell().status > NON_ROOT_SHELL;
-    }
-
-
-    /* ***************************
-     * Deprecated High Level APIs
-     * ***************************/
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public final static class Sync extends DeprecatedApiShim.Sync {
-        private Sync() {}
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public final static class Async extends DeprecatedApiShim.Async {
-        private Async() {}
-        public interface Callback {
-            void onTaskResult(@Nullable List<String> out, @Nullable List<String> err);
-            void onTaskError(@NonNull Throwable err);
-        }
+        return getShell().isRoot();
     }
 
     /* ************
@@ -568,6 +500,10 @@ public abstract class Shell implements Closeable {
 
     /**
      * The container to store the global {@code Shell} instance.
+     * <p>
+     * Create a volatile field for storing the {@code Shell} instance, implement {@link #getShell()}
+     * and {@link #setShell(Shell)} to expose the new field, and don't forget to register yourself
+     * in the constructor by calling {@link #setContainer(Container)} with {@code this}.
      */
     public interface Container {
         /**
@@ -583,35 +519,6 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * A subclass of {@link Application} that implements {@link Container}.
-     */
-    public static class ContainerApp extends Application implements Container {
-
-        /**
-         * The actual field to save the global {@code Shell} instance.
-         */
-        protected volatile Shell mShell;
-
-        /**
-         * Set the {@code ContainerApp} as the global container as soon as it is constructed.
-         */
-        public ContainerApp() {
-            setContainer(this);
-        }
-
-        @Nullable
-        @Override
-        public Shell getShell() {
-            return mShell;
-        }
-
-        @Override
-        public void setShell(@Nullable Shell shell) {
-            mShell = shell;
-        }
-    }
-
-    /**
      * The initializer when a new {@code Shell} is constructed.
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
@@ -621,72 +528,25 @@ public abstract class Shell implements Closeable {
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
      * <p>
-     * Note:
-     * <ul>
-     *     <li>Please directly call the low level APIs on the passed in {@code Shell} instance within
-     *     these two callbacks. <strong>DO NOT</strong> use methods in {@link Shell.Sync} or
-     *     {@link Shell.Async}. The global shell is not set yet, calling these high level APIs
-     *     will end up in an infinite loop of creating new {@code Shell} and calling the initializer.</li>
-     *     <li>If you want the initializer to run in a BusyBox environment, call
-     *     {@link BusyBox#setup(Context)} or set {@link BusyBox#BB_PATH} before any shell will
-     *     be constructed.</li>
-     * </ul>
-     *
+     * Note: If you want the initializer to run in a BusyBox environment, call
+     * {@link BusyBox#setup(Context)} or assign {@link BusyBox#BB_PATH} before any shell will
+     * be constructed.
      * <p>
      * An initializer will be constructed and the callbacks will be invoked each time a new
      * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
      * access resources within the APK (e.g. shell scripts).
      */
-    public static class Initializer {
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public void onShellInit(@NonNull Shell shell) {}
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public boolean onShellInit(Context context, @NonNull Shell shell) throws Exception {
-            // Backwards compatibility
-            onShellInit(shell);
-            return true;
-        }
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public void onRootShellInit(@NonNull Shell shell) {}
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public boolean onRootShellInit(Context context, @NonNull Shell shell) throws Exception {
-            // Backwards compatibility
-            onRootShellInit(shell);
-            return true;
-        }
+    public static class Initializer extends InitializerCompat {
 
         /**
          * Called when a new shell is constructed.
-         * Do not call the super method; the default implementation is only for backwards compatibility.
+         * Do NOT call the super method; the default implementation is only for backwards compatibility.
          * @param context the application context.
          * @param shell the newly constructed shell.
          * @return {@code false} when the initialization fails, otherwise {@code true}
          */
         public boolean onInit(Context context, @NonNull Shell shell) {
-            try {
-                onShellInit(context, shell);
-                if (shell.isRoot())
-                    onRootShellInit(context, shell);
-            } catch (Exception e) {
-                return false;
-            }
-            return true;
+            return super.onInit(context, shell);
         }
 
         private boolean init(Shell shell) {
@@ -694,7 +554,6 @@ public abstract class Shell implements Closeable {
                 BusyBox.init(shell);
             return onInit(InternalUtils.getContext(), shell);
         }
-
     }
 
     /**
@@ -706,5 +565,4 @@ public abstract class Shell implements Closeable {
          */
         void onShell(@NonNull Shell shell);
     }
-
 }
