@@ -261,44 +261,27 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public static Shell newInstance() {
         Shell shell = null;
 
+        // Root mount master
         if (!InternalUtils.hasFlag(FLAG_NON_ROOT_SHELL) && InternalUtils.hasFlag(FLAG_MOUNT_MASTER)) {
-            // Try mount master
             try {
-                shell = Factory.createShell("su", "--mount-master");
-                if (!shell.isRoot())
+                shell = newInstance("su", "--mount-master");
+                if (shell.getStatus() != ROOT_MOUNT_MASTER)
                     shell = null;
-            } catch (IOException e) {
-                // Shell initialize failed
-                InternalUtils.stackTrace(e);
-                shell = null;
-            }
+            } catch (NoShellException ignore) {}
         }
 
+        // Normal root shell
         if (shell == null && !InternalUtils.hasFlag(FLAG_NON_ROOT_SHELL)) {
-            // Try normal root shell
             try {
-                shell = Factory.createShell("su");
-                if (!shell.isRoot())
+                shell = newInstance("su");
+                if (shell.getStatus() != ROOT_SHELL)
                     shell = null;
-            } catch (IOException e) {
-                // Shell initialize failed
-                InternalUtils.stackTrace(e);
-                shell = null;
-            }
+            } catch (NoShellException ignore) {}
         }
 
-        if (shell == null) {
-            // Try normal non-root shell
-            try {
-                shell = Factory.createShell("sh");
-            } catch (IOException e) {
-                // Shell initialize failed
-                InternalUtils.stackTrace(e);
-                throw new NoShellException("Impossible to create a shell!");
-            }
-        }
-
-        initShell(shell);
+        // Try normal non-root shell
+        if (shell == null)
+            shell = newInstance("su");
 
         return shell;
     }
@@ -315,7 +298,23 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public static Shell newInstance(String... commands) {
         try {
             Shell shell = Factory.createShell(commands);
-            initShell(shell);
+            Initializer init = null;
+            if (initClass != null) {
+                try {
+                    // Force enabling the default constructor as it might be private
+                    Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
+                    ic.setAccessible(true);
+                    init = ic.newInstance();
+                } catch (Exception e) {
+                    InternalUtils.stackTrace(e);
+                }
+            } else if (initializer != null) {
+                init = initializer;
+            }
+            if (init == null)
+                init = new Initializer();
+            if (!init.init(shell))
+                throw new NoShellException("Unable to init shell");
             return shell;
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
@@ -367,26 +366,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
     private static Job newJob(Shell shell, InputStream in) {
         return shell.newJob(in).to(NOPList.getInstance());
-    }
-
-    private static void initShell(Shell shell) {
-        Initializer init = null;
-        if (initClass != null) {
-            try {
-                // Force enabling the default constructor as it might be private
-                Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
-                ic.setAccessible(true);
-                init = ic.newInstance();
-            } catch (Exception e) {
-                InternalUtils.stackTrace(e);
-            }
-        } else if (initializer != null) {
-            init = initializer;
-        }
-        if (init == null)
-            init = new Initializer();
-        if (!init.init(shell))
-            throw new NoShellException("Unable to init shell");
     }
 
     private static Shell getGlobalShell() {

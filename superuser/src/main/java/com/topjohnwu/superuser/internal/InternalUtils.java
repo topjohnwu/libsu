@@ -32,12 +32,12 @@ public final class InternalUtils {
             Log.d("LIBSU", "Internal Error", t);
     }
 
-    public static boolean hasFlag(int flag) {
-        return hasFlag(Shell.getFlags(), flag);
+    public static boolean hasFlag(int flags) {
+        return hasFlag(Shell.getFlags(), flags);
     }
 
-    public static boolean hasFlag(int flags, int flag) {
-        return (flags & flag) != 0;
+    public static boolean hasFlag(int base, int flags) {
+        return (base & flags) == flags;
     }
 
     public static Context getContext() {
