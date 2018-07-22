@@ -124,13 +124,13 @@ public abstract class Shell extends ShellCompat implements Closeable {
     /**
      * If set, STDERR outputs will be stored in STDOUT outputs.
      * <p>
-     * Note: This flag only affects the following:
+     * Note: This flag only affects the following methods:
      * <ul>
      *     <li>{@link #sh(String...)}</li>
      *     <li>{@link #su(String...)}</li>
      *     <li>{@link #sh(InputStream)}</li>
      *     <li>{@link #su(InputStream)}</li>
-     *     <li>{@link Output#Output(List)}</li>
+     *     <li>{@link Job#to(List)}</li>
      * </ul>
      * <p>
      * Constant value {@value}.
@@ -362,11 +362,11 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * ***********************/
 
     private static Job newJob(Shell shell, String... commands) {
-        return shell.newJob(commands).to(new Output(new ArrayList<>()));
+        return shell.newJob(commands).to(new ArrayList<>());
     }
 
     private static Job newJob(Shell shell, InputStream in) {
-        return shell.newJob(in).to(new Output(new ArrayList<>()));
+        return shell.newJob(in).to(new ArrayList<>());
     }
 
     private static void initShell(Shell shell) {
@@ -455,37 +455,24 @@ public abstract class Shell extends ShellCompat implements Closeable {
         void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException;
     }
 
-    public static class Output {
+    public abstract static class Result {
 
-        protected List<String> out;
-        protected List<String> err;
+        public abstract List<String> getOut();
 
-        public Output(List<String> outList) {
-            this(outList, InternalUtils.hasFlag(FLAG_REDIRECT_STDERR) ? outList : null);
-        }
+        public abstract List<String> getErr();
 
-        public Output(List<String> outList, List<String> errList) {
-            out = outList;
-            err = errList;
-        }
-
-        public List<String> getOut() {
-            return out;
-        }
-
-        public List<String> getErr() {
-            return err;
-        }
+        public abstract int getCode();
     }
 
     public interface ResultCallback {
-        void onResult(Output out);
+        void onResult(Result out);
     }
 
     public abstract static class Job {
-        public abstract Job to(Output out);
+        public abstract Job to(List<String> stdout);
+        public abstract Job to(List<String> stdout, List<String> stderr);
         public abstract Job onResult(ResultCallback cb);
-        public abstract Output exec();
+        public abstract Result exec();
         public abstract void enqueue();
     }
 

@@ -100,7 +100,7 @@ public final class ShellUtils {
     @Nullable
     public static String fastCmd(Shell shell, String... cmds) {
         List<String> out = shell.newJob(cmds)
-                .to(new Shell.Output(new ArrayList<>(), null))
+                .to(new ArrayList<>(), null)
                 .exec()
                 .getOut();
         return isValidOutput(out) ? out.get(out.size() - 1) : null;

@@ -198,46 +198,80 @@ class ShellImpl extends Shell {
         return new JobImpl(new InputStreamTask(in));
     }
 
+    static class ResultImpl extends Result {
+        private List<String> out;
+        private List<String> err;
+        private int code;
+
+        @Override
+        public List<String> getOut() {
+            return out;
+        }
+
+        @Override
+        public List<String> getErr() {
+            return err;
+        }
+
+        @Override
+        public int getCode() {
+            return code;
+        }
+    }
+
     private class JobImpl extends Job {
 
         private ResultCallback cb;
-        private Output out;
         private OutputGobblingTask task;
+        private List<String> out, err;
+        private boolean redirect;
 
         private JobImpl(OutputGobblingTask t) {
             task = t;
             cb = null;
-            out = null;
+            redirect = false;
         }
 
         @Override
-        public Output exec() {
+        public Result exec() {
             InternalUtils.log(TAG, "exec");
-            if (out == null)
-                out = new Output(null, null);
-            task.setOut(out);
+            ResultImpl result = new ResultImpl();
+            result.out = out;
+            result.err = redirect ? out : err;
+            task.setRes(result);
             try {
                 execTask(task);
             } catch (IOException e) {
                 InternalUtils.stackTrace(e);
                 return null;
             }
-            return out;
+            if (redirect)
+                result.err = null;
+            return result;
         }
 
         @Override
         public void enqueue() {
             InternalUtils.log(TAG, "enqueue");
             AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-                exec();
+                Result result = exec();
                 if (cb != null)
-                    UiThreadHandler.run(() -> cb.onResult(out));
+                    UiThreadHandler.run(() -> cb.onResult(result));
             });
         }
 
         @Override
-        public Job to(Output out) {
-            this.out = out;
+        public Job to(List<String> stdout) {
+            out = stdout;
+            redirect = InternalUtils.hasFlag(FLAG_REDIRECT_STDERR);
+            return this;
+        }
+
+        @Override
+        public Job to(List<String> stdout, List<String> stderr) {
+            out = stdout;
+            err = stderr;
+            redirect = false;
             return this;
         }
 
@@ -250,12 +284,12 @@ class ShellImpl extends Shell {
 
     private abstract class OutputGobblingTask implements Task {
 
-        private Output out;
+        private Result res;
 
         @Override
         public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
-            outGobbler.begin(out.getOut());
-            errGobbler.begin(out.getErr());
+            outGobbler.begin(res.getOut());
+            errGobbler.begin(res.getErr());
             handleInput(stdin);
             byte[] end = String.format("echo %s; echo %s >&2\n", token, token).getBytes("UTF-8");
             stdin.write(end);
@@ -268,8 +302,8 @@ class ShellImpl extends Shell {
             }
         }
 
-        private void setOut(Output output) {
-            out = output;
+        private void setRes(Result result) {
+            res = result;
         }
 
         protected abstract void handleInput(OutputStream in) throws IOException;
@@ -316,29 +350,29 @@ class ShellImpl extends Shell {
 
     @Override
     public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
-        newJob(commands).to(new Shell.Output(outList, errList)).exec();
+        newJob(commands).to(outList, errList).exec();
         return null;
     }
 
     @Override
     public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
-        Job job = newJob(commands).to(new Shell.Output(outList, errList));
+        Job job = newJob(commands).to(outList, errList);
         if (callback != null)
-            job.onResult(out -> callback.onTaskResult(out.getOut(), out.getErr()));
+            job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
         job.enqueue();
     }
 
     @Override
     public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-        newJob(in).to(new Shell.Output(outList, errList)).exec();
+        newJob(in).to(outList, errList).exec();
         return null;
     }
 
     @Override
     public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
-        Job job = newJob(in).to(new Shell.Output(outList, errList));
+        Job job = newJob(in).to(outList, errList);
         if (callback != null)
-            job.onResult(out -> callback.onTaskResult(out.getOut(), out.getErr()));
+            job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
         job.enqueue();
     }
 }

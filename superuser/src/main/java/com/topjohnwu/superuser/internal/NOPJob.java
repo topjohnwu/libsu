@@ -18,12 +18,19 @@ package com.topjohnwu.superuser.internal;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.util.List;
+
 public class NOPJob extends Shell.Job {
 
     private Shell.ResultCallback cb;
 
     @Override
-    public Shell.Job to(Shell.Output out) {
+    public Shell.Job to(List<String> stdout) {
+        return this;
+    }
+
+    @Override
+    public Shell.Job to(List<String> stdout, List<String> stderr) {
         return this;
     }
 
@@ -34,8 +41,8 @@ public class NOPJob extends Shell.Job {
     }
 
     @Override
-    public Shell.Output exec() {
-        return new Shell.Output(null, null);
+    public Shell.Result exec() {
+        return new ShellImpl.ResultImpl();
     }
 
     @Override
