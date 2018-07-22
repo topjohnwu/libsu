@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -228,17 +229,18 @@ class ShellImpl extends Shell {
 
         private JobImpl(OutputGobblingTask t) {
             task = t;
-            cb = null;
             redirect = false;
         }
 
         @Override
         public Result exec() {
             InternalUtils.log(TAG, "exec");
+            if (out instanceof NOPList)
+                out = new ArrayList<>();
             ResultImpl result = new ResultImpl();
             result.out = out;
             result.err = redirect ? out : err;
-            task.setRes(result);
+            task.res = result;
             try {
                 execTask(task);
             } catch (IOException e) {
@@ -253,6 +255,8 @@ class ShellImpl extends Shell {
         @Override
         public void enqueue() {
             InternalUtils.log(TAG, "enqueue");
+            if (out instanceof NOPList && cb == null)
+                out = null;
             AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
                 Result result = exec();
                 if (cb != null)
@@ -300,10 +304,6 @@ class ShellImpl extends Shell {
             } catch (InterruptedException e) {
                 InternalUtils.stackTrace(e);
             }
-        }
-
-        private void setRes(Result result) {
-            res = result;
         }
 
         protected abstract void handleInput(OutputStream in) throws IOException;

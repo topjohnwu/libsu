@@ -24,6 +24,7 @@ import android.support.annotation.Nullable;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.NOPJob;
+import com.topjohnwu.superuser.internal.NOPList;
 import com.topjohnwu.superuser.internal.ShellCompat;
 
 import java.io.Closeable;
@@ -32,7 +33,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -362,11 +362,11 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * ***********************/
 
     private static Job newJob(Shell shell, String... commands) {
-        return shell.newJob(commands).to(new ArrayList<>());
+        return shell.newJob(commands).to(NOPList.getInstance());
     }
 
     private static Job newJob(Shell shell, InputStream in) {
-        return shell.newJob(in).to(new ArrayList<>());
+        return shell.newJob(in).to(NOPList.getInstance());
     }
 
     private static void initShell(Shell shell) {
