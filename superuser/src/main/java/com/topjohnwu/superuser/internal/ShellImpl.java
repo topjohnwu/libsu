@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -204,14 +205,16 @@ class ShellImpl extends Shell {
         private List<String> err;
         private int code;
 
+        @NonNull
         @Override
         public List<String> getOut() {
-            return out;
+            return out == null ? Collections.emptyList() : out;
         }
 
+        @NonNull
         @Override
         public List<String> getErr() {
-            return err;
+            return err == null ? Collections.emptyList() : out;
         }
 
         @Override

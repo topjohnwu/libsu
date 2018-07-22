@@ -457,8 +457,10 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
     public abstract static class Result {
 
+        @NonNull
         public abstract List<String> getOut();
 
+        @NonNull
         public abstract List<String> getErr();
 
         public abstract int getCode();
