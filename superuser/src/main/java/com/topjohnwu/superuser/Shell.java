@@ -25,6 +25,7 @@ import android.support.annotation.Nullable;
 import com.topjohnwu.superuser.internal.DeprecatedApiShim;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
+import com.topjohnwu.superuser.internal.NOPJob;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -404,6 +406,77 @@ public abstract class Shell implements Closeable {
         }
     }
 
+    /* ************
+     * Static APIs
+     * ************/
+
+    public static Job su(String... commands) {
+        Shell shell = getShell();
+        if (shell.isRoot())
+            return sh(commands);
+        return new NOPJob();
+    }
+
+    public static Job sh(String... commands) {
+        return newJob(getShell(), commands);
+    }
+
+    public static Job su(InputStream in) {
+        Shell shell = getShell();
+        if (shell.isRoot())
+            return sh(in);
+        return new NOPJob();
+    }
+
+    public static Job sh(InputStream in) {
+        return newJob(getShell(), in);
+    }
+
+    /* **********************
+     * Private helper methods
+     * ***********************/
+
+    private static Job newJob(Shell shell, String... commands) {
+        return shell.newJob(commands).to(new Output(new ArrayList<>()));
+    }
+
+    private static Job newJob(Shell shell, InputStream in) {
+        return shell.newJob(in).to(new Output(new ArrayList<>()));
+    }
+
+    private static void initShell(Shell shell) {
+        Initializer init = null;
+        if (initClass != null) {
+            try {
+                // Force enabling the default constructor as it might be private
+                Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
+                ic.setAccessible(true);
+                init = ic.newInstance();
+            } catch (Exception e) {
+                InternalUtils.stackTrace(e);
+            }
+        } else if (initializer != null) {
+            init = initializer;
+        }
+        if (init == null)
+            init = new Initializer();
+        if (!init.init(shell))
+            throw new NoShellException();
+    }
+
+    private static Shell getGlobalShell() {
+        Shell shell = null;
+        Container container = weakContainer.get();
+
+        if (container != null)
+            shell = container.getShell();
+
+        if (shell != null && !shell.isAlive())
+            shell = null;
+
+        return shell;
+    }
+
     /* ***************
      * Non-static APIs
      * ****************/
@@ -439,43 +512,6 @@ public abstract class Shell implements Closeable {
      */
     public boolean isRoot() {
         return status >= ROOT_SHELL;
-    }
-
-    /* **********************
-    * Private helper methods
-    * ***********************/
-
-    private static void initShell(Shell shell) {
-        Initializer init = null;
-        if (initClass != null) {
-            try {
-                // Force enabling the default constructor as it might be private
-                Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
-                ic.setAccessible(true);
-                init = ic.newInstance();
-            } catch (Exception e) {
-                InternalUtils.stackTrace(e);
-            }
-        } else if (initializer != null) {
-            init = initializer;
-        }
-        if (init == null)
-            init = new Initializer();
-        if (!init.init(shell))
-            throw new NoShellException();
-    }
-
-    private static Shell getGlobalShell() {
-        Shell shell = null;
-        Container container = weakContainer.get();
-
-        if (container != null)
-            shell = container.getShell();
-
-        if (shell != null && !shell.isAlive())
-            shell = null;
-
-        return shell;
     }
 
     /* **********

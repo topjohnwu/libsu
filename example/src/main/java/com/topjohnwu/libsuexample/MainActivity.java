@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
     private TextView console;
     private EditText input;
     private ScrollView sv;
-    private List<String> consoleList;
+    private Shell.Output output;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
         sync_cmd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Shell.Sync.sh(consoleList, input.getText().toString());
+                Shell.sh(input.getText().toString()).to(output).exec();
                 input.setText("");
             }
         });
@@ -53,20 +53,14 @@ public class MainActivity extends Activity {
         async_cmd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Shell.Async.sh(consoleList, consoleList,
-                        new Shell.Async.Callback() {
+                Shell.sh(input.getText().toString())
+                        .to(output)
+                        .onResult(new Shell.ResultCallback() {
                             @Override
-                            public void onTaskResult(List<String> out, List<String> err) {
-                                Log.d(ExampleApp.TAG, "in_async_callback");
+                            public void onResult(Shell.Output out) {
+                                Log.d(ExampleApp.TAG, "async_cmd_result");
                             }
-
-                            @Override
-                            public void onTaskError(Throwable err) {
-                                Log.d(ExampleApp.TAG, "async_callback_error");
-                                err.printStackTrace();
-                            }
-                        },
-                        input.getText().toString());
+                        }).enqueue();
                 input.setText("");
             }
         });
@@ -87,7 +81,7 @@ public class MainActivity extends Activity {
         sync_script.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Shell.Sync.loadScript(consoleList, getResources().openRawResource(R.raw.info));
+                Shell.sh(getResources().openRawResource(R.raw.info)).to(output).exec();
             }
         });
 
@@ -95,23 +89,30 @@ public class MainActivity extends Activity {
         async_script.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Shell.Async.loadScript(consoleList, getResources().openRawResource(R.raw.count));
+                Shell.sh(getResources().openRawResource(R.raw.count))
+                        .to(output)
+                        .onResult(new Shell.ResultCallback() {
+                            @Override
+                            public void onResult(Shell.Output out) {
+                                Log.d(ExampleApp.TAG, "async_script_result");
+                            }
+                        }).enqueue();
                 }
         });
 
         clear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                consoleList.clear();
+                output.getOut().clear();
             }
         });
 
         /* Create a CallbackList to update the UI with Shell output
          * Here I demonstrate 2 ways to implement a CallbackList
          * Use either ContainerCallbackList or StringBuilderCallbackList
-         * Both implementation has the same result
+         * Both implementation will have the same result
          */
-        consoleList = new ContainerCallbackList(new ArrayList<String>());
+        output = new Shell.Output(new ContainerCallbackList(new ArrayList<String>()));
     }
 
     private class ContainerCallbackList extends CallbackList<String> {
