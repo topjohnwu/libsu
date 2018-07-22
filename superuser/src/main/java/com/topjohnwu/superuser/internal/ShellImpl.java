@@ -38,6 +38,8 @@ class ShellImpl extends Shell {
     private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
 
+    private int status;
+
     private final ReentrantLock lock;
     private final String token;
     private final Process process;
@@ -127,6 +129,9 @@ class ShellImpl extends Shell {
             status = ROOT_SHELL;
         } catch (IOException ignored) {}
 
+        if (status == ROOT_SHELL && cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
+            status = ROOT_MOUNT_MASTER;
+
         br.close();
     }
 
@@ -147,6 +152,11 @@ class ShellImpl extends Shell {
         STDERR.close0();
         STDOUT.close0();
         process.destroy();
+    }
+
+    @Override
+    public int getStatus() {
+        return status;
     }
 
     @Override

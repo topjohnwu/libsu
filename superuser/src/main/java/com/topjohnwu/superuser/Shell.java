@@ -136,11 +136,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * Constant value {@value}.
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
-
-    /**
-     * The status of the shell
-     */
-    protected int status;
     
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
@@ -270,9 +265,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
             // Try mount master
             try {
                 shell = Factory.createShell("su", "--mount-master");
-                if (shell.status == ROOT_SHELL)
-                    shell.status = ROOT_MOUNT_MASTER;
-                else
+                if (!shell.isRoot())
                     shell = null;
             } catch (IOException e) {
                 // Shell initialize failed
@@ -285,7 +278,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
             // Try normal root shell
             try {
                 shell = Factory.createShell("su");
-                if (shell.status != ROOT_SHELL)
+                if (!shell.isRoot())
                     shell = null;
             } catch (IOException e) {
                 // Shell initialize failed
@@ -435,15 +428,13 @@ public abstract class Shell extends ShellCompat implements Closeable {
      *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL}, or
      *         {@link #ROOT_MOUNT_MASTER}
      */
-    public int getStatus() {
-        return status;
-    }
+    public abstract int getStatus();
 
     /**
      * @return whether the shell is a root shell.
      */
     public boolean isRoot() {
-        return status >= ROOT_SHELL;
+        return getStatus() >= ROOT_SHELL;
     }
 
     /* **********
