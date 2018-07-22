@@ -20,7 +20,6 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.BufferedReader;
@@ -35,7 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-class ShellImpl extends Shell {
+class ShellImpl extends ShellCompat.Impl {
     private static final String TAG = "SHELLIMPL";
     private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
@@ -349,33 +348,5 @@ class ShellImpl extends Shell {
             in.write('\n');
             in.flush();
         }
-    }
-
-    @Override
-    public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
-        newJob(commands).to(outList, errList).exec();
-        return null;
-    }
-
-    @Override
-    public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
-        Job job = newJob(commands).to(outList, errList);
-        if (callback != null)
-            job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
-        job.enqueue();
-    }
-
-    @Override
-    public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-        newJob(in).to(outList, errList).exec();
-        return null;
-    }
-
-    @Override
-    public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
-        Job job = newJob(in).to(outList, errList);
-        if (callback != null)
-            job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
-        job.enqueue();
     }
 }
