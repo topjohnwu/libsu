@@ -294,7 +294,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
             } catch (IOException e) {
                 // Shell initialize failed
                 InternalUtils.stackTrace(e);
-                throw new NoShellException();
+                throw new NoShellException("Impossible to create a shell!");
             }
         }
 
@@ -319,7 +319,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
             return shell;
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
-            throw new NoShellException();
+            throw new NoShellException("Impossible to create a shell!");
         }
     }
 
@@ -386,7 +386,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
         if (init == null)
             init = new Initializer();
         if (!init.init(shell))
-            throw new NoShellException();
+            throw new NoShellException("Unable to init shell");
     }
 
     private static Shell getGlobalShell() {

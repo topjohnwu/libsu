@@ -23,7 +23,7 @@ package com.topjohnwu.superuser;
 
 public class NoShellException extends RuntimeException {
 
-    public NoShellException() {
-        super("Impossible to create a shell!");
+    NoShellException(String msg) {
+        super(msg);
     }
 }
