@@ -17,85 +17,58 @@
 package com.topjohnwu.superuser.internal;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-class StreamGobbler extends Thread {
+class StreamGobbler implements Callable<Integer> {
 
     private static final String TAG = "SHELLOUT";
-    private static final int PENDING = 0;
-    private static final int RUNNING = 1;
-    private static final int TERMINATE = 2;
 
-    private final InputStream in;
-    private String token;
-    private List<String> writer;
+    private final String token;
+    private final boolean returnCode;
 
-    private int status;
+    private InputStream in;
+    private List<String> list;
 
-    public StreamGobbler(InputStream in, String token) {
-        status = PENDING;
-        this.in = in;
+    StreamGobbler(String token, Boolean b) {
         this.token = token;
+        returnCode = b;
     }
 
-    synchronized void begin(List<String> out) {
-        if (!isAlive())
-            start();
-        status = RUNNING;
-        writer = out == null ? null : Collections.synchronizedList(out);
-        notifyAll();
-    }
-
-    synchronized void waitDone() throws InterruptedException {
-        while (status == RUNNING)
-            wait();
+    public Callable<Integer> set(InputStream in, List<String> list) {
+        this.in = in;
+        this.list = list == null ? null : Collections.synchronizedList(list);
+        return this;
     }
 
     private void output(String s) {
-        if (writer != null)
-            writer.add(s);
+        if (list != null)
+            list.add(s);
         InternalUtils.log(TAG, s);
     }
 
     @Override
-    public void run() {
-        while (true) {
-            try {
-                synchronized(this) {
-                    while (status != RUNNING) {
-                        if (status == TERMINATE) {
-                            notifyAll();
-                            return;
-                        }
-                        wait();
-                    }
+    public Integer call() throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            int end = line.lastIndexOf(token);
+            if (end >= 0) {
+                if (end > 0) {
+                    while (line.charAt(end - 1) == 0)
+                        --end;
+                    output(line.substring(0, end));
                 }
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    int end = line.lastIndexOf(token);
-                    if (end >= 0) {
-                        if (end > 0) {
-                            while (line.charAt(end - 1) == 0)
-                                --end;
-                            output(line.substring(0, end));
-                        }
-                        break;
-                    }
-                    output(line);
-                }
-                reader.close();
-                synchronized (this) {
-                    status = PENDING;
-                    notifyAll();
-                }
-            } catch (InterruptedException | IOException e) {
-                status = TERMINATE;
+                break;
             }
+            output(line);
         }
+        reader.close();
+        in = null;
+        list = null;
+        return 0;
     }
 }

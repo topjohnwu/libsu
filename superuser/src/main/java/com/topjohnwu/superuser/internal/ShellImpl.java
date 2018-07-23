@@ -32,12 +32,17 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 
 class ShellImpl extends ShellCompat.Impl {
     private static final String TAG = "SHELLIMPL";
     private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     private int status;
 
@@ -104,8 +109,8 @@ class ShellImpl extends ShellCompat.Impl {
 
         token = ShellUtils.genRandomAlphaNumString(32).toString();
         InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(STDOUT, token);
-        errGobbler = new StreamGobbler(STDERR, token);
+        outGobbler = new StreamGobbler(token, true);
+        errGobbler = new StreamGobbler(token, false);
 
         lock = new ReentrantLock();
         status = UNKNOWN;
@@ -147,8 +152,6 @@ class ShellImpl extends ShellCompat.Impl {
             return;
         InternalUtils.log(TAG, "close");
         status = UNINT;
-        outGobbler.interrupt();
-        errGobbler.interrupt();
         STDIN.close0();
         STDERR.close0();
         STDOUT.close0();
@@ -300,20 +303,26 @@ class ShellImpl extends ShellCompat.Impl {
 
     abstract class OutputGobblingTask implements Task {
 
-        private Result res;
+        private ResultImpl res;
 
         @Override
         public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
-            outGobbler.begin(res.getOut());
-            errGobbler.begin(res.getErr());
+            Future<Integer> outFuture = EXECUTOR.submit(outGobbler.set(stdout, res.out));
+            Future<Integer> errFuture = res.err == null ? null :
+                    EXECUTOR.submit(errGobbler.set(stderr, res.err));
             handleInput(stdin);
-            byte[] end = String.format("echo %s; echo %s >&2\n", token, token).getBytes("UTF-8");
+            byte[] end = String.format("echo %s\n", token).getBytes("UTF-8");
             stdin.write(end);
+            if (res.err != null) {
+                end = String.format("echo %s >&2\n", token).getBytes("UTF-8");
+                stdin.write(end);
+            }
             stdin.flush();
             try {
-                outGobbler.waitDone();
-                errGobbler.waitDone();
-            } catch (InterruptedException e) {
+                res.code = outFuture.get();
+                if (errFuture != null)
+                    errFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
                 InternalUtils.stackTrace(e);
             }
         }
