@@ -27,6 +27,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -146,6 +147,7 @@ class ShellImpl extends ShellCompat.Impl {
             return;
         InternalUtils.log(TAG, "close");
         status = UNINT;
+        SERIAL_EXECUTOR.shutdownNow();
         STDIN.close0();
         STDERR.close0();
         STDOUT.close0();
@@ -216,11 +218,11 @@ class ShellImpl extends ShellCompat.Impl {
             }
             stdin.flush();
             try {
-                res.code = outFuture.get();
                 if (errFuture != null)
                     errFuture.get();
-            } catch (InterruptedException | ExecutionException e) {
-                InternalUtils.stackTrace(e);
+                res.code = outFuture.get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
             }
         }
 
