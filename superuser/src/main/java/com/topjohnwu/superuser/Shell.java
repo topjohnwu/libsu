@@ -321,7 +321,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
             return shell;
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
-            throw new NoShellException("Impossible to create a shell!");
+            throw new NoShellException("Impossible to create a shell!", e);
         }
     }
 
