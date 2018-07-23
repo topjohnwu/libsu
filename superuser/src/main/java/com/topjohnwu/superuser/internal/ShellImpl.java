@@ -199,6 +199,14 @@ class ShellImpl extends ShellCompat.Impl {
         return new JobImpl(new InputStreamTask(in));
     }
 
+    OutputGobblingTask newOutputGobblingTask(String... cmds) {
+        return new CommandTask(cmds);
+    }
+
+    OutputGobblingTask newOutputGobblingTask(InputStream in) {
+        return new InputStreamTask(in);
+    }
+
     static class ResultImpl extends Result {
         private List<String> out;
         private List<String> err;
@@ -222,16 +230,18 @@ class ShellImpl extends ShellCompat.Impl {
         }
     }
 
-    private class JobImpl extends Job {
+    static class JobImpl extends Job {
 
-        private ResultCallback cb;
-        private OutputGobblingTask task;
         private List<String> out, err;
-        private boolean redirect;
+        private boolean redirect = false;
+
+        OutputGobblingTask task;
+        ResultCallback cb;
+
+        JobImpl() {}
 
         private JobImpl(OutputGobblingTask t) {
             task = t;
-            redirect = false;
         }
 
         @Override
@@ -244,7 +254,7 @@ class ShellImpl extends ShellCompat.Impl {
             result.err = redirect ? out : err;
             task.res = result;
             try {
-                execTask(task);
+                task.exec();
             } catch (IOException e) {
                 InternalUtils.stackTrace(e);
                 return null;
@@ -288,7 +298,7 @@ class ShellImpl extends ShellCompat.Impl {
         }
     }
 
-    private abstract class OutputGobblingTask implements Task {
+    abstract class OutputGobblingTask implements Task {
 
         private Result res;
 
@@ -306,6 +316,10 @@ class ShellImpl extends ShellCompat.Impl {
             } catch (InterruptedException e) {
                 InternalUtils.stackTrace(e);
             }
+        }
+
+        private void exec() throws IOException {
+            ShellImpl.this.execTask(this);
         }
 
         protected abstract void handleInput(OutputStream in) throws IOException;

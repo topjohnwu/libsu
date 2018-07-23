@@ -23,8 +23,6 @@ import android.support.annotation.Nullable;
 
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
-import com.topjohnwu.superuser.internal.NOPJob;
-import com.topjohnwu.superuser.internal.NOPList;
 import com.topjohnwu.superuser.internal.ShellCompat;
 
 import java.io.Closeable;
@@ -208,15 +206,13 @@ public abstract class Shell extends ShellCompat implements Closeable {
      */
     @NonNull
     public static Shell getShell() {
-        Shell shell = getGlobalShell();
-
+        Shell shell = getCachedShell();
         if (shell == null) {
             shell = newInstance();
             Container container = weakContainer.get();
             if (container != null)
                 container.setShell(shell);
         }
-
         return shell;
     }
 
@@ -227,7 +223,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * @param callback called when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
-        Shell shell = getGlobalShell();
+        Shell shell = getCachedShell();
         if (shell != null) {
             // If global shell exists, it runs synchronously
             callback.onShell(shell);
@@ -335,40 +331,26 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * ************/
 
     public static Job su(String... commands) {
-        Shell shell = getShell();
-        if (shell.isRoot())
-            return sh(commands);
-        return new NOPJob();
+        return Factory.createJob(true, commands);
     }
 
     public static Job sh(String... commands) {
-        return newJob(getShell(), commands);
+        return Factory.createJob(false, commands);
     }
 
     public static Job su(InputStream in) {
-        Shell shell = getShell();
-        if (shell.isRoot())
-            return sh(in);
-        return new NOPJob();
+        return Factory.createJob(true, in);
     }
 
     public static Job sh(InputStream in) {
-        return newJob(getShell(), in);
+        return Factory.createJob(false, in);
     }
 
     /* **********************
      * Private helper methods
      * ***********************/
 
-    private static Job newJob(Shell shell, String... commands) {
-        return shell.newJob(commands).to(NOPList.getInstance());
-    }
-
-    private static Job newJob(Shell shell, InputStream in) {
-        return shell.newJob(in).to(NOPList.getInstance());
-    }
-
-    private static Shell getGlobalShell() {
+    private static Shell getCachedShell() {
         Shell shell = null;
         Container container = weakContainer.get();
 

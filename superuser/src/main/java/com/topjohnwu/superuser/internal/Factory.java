@@ -19,6 +19,7 @@ package com.topjohnwu.superuser.internal;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 public final class Factory {
 
@@ -59,5 +60,13 @@ public final class Factory {
 
     public static ShellFile createShellFile(File file) {
         return new ShellFile(file);
+    }
+
+    public static PlaceHolderJob createJob(boolean su, InputStream in) {
+        return new PlaceHolderJob.IsPlaceHolderJob(su, in);
+    }
+
+    public static PlaceHolderJob createJob(boolean su, String... cmds) {
+        return new PlaceHolderJob.CmdPlaceHolderJob(su, cmds);
     }
 }
