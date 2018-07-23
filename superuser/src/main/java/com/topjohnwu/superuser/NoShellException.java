@@ -26,4 +26,8 @@ public class NoShellException extends RuntimeException {
     NoShellException(String msg) {
         super(msg);
     }
+
+    NoShellException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
