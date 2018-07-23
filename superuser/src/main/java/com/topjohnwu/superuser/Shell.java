@@ -425,6 +425,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
     public abstract static class Result {
 
+        public static final int JOB_NOT_EXECUTED = -1;
+
         @NonNull
         public abstract List<String> getOut();
 
@@ -432,6 +434,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
         public abstract List<String> getErr();
 
         public abstract int getCode();
+
+        public abstract boolean isSuccess();
     }
 
     public interface ResultCallback {

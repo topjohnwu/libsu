@@ -26,7 +26,7 @@ import java.util.List;
 class ResultImpl extends Shell.Result {
     List<String> out;
     List<String> err;
-    int code;
+    int code = JOB_NOT_EXECUTED;
 
     @NonNull
     @Override
@@ -43,5 +43,10 @@ class ResultImpl extends Shell.Result {
     @Override
     public int getCode() {
         return code;
+    }
+
+    @Override
+    public boolean isSuccess() {
+        return code == 0;
     }
 }

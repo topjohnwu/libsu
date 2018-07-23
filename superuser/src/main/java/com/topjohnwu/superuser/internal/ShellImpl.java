@@ -210,7 +210,7 @@ class ShellImpl extends ShellCompat.Impl {
             Future<Integer> errFuture = res.err == null ? null :
                     EXECUTOR.submit(errGobbler.set(stderr, res.err));
             handleInput(stdin);
-            byte[] end = String.format("echo %s\n", token).getBytes("UTF-8");
+            byte[] end = String.format("__RET=$?;echo %s;echo $__RET;__RET=\n", token).getBytes("UTF-8");
             stdin.write(end);
             if (res.err != null) {
                 end = String.format("echo %s >&2\n", token).getBytes("UTF-8");

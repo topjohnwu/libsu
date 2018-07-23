@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
                         .onResult(new Shell.ResultCallback() {
                             @Override
                             public void onResult(Shell.Result out) {
-                                Log.d(ExampleApp.TAG, "async_cmd_result");
+                                Log.d(ExampleApp.TAG, "async_cmd_result: " + out.getCode());
                             }
                         }).enqueue();
                 input.setText("");

@@ -66,9 +66,10 @@ class StreamGobbler implements Callable<Integer> {
             }
             output(line);
         }
+        int code = returnCode ? Integer.parseInt(reader.readLine()) : 0;
         reader.close();
         in = null;
         list = null;
-        return 0;
+        return code;
     }
 }

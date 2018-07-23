@@ -51,7 +51,7 @@ class JobImpl extends Shell.Job {
             task.exec();
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
-            return null;
+            return new ResultImpl();
         }
         if (redirect)
             result.err = null;
