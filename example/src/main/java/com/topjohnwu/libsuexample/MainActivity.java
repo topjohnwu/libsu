@@ -70,7 +70,9 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 try {
-                    Shell.getShell().close();
+                    Shell shell = Shell.getCachedShell();
+                    if (shell != null)
+                        shell.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

@@ -240,6 +240,20 @@ public abstract class Shell extends ShellCompat implements Closeable {
         }
     }
 
+    @Nullable
+    public static Shell getCachedShell() {
+        Shell shell = null;
+        Container container = weakContainer.get();
+
+        if (container != null)
+            shell = container.getShell();
+
+        if (shell != null && !shell.isAlive())
+            shell = null;
+
+        return shell;
+    }
+
     /**
      * Construct a new {@code Shell} instance with the default methods.
      * <p>
@@ -351,23 +365,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
     public static Job sh(InputStream in) {
         return Factory.createJob(false, in);
-    }
-
-    /* **********************
-     * Private helper methods
-     * ***********************/
-
-    private static Shell getCachedShell() {
-        Shell shell = null;
-        Container container = weakContainer.get();
-
-        if (container != null)
-            shell = container.getShell();
-
-        if (shell != null && !shell.isAlive())
-            shell = null;
-
-        return shell;
     }
 
     /* ***************
