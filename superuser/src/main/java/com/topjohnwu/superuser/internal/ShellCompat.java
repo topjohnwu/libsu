@@ -245,10 +245,9 @@ public abstract class ShellCompat {
 
         @Override
         public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
-            Job job = newJob(commands).to(outList, errList);
-            if (callback != null)
-                job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
-            job.enqueue();
+            newJob(commands).to(outList, errList)
+                    .submit(callback == null ? null :
+                            res -> callback.onTaskResult(res.getOut(), res.getErr()));
         }
 
         @Override
@@ -259,10 +258,9 @@ public abstract class ShellCompat {
 
         @Override
         public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
-            Job job = newJob(in).to(outList, errList);
-            if (callback != null)
-                job.onResult(res -> callback.onTaskResult(res.getOut(), res.getErr()));
-            job.enqueue();
+            newJob(in).to(outList, errList)
+                    .submit(callback == null ? null :
+                            res -> callback.onTaskResult(res.getOut(), res.getErr()));
         }
     }
 }

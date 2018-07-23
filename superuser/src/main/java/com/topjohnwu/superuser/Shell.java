@@ -68,7 +68,7 @@ import java.util.concurrent.Executors;
  * is a root shell. Be aware that {@code sh(...)} will still run in a root environment if the
  * global shell is a root shell.
  * <p>
- * When you run a {@link Job} in a background thread or calling {@link Job#enqueue()}, you can
+ * When you run a {@link Job} in a background thread or calling {@link Job#submit()}, you can
  * access the output reactively by using a more advanced callback with {@link CallbackList}:
  * {@link CallbackList#onAddElement(Object)} will be invoked on the main thread every time the shell
  * outputs a new line.
@@ -445,9 +445,9 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public abstract static class Job {
         public abstract Job to(List<String> stdout);
         public abstract Job to(List<String> stdout, List<String> stderr);
-        public abstract Job onResult(ResultCallback cb);
         public abstract Result exec();
-        public abstract void enqueue();
+        public abstract void submit();
+        public abstract void submit(ResultCallback cb);
     }
 
     /**

@@ -41,14 +41,14 @@ abstract class PlaceHolderJob extends JobImpl {
     }
 
     @Override
-    public void enqueue() {
+    public void submit(Shell.ResultCallback cb) {
         Shell.getShell(shell -> {
             if (isSU && !shell.isRoot() && cb != null) {
                 cb.onResult(new ResultImpl());
                 return;
             }
             setTask((ShellImpl) shell);
-            super.enqueue();
+            super.submit();
         });
     }
 

@@ -55,12 +55,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 Shell.sh(input.getText().toString())
                         .to(consoleList)
-                        .onResult(new Shell.ResultCallback() {
+                        .submit(new Shell.ResultCallback() {
                             @Override
                             public void onResult(Shell.Result out) {
                                 Log.d(ExampleApp.TAG, "async_cmd_result: " + out.getCode());
                             }
-                        }).enqueue();
+                        });
                 input.setText("");
             }
         });
@@ -91,12 +91,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 Shell.sh(getResources().openRawResource(R.raw.count))
                         .to(consoleList)
-                        .onResult(new Shell.ResultCallback() {
+                        .submit(new Shell.ResultCallback() {
                             @Override
                             public void onResult(Shell.Result out) {
                                 Log.d(ExampleApp.TAG, "async_script_result");
                             }
-                        }).enqueue();
+                        });
                 }
         });
 

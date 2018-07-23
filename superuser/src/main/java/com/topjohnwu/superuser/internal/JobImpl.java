@@ -30,7 +30,6 @@ class JobImpl extends Shell.Job {
     private boolean redirect = false;
 
     ShellImpl.OutputGobblingTask task;
-    Shell.ResultCallback cb;
 
     JobImpl() {}
 
@@ -59,8 +58,13 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public void enqueue() {
-        InternalUtils.log(TAG, "enqueue");
+    public void submit() {
+        submit(null);
+    }
+
+    @Override
+    public void submit(Shell.ResultCallback cb) {
+        InternalUtils.log(TAG, "submit");
         if (out instanceof NOPList && cb == null)
             out = null;
         task.getExecutor().execute(() -> {
@@ -85,9 +89,4 @@ class JobImpl extends Shell.Job {
         return this;
     }
 
-    @Override
-    public Shell.Job onResult(Shell.ResultCallback cb) {
-        this.cb = cb;
-        return this;
-    }
 }
