@@ -386,9 +386,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
      */
     public abstract void execTask(@NonNull Task task) throws IOException;
 
-    public abstract Job newJob(String... cmds);
-
-    public abstract Job newJob(InputStream in);
+    public abstract Job newJob();
 
     /**
      * Get the status of the shell.
@@ -445,6 +443,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public abstract static class Job {
         public abstract Job to(List<String> stdout);
         public abstract Job to(List<String> stdout, List<String> stderr);
+        public abstract Job add(InputStream in);
+        public abstract Job add(String... cmds);
         public abstract Result exec();
         public abstract void submit();
         public abstract void submit(ResultCallback cb);

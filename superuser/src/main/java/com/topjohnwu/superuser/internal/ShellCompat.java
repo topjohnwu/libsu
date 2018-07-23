@@ -239,26 +239,26 @@ public abstract class ShellCompat {
     abstract static class Impl extends Shell {
         @Override
         public Throwable run(List<String> outList, List<String> errList, @NonNull String... commands) {
-            newJob(commands).to(outList, errList).exec();
+            newJob().add(commands).to(outList, errList).exec();
             return null;
         }
 
         @Override
         public void run(List<String> outList, List<String> errList, Async.Callback callback, @NonNull String... commands) {
-            newJob(commands).to(outList, errList)
+            newJob().add(commands).to(outList, errList)
                     .submit(callback == null ? null :
                             res -> callback.onTaskResult(res.getOut(), res.getErr()));
         }
 
         @Override
         public Throwable loadInputStream(List<String> outList, List<String> errList, @NonNull InputStream in) {
-            newJob(in).to(outList, errList).exec();
+            newJob().add(in).to(outList, errList).exec();
             return null;
         }
 
         @Override
         public void loadInputStream(List<String> outList, List<String> errList, Async.Callback callback, @NonNull InputStream in) {
-            newJob(in).to(outList, errList)
+            newJob().add(in).to(outList, errList)
                     .submit(callback == null ? null :
                             res -> callback.onTaskResult(res.getOut(), res.getErr()));
         }

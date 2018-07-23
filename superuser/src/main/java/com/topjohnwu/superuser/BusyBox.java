@@ -111,9 +111,9 @@ public final class BusyBox {
     static boolean init(Shell shell) {
         if (BB_PATH != null) {
             if (isInternalBusyBox && BB_PATH.listFiles().length != APPLET_NUM + 1) {
-                shell.newJob(BB_PATH + "/busybox --install -s " + BB_PATH).exec();
+                shell.newJob().add(BB_PATH + "/busybox --install -s " + BB_PATH).exec();
             }
-            shell.newJob("export PATH=" + BB_PATH + ":$PATH").exec();
+            shell.newJob().add("export PATH=" + BB_PATH + ":$PATH").exec();
             return true;
         }
         return false;

@@ -99,7 +99,7 @@ public final class ShellUtils {
      */
     @Nullable
     public static String fastCmd(Shell shell, String... cmds) {
-        List<String> out = shell.newJob(cmds).to(new ArrayList<>(), null).exec().getOut();
+        List<String> out = shell.newJob().add(cmds).to(new ArrayList<>(), null).exec().getOut();
         return isValidOutput(out) ? out.get(out.size() - 1) : "";
     }
 
@@ -119,7 +119,7 @@ public final class ShellUtils {
      * @return {@code true} if the commands succeed.
      */
     public static boolean fastCmdResult(Shell shell, String... cmds) {
-        return shell.newJob(cmds).exec().isSuccess();
+        return shell.newJob().add(cmds).exec().isSuccess();
     }
 
     /**

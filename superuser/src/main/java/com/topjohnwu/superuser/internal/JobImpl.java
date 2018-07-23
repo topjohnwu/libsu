@@ -19,7 +19,9 @@ package com.topjohnwu.superuser.internal;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 class JobImpl extends Shell.Job {
@@ -27,14 +29,18 @@ class JobImpl extends Shell.Job {
     private static final String TAG = "JOBIMPL";
 
     private List<String> out, err;
+    private List<InputHandler> handlers;
     private boolean redirect = false;
 
     ShellImpl.OutputGobblingTask task;
 
-    JobImpl() {}
+    JobImpl() {
+        handlers = new LinkedList<>();
+    }
 
-    JobImpl(ShellImpl.OutputGobblingTask t) {
-        task = t;
+    JobImpl(ShellImpl.OutputGobblingTask task) {
+        this();
+        this.task = task;
     }
 
     @Override
@@ -47,7 +53,7 @@ class JobImpl extends Shell.Job {
         result.err = redirect ? out : err;
         task.setResult(result);
         try {
-            task.exec();
+            task.exec(handlers);
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
             return new ResultImpl();
@@ -86,6 +92,18 @@ class JobImpl extends Shell.Job {
         out = stdout;
         err = stderr;
         redirect = false;
+        return this;
+    }
+
+    @Override
+    public Shell.Job add(InputStream in) {
+        handlers.add(InputHandler.newInstance(in));
+        return this;
+    }
+
+    @Override
+    public Shell.Job add(String... cmds) {
+        handlers.add(InputHandler.newInstance(cmds));
         return this;
     }
 

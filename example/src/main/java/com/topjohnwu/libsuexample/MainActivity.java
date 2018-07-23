@@ -91,12 +91,7 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 Shell.sh(getResources().openRawResource(R.raw.count))
                         .to(consoleList)
-                        .submit(new Shell.ResultCallback() {
-                            @Override
-                            public void onResult(Shell.Result out) {
-                                Log.d(ExampleApp.TAG, "async_script_result");
-                            }
-                        });
+                        .submit();
                 }
         });
 

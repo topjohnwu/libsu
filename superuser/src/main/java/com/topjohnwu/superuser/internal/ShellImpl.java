@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -183,33 +184,26 @@ class ShellImpl extends ShellCompat.Impl {
     }
 
     @Override
-    public Job newJob(String... cmds) {
-        return new JobImpl(new CommandTask(cmds));
+    public Job newJob() {
+        return new JobImpl(new OutputGobblingTask());
     }
 
-    @Override
-    public Job newJob(InputStream in) {
-        return new JobImpl(new InputStreamTask(in));
+    OutputGobblingTask newOutputGobblingTask() {
+        return new OutputGobblingTask();
     }
 
-    OutputGobblingTask newOutputGobblingTask(String... cmds) {
-        return new CommandTask(cmds);
-    }
-
-    OutputGobblingTask newOutputGobblingTask(InputStream in) {
-        return new InputStreamTask(in);
-    }
-
-    abstract class OutputGobblingTask implements Task {
+    class OutputGobblingTask implements Task {
 
         private ResultImpl res;
+        private List<InputHandler> handlers;
 
         @Override
         public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
             Future<Integer> outFuture = EXECUTOR.submit(outGobbler.set(stdout, res.out));
             Future<Integer> errFuture = res.err == null ? null :
                     EXECUTOR.submit(errGobbler.set(stderr, res.err));
-            handleInput(stdin);
+            for (InputHandler handler : handlers)
+                handler.handleInput(stdin);
             byte[] end = String.format("__RET=$?;echo %s;echo $__RET;__RET=\n", token).getBytes("UTF-8");
             stdin.write(end);
             if (res.err != null) {
@@ -226,7 +220,8 @@ class ShellImpl extends ShellCompat.Impl {
             }
         }
 
-        void exec() throws IOException {
+        void exec(List<InputHandler> handlers) throws IOException {
+            this.handlers = handlers;
             ShellImpl.this.execTask(this);
         }
 
@@ -236,47 +231,6 @@ class ShellImpl extends ShellCompat.Impl {
 
         void setResult(ResultImpl res) {
             this.res = res;
-        }
-
-        protected abstract void handleInput(OutputStream in) throws IOException;
-    }
-
-    private class CommandTask extends OutputGobblingTask {
-
-        private String commands[];
-
-        private CommandTask(String... cmds) {
-            commands = cmds;
-        }
-
-        @Override
-        protected void handleInput(OutputStream in) throws IOException {
-            InternalUtils.log(TAG, "CommandTask");
-            for (String command : commands) {
-                in.write(command.getBytes("UTF-8"));
-                in.write('\n');
-                in.flush();
-                InternalUtils.log(INTAG, command);
-            }
-        }
-    }
-
-    private class InputStreamTask extends OutputGobblingTask {
-
-        private InputStream is;
-
-        private InputStreamTask(InputStream in) {
-            is = in;
-        }
-
-        @Override
-        protected void handleInput(OutputStream in) throws IOException {
-            InternalUtils.log(TAG, "InputStreamTask");
-            ShellUtils.pump(is, in);
-            is.close();
-            // Make sure it flushes the shell
-            in.write('\n');
-            in.flush();
         }
     }
 }
