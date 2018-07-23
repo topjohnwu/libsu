@@ -24,6 +24,7 @@ import android.support.annotation.Nullable;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.ShellCompat;
+import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -225,11 +226,14 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public static void getShell(@NonNull GetShellCallback callback) {
         Shell shell = getCachedShell();
         if (shell != null) {
-            // If global shell exists, it runs synchronously
+            // If cached shell exists, run synchronously
             callback.onShell(shell);
         } else {
             // Else we add it to the queue and call the callback when we get a Shell
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> callback.onShell(getShell()));
+            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+                Shell s = getShell();
+                UiThreadHandler.run(() -> callback.onShell(s));
+            });
         }
     }
 
