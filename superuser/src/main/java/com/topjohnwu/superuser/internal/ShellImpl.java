@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
@@ -29,20 +28,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.ReentrantLock;
 
 class ShellImpl extends ShellCompat.Impl {
     private static final String TAG = "SHELLIMPL";
     private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
-    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     private int status;
 
@@ -53,6 +47,7 @@ class ShellImpl extends ShellCompat.Impl {
     private final NoCloseInputStream STDERR;
     private final StreamGobbler outGobbler;
     private final StreamGobbler errGobbler;
+    private final ExecutorService SERIAL_EXECUTOR;
 
     private static class NoCloseInputStream extends FilterInputStream {
 
@@ -106,11 +101,6 @@ class ShellImpl extends ShellCompat.Impl {
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
 
-        token = ShellUtils.genRandomAlphaNumString(32).toString();
-        InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(token, true);
-        errGobbler = new StreamGobbler(token, false);
-
         status = UNKNOWN;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
@@ -137,6 +127,12 @@ class ShellImpl extends ShellCompat.Impl {
             status = ROOT_MOUNT_MASTER;
 
         br.close();
+
+        token = ShellUtils.genRandomAlphaNumString(32).toString();
+        InternalUtils.log(TAG, "token: " + token);
+        outGobbler = new StreamGobbler(token, true);
+        errGobbler = new StreamGobbler(token, false);
+        SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -202,97 +198,6 @@ class ShellImpl extends ShellCompat.Impl {
         return new InputStreamTask(in);
     }
 
-    static class ResultImpl extends Result {
-        private List<String> out;
-        private List<String> err;
-        private int code;
-
-        @NonNull
-        @Override
-        public List<String> getOut() {
-            return out == null ? Collections.emptyList() : out;
-        }
-
-        @NonNull
-        @Override
-        public List<String> getErr() {
-            return err == null ? Collections.emptyList() : out;
-        }
-
-        @Override
-        public int getCode() {
-            return code;
-        }
-    }
-
-    static class JobImpl extends Job {
-
-        private List<String> out, err;
-        private boolean redirect = false;
-
-        OutputGobblingTask task;
-        ResultCallback cb;
-
-        JobImpl() {}
-
-        private JobImpl(OutputGobblingTask t) {
-            task = t;
-        }
-
-        @Override
-        public Result exec() {
-            InternalUtils.log(TAG, "exec");
-            if (out instanceof NOPList)
-                out = new ArrayList<>();
-            ResultImpl result = new ResultImpl();
-            result.out = out;
-            result.err = redirect ? out : err;
-            task.res = result;
-            try {
-                task.exec();
-            } catch (IOException e) {
-                InternalUtils.stackTrace(e);
-                return null;
-            }
-            if (redirect)
-                result.err = null;
-            return result;
-        }
-
-        @Override
-        public void enqueue() {
-            InternalUtils.log(TAG, "enqueue");
-            if (out instanceof NOPList && cb == null)
-                out = null;
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
-                Result result = exec();
-                if (cb != null)
-                    UiThreadHandler.run(() -> cb.onResult(result));
-            });
-        }
-
-        @Override
-        public Job to(List<String> stdout) {
-            out = stdout;
-            redirect = InternalUtils.hasFlag(FLAG_REDIRECT_STDERR);
-            return this;
-        }
-
-        @Override
-        public Job to(List<String> stdout, List<String> stderr) {
-            out = stdout;
-            err = stderr;
-            redirect = false;
-            return this;
-        }
-
-        @Override
-        public Job onResult(ResultCallback cb) {
-            this.cb = cb;
-            return this;
-        }
-    }
-
     abstract class OutputGobblingTask implements Task {
 
         private ResultImpl res;
@@ -319,8 +224,16 @@ class ShellImpl extends ShellCompat.Impl {
             }
         }
 
-        private void exec() throws IOException {
+        void exec() throws IOException {
             ShellImpl.this.execTask(this);
+        }
+
+        ExecutorService getExecutor() {
+            return ShellImpl.this.SERIAL_EXECUTOR;
+        }
+
+        void setResult(ResultImpl res) {
+            this.res = res;
         }
 
         protected abstract void handleInput(OutputStream in) throws IOException;

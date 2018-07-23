@@ -17,7 +17,6 @@
 package com.topjohnwu.superuser;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -33,6 +32,8 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A class providing an API to an interactive (root) shell.
@@ -135,6 +136,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * Constant value {@value}.
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
+
+    public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
     
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
@@ -229,8 +232,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
             // If cached shell exists, run synchronously
             callback.onShell(shell);
         } else {
-            // Else we add it to the queue and call the callback when we get a Shell
-            AsyncTask.THREAD_POOL_EXECUTOR.execute(() -> {
+            // Else we get shell in worker thread and call the callback when we get a Shell
+            EXECUTOR.execute(() -> {
                 Shell s = getShell();
                 UiThreadHandler.run(() -> callback.onShell(s));
             });

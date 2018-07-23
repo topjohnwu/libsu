@@ -20,7 +20,7 @@ import com.topjohnwu.superuser.Shell;
 
 import java.io.InputStream;
 
-abstract class PlaceHolderJob extends ShellImpl.JobImpl {
+abstract class PlaceHolderJob extends JobImpl {
 
     private boolean isSU;
 
@@ -35,7 +35,7 @@ abstract class PlaceHolderJob extends ShellImpl.JobImpl {
     public Shell.Result exec() {
         ShellImpl shell = (ShellImpl) Shell.getShell();
         if (isSU && !shell.isRoot())
-            return new ShellImpl.ResultImpl();
+            return new ResultImpl();
         setTask(shell);
         return super.exec();
     }
@@ -44,7 +44,7 @@ abstract class PlaceHolderJob extends ShellImpl.JobImpl {
     public void enqueue() {
         Shell.getShell(shell -> {
             if (isSU && !shell.isRoot() && cb != null) {
-                cb.onResult(new ShellImpl.ResultImpl());
+                cb.onResult(new ResultImpl());
                 return;
             }
             setTask((ShellImpl) shell);
