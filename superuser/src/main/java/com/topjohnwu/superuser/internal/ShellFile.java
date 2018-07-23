@@ -71,7 +71,7 @@ public class ShellFile extends File {
     }
 
     private boolean cmdBoolean(String c) {
-        return Boolean.parseBoolean(cmd(c + " >/dev/null 2>&1 && echo true || echo false"));
+        return ShellUtils.fastCmdResult(genCmd(c));
     }
 
     private static class Attributes {
@@ -280,9 +280,9 @@ public class ShellFile extends File {
 
     @Override
     public String[] list() {
-        List<String> out = Shell.Sync.su(genCmd("ls \"$FILE\""));
-        if (!ShellUtils.isValidOutput(out))
+        if (!isDirectory())
             return null;
+        List<String> out = Shell.su(genCmd("ls \"$FILE\"")).exec().getOut();
         return out.toArray(new String[0]);
     }
 
@@ -303,6 +303,8 @@ public class ShellFile extends File {
 
     @Override
     public ShellFile[] listFiles() {
+        if (!isDirectory())
+            return null;
         String[] ss = list();
         if (ss == null) return null;
         int n = ss.length;
@@ -315,6 +317,8 @@ public class ShellFile extends File {
 
     @Override
     public ShellFile[] listFiles(FilenameFilter filter) {
+        if (!isDirectory())
+            return null;
         String[] ss = list(filter);
         if (ss == null) return null;
         int n = ss.length;

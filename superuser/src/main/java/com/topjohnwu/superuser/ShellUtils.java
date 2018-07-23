@@ -84,7 +84,7 @@ public final class ShellUtils {
     /**
      * Run commands with the global shell and get a single line output.
      * @param cmds the commands.
-     * @return the last line of the output of the command, {@code null} if no output is available.
+     * @return the last line of the output of the command, empty string if no output is available.
      */
     @Nullable
     public static String fastCmd(String... cmds) {
@@ -95,34 +95,31 @@ public final class ShellUtils {
      * Run commands and get a single line output.
      * @param shell a shell instance.
      * @param cmds the commands.
-     * @return the last line of the output of the command, {@code null} if no output is available.
+     * @return the last line of the output of the command, empty string if no output is available.
      */
     @Nullable
     public static String fastCmd(Shell shell, String... cmds) {
-        List<String> out = shell.newJob(cmds)
-                .to(new ArrayList<>(), null)
-                .exec()
-                .getOut();
-        return isValidOutput(out) ? out.get(out.size() - 1) : null;
+        List<String> out = shell.newJob(cmds).to(new ArrayList<>(), null).exec().getOut();
+        return isValidOutput(out) ? out.get(out.size() - 1) : "";
     }
 
     /**
-     * Run a single line command with the global shell and return whether the command returns 0 (success).
-     * @param cmd the single line command.
-     * @return {@code true} if the command succeed.
+     * Run commands with the global shell and return whether returns 0 (success).
+     * @param cmds the commands.
+     * @return {@code true} if the commands succeed.
      */
-    public static boolean fastCmdResult(String cmd) {
-        return fastCmdResult(Shell.getShell(), cmd);
+    public static boolean fastCmdResult(String... cmds) {
+        return fastCmdResult(Shell.getShell(), cmds);
     }
 
     /**
-     * Run a single line command and return whether the command returns 0 (success).
+     * Run commands and return whether returns 0 (success).
      * @param shell a shell instance.
-     * @param cmd the single line command.
-     * @return {@code true} if the command succeed.
+     * @param cmds the commands.
+     * @return {@code true} if the commands succeed.
      */
-    public static boolean fastCmdResult(Shell shell, String cmd) {
-        return Boolean.parseBoolean(fastCmd(shell, cmd + " >/dev/null 2>&1 && echo true || echo false"));
+    public static boolean fastCmdResult(Shell shell, String... cmds) {
+        return shell.newJob(cmds).exec().isSuccess();
     }
 
     /**
@@ -157,10 +154,10 @@ public final class ShellUtils {
             MessageDigest digest = MessageDigest.getInstance(alg);
             pump(in, new DigestOutputStream(new OutputStream() {
                 @Override
-                public void write(int b) throws IOException {}
+                public void write(int b) {}
 
                 @Override
-                public void write(@NonNull byte[] b, int off, int len) throws IOException {}
+                public void write(@NonNull byte[] b, int off, int len) {}
             }, digest));
             byte[] chksum = digest.digest();
             StringBuilder sb = new StringBuilder();
