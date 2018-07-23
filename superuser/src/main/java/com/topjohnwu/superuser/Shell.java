@@ -277,7 +277,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
         // Try normal non-root shell
         if (shell == null)
-            shell = newInstance("su");
+            shell = newInstance("sh");
 
         return shell;
     }
