@@ -46,7 +46,6 @@ class ShellImpl extends ShellCompat.Impl {
 
     private int status;
 
-    private final ReentrantLock lock;
     private final String token;
     private final Process process;
     private final NoCloseOutputStream STDIN;
@@ -112,7 +111,6 @@ class ShellImpl extends ShellCompat.Impl {
         outGobbler = new StreamGobbler(token, true);
         errGobbler = new StreamGobbler(token, false);
 
-        lock = new ReentrantLock();
         status = UNKNOWN;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
@@ -179,17 +177,11 @@ class ShellImpl extends ShellCompat.Impl {
     }
 
     @Override
-    public void execTask(@NonNull Task task) throws IOException {
-        lock.lock();
+    public synchronized void execTask(@NonNull Task task) throws IOException {
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
-        try {
-            if (!isAlive())
-                return;
+        if (isAlive())
             task.run(STDIN, STDOUT, STDERR);
-        } finally {
-            lock.unlock();
-        }
     }
 
     @Override
