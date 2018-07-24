@@ -18,7 +18,6 @@ package com.topjohnwu.superuser;
 
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import java.io.EOFException;
@@ -86,7 +85,7 @@ public final class ShellUtils {
      * @param cmds the commands.
      * @return the last line of the output of the command, empty string if no output is available.
      */
-    @Nullable
+    @NonNull
     public static String fastCmd(String... cmds) {
         return fastCmd(Shell.getShell(), cmds);
     }
@@ -97,7 +96,7 @@ public final class ShellUtils {
      * @param cmds the commands.
      * @return the last line of the output of the command, empty string if no output is available.
      */
-    @Nullable
+    @NonNull
     public static String fastCmd(Shell shell, String... cmds) {
         List<String> out = shell.newJob().add(cmds).to(new ArrayList<>(), null).exec().getOut();
         return isValidOutput(out) ? out.get(out.size() - 1) : "";

@@ -38,19 +38,18 @@ import java.nio.file.Path;
  * <p>
  * Without root access in the global shell, this class is simply just a wrapper around {@link File}.
  * However, when root is available, all methods will be backed by commands executing via the
- * global root shell.
+ * global root shell. The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
  * <p>
  * This class has the exact same behavior as a normal {@link File}, however non of the operations
  * are atomic if backed with shell commands. This is a limitation of using shells, be aware of it.
  * <p>
- * The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
- * The methods of this class require: {@code rm}, {@code rmdir}, {@code readlink}, {@code mv},
- * {@code ls}, {@code mkdir}, {@code touch}, or optionally for better support,
- * {@code blockdev} and {@code stat}.
- * All required tools are available on modern Android versions (tested on Lollipop+),
- * older versions might need to install {@code busybox} to make things work properly.
- * Some operations could have oddities without busybox due to the very limited tools available,
- * check the method descriptions for more info before using it.
+ * For full functionality, the environment require: {@code rm}, {@code rmdir}, {@code readlink},
+ * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, {@code stat}. For some methods,
+ * {@code blockdev} could be utilized for additional functionality.
+ * These tools are available on modern Android versions with toolbox, however for optimal results
+ * installing {@code busybox}, especially the one bundled with libsu {@link com.topjohnwu.superuser.BusyBox}
+ * would be desirable. Some operations could have oddities without busybox due to the lack of tools
+ * or inconsistency of the tools, check the method descriptions for more info before using it.
  * @see com.topjohnwu.superuser.BusyBox
  */
 public class SuFile extends File {
@@ -219,7 +218,7 @@ public class SuFile extends File {
      * Returns the length of the file denoted by this abstract pathname.
      * <p>
      * Note: If there is no {@code blockdev} and {@code stat} in {@code PATH}, the file size is
-     * the value reported from {@code ls -ld}, which will not correctly report the size of block files.
+     * the value reported from {@code wc -c}, which will be extremely slow.
      * @return the size in bytes of the underlying file.
      * @see File#length()
      */
@@ -299,8 +298,8 @@ public class SuFile extends File {
      * <p>
      * Note: On older Android devices, the {@code touch} commands accepts a different timestamp
      * format than GNU {@code touch}. This shell implementation uses the format accepted in GNU
-     * coreutils, which is the same in more recent Android versions and busybox, so the operation
-     * might fail on older Android versions.
+     * coreutils, which is the same in toolbox and busybox, so the operation
+     * might fail on older Android versions without busybox.
      * @param time The new last-modified time, measured in milliseconds since the epoch.
      * @return {@code true} if and only if the operation succeeded; {@code false} otherwise.
      */

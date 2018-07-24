@@ -24,8 +24,8 @@ import com.topjohnwu.superuser.ShellUtils;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -35,7 +35,7 @@ import java.util.Locale;
 public class ShellFile extends File {
 
     private static int shellHash = -1;
-    private static boolean stat, blockdev;
+    private static boolean stat, blockdev, wc;
 
     ShellFile(@NonNull File file) {
         super(file.getAbsolutePath());
@@ -45,6 +45,7 @@ public class ShellFile extends File {
             // Check tools
             stat = ShellUtils.fastCmdResult(shell, "command -v stat");
             blockdev = ShellUtils.fastCmdResult(shell, "command -v blockdev");
+            wc = ShellUtils.fastCmdResult(shell, "command -v wc");
         }
     }
 
@@ -56,69 +57,31 @@ public class ShellFile extends File {
         this(new File(parent, child));
     }
 
-    private String[] genCmd(String cmd) {
-        String setup;
-        if (cmd.contains("$CFILE")) {
-            setup = String.format("FILE='%s';CFILE=\"`readlink -f \"$FILE\"`\"", getAbsolutePath());
-        } else {
-            setup = String.format("FILE='%s'", getAbsolutePath());
+    private String[] genCmd(String... cmds) {
+        boolean needCfile = false;
+        for (String cmd : cmds) {
+            if (cmd.contains("$CFILE")) {
+                needCfile = true;
+                break;
+            }
         }
-        return new String[] { setup, cmd, "FILE=;CFILE=" };
+        String newCmd[] = new String[cmds.length + 2];
+        if (needCfile) {
+            newCmd[0] = String.format("FILE='%s';CFILE=\"`readlink -f \"$FILE\"`\"", getAbsolutePath());
+        } else {
+            newCmd[0] = String.format("FILE='%s'", getAbsolutePath());
+        }
+        System.arraycopy(cmds, 0, newCmd, 1, cmds.length);
+        newCmd[newCmd.length - 1] = "FILE=;CFILE=";
+        return newCmd;
     }
 
-    private String cmd(String c) {
-        return ShellUtils.fastCmd(genCmd(c));
+    private String cmd(String... cmds) {
+        return ShellUtils.fastCmd(genCmd(cmds));
     }
 
     private boolean cmdBoolean(String c) {
         return ShellUtils.fastCmdResult(genCmd(c));
-    }
-
-    private static class Attributes {
-        char[] perms = new char[3];
-        String owner = "";
-        String group = "";
-        long size = 0L;
-        long time = 0L;
-
-        @Override
-        public String toString() {
-            return String.format(Locale.US,
-                    "%s %s.%s %d %d", new String(perms), owner, group, size, time);
-        }
-    }
-
-
-    private Attributes getAttributes() {
-        String lsInfo = cmd("ls -ld \"$CFILE\"");
-        Attributes a = new Attributes();
-        if (lsInfo == null)
-            return a;
-        String[] toks = lsInfo.split("\\s+");
-        int idx = 0;
-        for (int i = 0; i < 9; i += 3) {
-            int perm = 0;
-            if (toks[idx].charAt(i + 1) != '-')
-                perm |= 0x4;
-            if (toks[idx].charAt(i + 2) != '-')
-                perm |= 0x2;
-            if (toks[idx].charAt(i + 3) != '-')
-                perm |= 0x1;
-            a.perms[i / 3] = (char) (perm + '0');
-        }
-        ++idx;
-        // There might be links info, we don't want it
-        if (toks.length > 7)
-            ++idx;
-        a.owner = toks[idx++];
-        a.group = toks[idx++];
-        a.size = Long.parseLong(toks[idx++]);
-        try {
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
-            a.time = df.parse(toks[idx++] + " " + toks[idx++]).getTime();
-        } catch (ParseException ignored) {}
-
-        return a;
     }
 
     @Override
@@ -138,7 +101,11 @@ public class ShellFile extends File {
 
     @Override
     public boolean createNewFile() {
-        return cmdBoolean("[ ! -e \"$FILE\" ] && touch \"$FILE\"");
+        boolean origImpl = false;
+        try {
+            origImpl = super.createNewFile();
+        } catch (IOException ignored) { }
+        return origImpl || cmdBoolean("[ ! -e \"$FILE\" ] && touch \"$FILE\"");
     }
 
     @Override
@@ -172,7 +139,7 @@ public class ShellFile extends File {
     @Override
     public String getCanonicalPath() {
         String path = cmd("echo \"$CFILE\"");
-        return path == null ? getAbsolutePath() : path;
+        return path.isEmpty() ? getAbsolutePath() : path;
     }
 
     @NonNull
@@ -186,19 +153,28 @@ public class ShellFile extends File {
         return new ShellFile(getParent());
     }
 
+    private long statFS(String fmt) {
+        if (!stat)
+            return Long.MAX_VALUE;
+        String res[] = cmd("stat -fc '%S " + fmt + "' \"$FILE\"").split(" ");
+        if (res.length != 2)
+            return Long.MAX_VALUE;
+        return Long.parseLong(res[0]) * Long.parseLong(res[1]);
+    }
+
     @Override
     public long getFreeSpace() {
-        return Long.MAX_VALUE;
+        return statFS("%f");
     }
 
     @Override
     public long getTotalSpace() {
-        return Long.MAX_VALUE;
+        return statFS("%b");
     }
 
     @Override
     public long getUsableSpace() {
-        return Long.MAX_VALUE;
+        return statFS("%a");
     }
 
     @Override
@@ -213,14 +189,35 @@ public class ShellFile extends File {
 
     @Override
     public long lastModified() {
-        return getAttributes().time;
+        try {
+            if (!stat)
+                return 0L;
+            return Long.parseLong(cmd("stat -Lc '%Y' \"$FILE\"")) * 1000;
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     @Override
     public long length() {
-        return (blockdev && stat ? Long.parseLong(
-                cmd("[ -b \"$FILE\" ] && blockdev --getsize64 \"$FILE\" || stat -c '%s' \"$CFILE\""))
-                : getAttributes().size);
+        try {
+            if (stat) {
+                // Support block size
+                if (blockdev) {
+                    return Long.parseLong(cmd("[ -b \"$FILE\" ] && " +
+                            "blockdev --getsize64 \"$FILE\" || " +
+                            "stat -Lc '%s' \"$FILE\""));
+                } else {
+                    return Long.parseLong(cmd("stat -Lc '%s' \"$FILE\""));
+                }
+            } else if (wc) {
+                return Long.parseLong(cmd("[ -f \"$FILE\" ] && wc -c < \"$FILE\" || echo 0"));
+            } else {
+                return 0L;
+            }
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     @Override
@@ -239,16 +236,18 @@ public class ShellFile extends File {
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
-        Attributes a = getAttributes();
-        for (int i = 0; i < a.perms.length; ++i) {
-            int perm = a.perms[i] - '0';
+        if (!stat)
+            return false;
+        char perms[] = cmd("stat -Lc '%a' \"$FILE\"").toCharArray();
+        for (int i = 0; i < perms.length; ++i) {
+            int perm = perms[i] - '0';
             if (set && (!ownerOnly || i == 0))
                 perm |= b;
             else
                 perm &= ~(b);
-            a.perms[i] = (char) (perm + '0');
+            perms[i] = (char) (perm + '0');
         }
-        return cmdBoolean("chmod " + new String(a.perms) + " \"$CFILE\"");
+        return cmdBoolean("chmod " + new String(perms) + " \"$CFILE\"");
     }
 
     @Override
