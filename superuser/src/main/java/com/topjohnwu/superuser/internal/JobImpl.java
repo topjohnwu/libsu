@@ -105,7 +105,8 @@ class JobImpl extends Shell.Job {
 
     @Override
     public Shell.Job add(String... cmds) {
-        handlers.add(InputHandler.newInstance(cmds));
+        if (cmds.length > 0)
+            handlers.add(InputHandler.newInstance(cmds));
         return this;
     }
 
