@@ -42,11 +42,7 @@ import java.util.concurrent.Executors;
  * the static {@code sh(...)}/{@code su(...)} high level APIs using the global {@code Shell} instance;
  * and the lower level API instance methods interacting with the invoking {@code Shell} instance.
  * <p>
- * A {@code Shell} instance consists of a Unix shell process along with 2 additional threads to
- * gobble through STDOUT and STDERR. The process itself and the 2 worker threads are always running
- * in the background as long as the {@code Shell} instance exists unless an error occurs.
- * <p>
- * Tp share shells means the {@code Shell} instance would need a container.
+ * Sharing shells means that the {@code Shell} instance would need to be stored somewhere.
  * Generally, most developers would want to have the {@code Shell} instance shared globally
  * across the application. In that case, the developer can directly subclass the the readily
  * available {@link ShellContainerApp}, or assign {@code com.topjohnwu.superuser.ShellContainerApp}
@@ -55,18 +51,10 @@ import java.util.concurrent.Executors;
  * want to store the {@code Shell} instance somewhere else, check the documentation of
  * {@link Container} for more info. If no {@link Container} is registered, every shell related methods
  * (including {@link #rootAccess()}) will respawn a new shell process, which is very inefficient.
- * The {@code Shell} class stores a {@link WeakReference} of the registered container
- * so the container could be garbage collected to prevent memory leak if you decide to
- * store {@code Shell} in places like {@link android.app.Activity}.
- * <p>
  * Once a global {@link Container} is registered, use {@link #getShell()} (synchronously) or
  * {@link #getShell(GetShellCallback)} (asynchronously) to get the global {@code Shell} instance.
  * However in most cases, developers do not need a {@code Shell} instance; instead call
  * {@code sh(...)}/{@code su(...)} as they use the global shell and provides a higher level API.
- * One thing worth mentioning: {@code sh(...)} and {@code su(...)} behaves exactly the same, the
- * only difference is that {@code su(...)} will only run if the underlying {@code Shell}
- * is a root shell. Be aware that {@code sh(...)} will still run in a root environment if the
- * global shell is a root shell.
  * <p>
  * When you run a {@link Job} in a background thread or calling {@link Job#submit()}, you can
  * access the output reactively by using a more advanced callback with {@link CallbackList}:
@@ -132,11 +120,14 @@ public abstract class Shell extends ShellCompat implements Closeable {
      *     <li>{@link #su(InputStream)}</li>
      *     <li>{@link Job#to(List)}</li>
      * </ul>
+     * Check the descriptions of each method above for more details.
      * <p>
      * Constant value {@value}.
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
-
+    /**
+     * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
+     */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
     
     private static int flags = 0;
@@ -152,6 +143,10 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * <p>
      * Future shell commands using static method APIs will automatically obtain a {@code Shell}
      * from the container with {@link #getShell()} or {@link #getShell(GetShellCallback)}.
+     * <p>
+     * A {@link WeakReference} of the registered container would be saved statically
+     * so the container could be garbage collected to prevent memory leak if you decide to
+     * store {@code Shell} in places like {@link android.app.Activity}.
      * @param container the container to store the global {@code Shell} instance.
      */
     public static void setContainer(@Nullable Container container) {
@@ -169,11 +164,11 @@ public abstract class Shell extends ShellCompat implements Closeable {
     }
 
     /**
-     * Set special flags that controls how {@code Shell} works and how a new {@code Shell} will be
+     * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
      * constructed.
      * @param flags the desired flags.
-     *              Value is either 0 or a combination of {@link #FLAG_NON_ROOT_SHELL},
-     *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER},
+     *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
+     *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
      *              {@link #FLAG_REDIRECT_STDERR}
      */
     public static void setFlags(int flags) {
@@ -181,7 +176,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
     }
 
     /**
-     * Get special flags that controls how {@code Shell} works and how a new {@code Shell} will be
+     * Get the flags that controls how {@code Shell} works and how a new {@code Shell} will be
      * constructed.
      * @return the flags
      */
@@ -202,9 +197,9 @@ public abstract class Shell extends ShellCompat implements Closeable {
     }
 
     /**
-     * Get a {@code Shell} instance from the global container.
-     * If the global container is not set, or the container has not contained any {@code Shell} yet,
-     * it will call {@link #newInstance()} to construct a new {@code Shell}.
+     * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
+     * If {@link #getCachedShell()} returns null, it will call {@link #newInstance()} to construct
+     * a new {@code Shell}.
      * @see #newInstance()
      * @return a {@code Shell} instance
      */
@@ -221,9 +216,10 @@ public abstract class Shell extends ShellCompat implements Closeable {
     }
 
     /**
-     * Get a {@code Shell} instance from the global container and call a callback.
-     * When the global container is set and contains a shell, the callback will be called immediately,
-     * or else it will queue a new asynchronous task to call {@link #newInstance()} and the callback.
+     * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
+     * If {@link #getCachedShell()} does not return null, the callback will be called immediately,
+     * or else it will call {@link #newInstance()} in a background thread and invoke the callback
+     * in the main thread.
      * @param callback called when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
@@ -240,6 +236,12 @@ public abstract class Shell extends ShellCompat implements Closeable {
         }
     }
 
+    /**
+     * Get a {@code Shell} instance from the global container, return {@code null} if no active
+     * shell is stored in the container or no container is assigned.
+     * @return a {@code Shell} instance, {@code null} if no active shell is stored in the container
+     * or no container is assigned.
+     */
     @Nullable
     public static Shell getCachedShell() {
         Shell shell = null;
@@ -265,7 +267,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
      *     It may fail if the root implementation does not support mount master.</li>
      *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
      *     {@code su}. It may fail if the device is not rooted, or root permission is not granted.</li>
-     *     <li>Construct a Unix shell by calling {@code sh}. This would not fail in normal
+     *     <li>Construct a Unix shell by calling {@code sh}. This would never fail in normal
      *     conditions, but should it fails, it will throw {@link NoShellException}</li>
      * </ol>
      * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
@@ -351,19 +353,53 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * Static APIs
      * ************/
 
+    /**
+     * Equivalent to {@link #sh(String...)} with root access check.
+     */
     public static Job su(String... commands) {
         return Factory.createJob(true, commands);
     }
 
+    /**
+     * Create a {@link Job} with commands.
+     * <p>
+     * By default a new {@link List} will be created internally
+     * to store the output after executing {@link Job#exec()} or {@link Job#submit(Shell.ResultCallback)}.
+     * You can get the internally created {@link List} via {@link Result#getOut()} after
+     * the job is done. Output of STDERR will be stored in the same list along
+     * with STDOUT if the flag {@link #FLAG_REDIRECT_STDERR} is set; {@link Result#getErr()}
+     * will always return an empty list.
+     * <p>
+     * Note: the behavior mentioned above <strong>DOES NOT</strong> apply if the developer manually
+     * override output destination with either {@link Job#to(List)} or {@link Job#to(List, List)}.
+     * <p>
+     * {@code Shell} will not be requested until the developer invokes either {@link Job#exec()},
+     * {@link Job#submit()}, or {@link Job#submit(Shell.ResultCallback)}. It is possible to construct
+     * complex {@link Job} before the program will request any root access.
+     * <p>
+     * If the developer plan to simply construct a job and add operations with
+     * {@code Job.add(InputStream/String...))} afterwards, call this method with no arguments.
+     * @param commands the commands to run within the {@link Job}.
+     * @return a job that the developer can execute or submit later.
+     */
     public static Job sh(String... commands) {
         return Factory.createJob(false, commands);
     }
 
-    public static Job su(InputStream in) {
+    /**
+     * Equivalent to {@link #sh(InputStream)} with root access check.
+     */
+    public static Job su(@NonNull InputStream in) {
         return Factory.createJob(true, in);
     }
 
-    public static Job sh(InputStream in) {
+    /**
+     * Create a {@link Job} with an {@link InputStream}.
+     * Check {@link #sh(String...)} for details.
+     * @param in the data in this {@link InputStream} will be served to {@code STDIN}.
+     * @return a job that the developer can execute or submit later.
+     */
+    public static Job sh(@NonNull InputStream in) {
         return Factory.createJob(false, in);
     }
 
@@ -378,11 +414,26 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public abstract boolean isAlive();
 
     /**
-     * Execute a {@code Task} with the shell.
+     * Execute a {@code Task} with the shell. USE THIS METHOD WITH CAUTION!
+     * <p>
+     * This method exposes raw STDIN/STDOUT/STDERR directly to the task. This is meant for
+     * implementing low-level operations. Operation may stall if the buffer of STDOUT/STDERR
+     * is full, so it is recommended to use separate threads to read STDOUT/STDERR if you expect
+     * large outputs.
+     * <p>
+     * STDOUT/STDERR is cleared before executing the task. No output from any previous tasks should
+     * be left over. It is the developer's responsibility to make sure all operations are done:
+     * the shell should be in idle and waiting for further input to be sent to STDIN when the task
+     * returns.
      * @param task the desired task.
+     * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
      */
     public abstract void execTask(@NonNull Task task) throws IOException;
 
+    /**
+     * Construct a new {@link Job} that will use the shell.
+     * @return a job that the developer can execute or submit later.
+     */
     public abstract Job newJob();
 
     /**
@@ -394,7 +445,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public abstract int getStatus();
 
     /**
-     * @return whether the shell is a root shell.
+     * Return whether the shell has root access.
+     * @return {@code true} if the shell has root access.
      */
     public boolean isRoot() {
         return getStatus() >= ROOT_SHELL;
@@ -410,40 +462,127 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public interface Task {
         /**
          * This method will be called when a task is executed by a shell.
+         * {@link Closeable#close()} on all streams is NOP, it is safe to close them.
          * @param stdin the STDIN of the shell.
          * @param stdout the STDOUT of the shell.
          * @param stderr the STDERR of the shell.
-         * @throws IOException I/O errors when doing operations on stdin/out/err
+         * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
          */
         void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException;
     }
 
+    /**
+     * The result of a {@link Job}.
+     */
     public abstract static class Result {
 
+        /**
+         * This code indicates that the job was not executed, and the outputs are all empty.
+         * Constant value: {@value}.
+         */
         public static final int JOB_NOT_EXECUTED = -1;
 
+        /**
+         * Get the output of STDOUT.
+         * @return a list of strings that stores the output of STDOUT. Empty list if no output
+         * is available.
+         */
         @NonNull
         public abstract List<String> getOut();
 
+        /**
+         * Get the output of STDERR.
+         * @return a list of strings that stores the output of STDERR. Empty list if no output
+         * is available.
+         */
         @NonNull
         public abstract List<String> getErr();
 
+        /**
+         * Get the return code of the job.
+         * @return the return code of the last operation in the shell. If the job is executed
+         * properly, the code should range from 0-255. If the job fails to execute, it will return
+         * {@link #JOB_NOT_EXECUTED}.
+         */
         public abstract int getCode();
 
+        /**
+         * Whether the job succeeded.
+         * {@code getCode() == 0}.
+         * @return {@code true} if the return code is 0.
+         */
         public abstract boolean isSuccess();
     }
 
+    /**
+     * The callback to receive a result in {@link Job#submit(Shell.ResultCallback)}.
+     */
     public interface ResultCallback {
+
+        /**
+         * @param out the result of the job.
+         */
         void onResult(Result out);
     }
 
+    /**
+     * Represents a Job that could later be executed or submitted to background thread.
+     * <p>
+     * All operations added in {@link #add(String...)} and {@link #add(InputStream)} will be
+     * executed in the order of addition.
+     */
     public abstract static class Job {
-        public abstract Job to(List<String> stdout);
-        public abstract Job to(List<String> stdout, List<String> stderr);
-        public abstract Job add(InputStream in);
+
+        /**
+         * Store output to a specific list.
+         * <p>
+         * Output of STDERR will be also be stored in the same {@link List} if the flag
+         * {@link #FLAG_REDIRECT_STDERR} is set; {@link Result#getErr()}
+         * will always return an empty list.
+         * @param output the list to store outputs. Pass {@code null} to omit all outputs.
+         * @return this Job object for chaining of calls.
+         */
+        public abstract Job to(@Nullable List<String> output);
+
+        /**
+         * Store output of STDOUT and STDERR to specific lists.
+         * @param stdout the list to store STDOUT. Pass {@code null} to omit STDOUT.
+         * @param stderr the list to store STDERR. Pass {@code null} to omit STDERR.
+         * @return this Job object for chaining of calls.
+         */
+        public abstract Job to(@Nullable List<String> stdout, @Nullable List<String> stderr);
+
+        /**
+         * Add a new operation running commands.
+         * @param cmds the commands to run.
+         * @return this Job object for chaining of calls.
+         */
         public abstract Job add(String... cmds);
+
+        /**
+         * Add a new operation serving an InputStream to STDIN.
+         * @param in the InputStream to serve to STDIN.
+         * @return this Job object for chaining of calls.
+         */
+        public abstract Job add(@NonNull InputStream in);
+
+        /**
+         * Execute the job immediately and returns the result.
+         * @return the result of the job.
+         */
         public abstract Result exec();
+
+        /**
+         * Submit the job to an internal queue to run in the background.
+         * The result will be omitted.
+         */
         public abstract void submit();
+
+        /**
+         * Submit the job to an internal queue to run in the background.
+         * The result will be returned to the callback, running in the main thread.
+         * @param cb the callback to receive the result of the job.
+         */
         public abstract void submit(ResultCallback cb);
     }
 
@@ -489,10 +628,11 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
         /**
          * Called when a new shell is constructed.
-         * Do NOT call the super method; the default implementation is only for backwards compatibility.
+         * Do <strong>NOT</strong> call the super method when implementing the override method!
+         * The default implementation is only for backwards compatibility.
          * @param context the application context.
          * @param shell the newly constructed shell.
-         * @return {@code false} when the initialization fails, otherwise {@code true}
+         * @return {@code false} when initialization fails, otherwise {@code true}
          */
         public boolean onInit(Context context, @NonNull Shell shell) {
             return super.onInit(context, shell);

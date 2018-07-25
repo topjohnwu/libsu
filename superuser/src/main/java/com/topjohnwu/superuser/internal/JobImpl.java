@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.support.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
@@ -81,8 +83,8 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public Shell.Job to(List<String> stdout) {
-        out = stdout;
+    public Shell.Job to(List<String> output) {
+        out = output;
         redirect = InternalUtils.hasFlag(Shell.FLAG_REDIRECT_STDERR);
         return this;
     }
@@ -96,7 +98,7 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public Shell.Job add(InputStream in) {
+    public Shell.Job add(@NonNull InputStream in) {
         handlers.add(InputHandler.newInstance(in));
         return this;
     }

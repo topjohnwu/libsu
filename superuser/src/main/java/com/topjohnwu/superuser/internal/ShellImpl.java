@@ -37,7 +37,6 @@ import java.util.concurrent.Future;
 
 class ShellImpl extends ShellCompat.Impl {
     private static final String TAG = "SHELLIMPL";
-    private static final String INTAG = "SHELL_IN";
     private static final int UNINT = -2;
 
     private int status;

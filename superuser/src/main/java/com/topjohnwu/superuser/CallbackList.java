@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * An {@code AbstractList} that calls {@code onAddElement} when a new element is added to the list.
+ * An {@link AbstractList} that calls {@code onAddElement} when a new element is added to the list.
  * <p>
  * To simplify the API of {@link Shell}, both STDOUT and STDERR will output to
  * {@link List}. This class is useful if you want to trigger a callback

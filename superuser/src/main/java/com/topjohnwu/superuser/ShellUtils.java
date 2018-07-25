@@ -40,7 +40,7 @@ import java.util.List;
  * However, since these are meant to be used internally, they are not stable APIs.
  * I would change them without too much consideration if needed. Also, these methods are not well
  * tested for public usage, many might not handle some edge cases correctly.
- * <heavy>You have been warned!!</heavy>
+ * <strong>You have been warned!!</strong>
  */
 public final class ShellUtils {
 
