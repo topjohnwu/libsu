@@ -29,7 +29,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 
 public class ShellFile extends File {
@@ -279,25 +281,25 @@ public class ShellFile extends File {
 
     @Override
     public String[] list() {
-        if (!isDirectory())
-            return null;
-        List<String> out = Shell.su(genCmd("ls \"$FILE\"")).exec().getOut();
-        return out.toArray(new String[0]);
+        return list(null);
     }
 
     @Override
     public String[] list(FilenameFilter filter) {
-        String names[] = list();
-        if ((names == null) || (filter == null)) {
-            return names;
+        if (!isDirectory())
+            return null;
+        FilenameFilter defFilter = (file, name) -> name.equals(".") || name.equals("..");
+        List<String> out = Shell.su(genCmd("ls -a \"$FILE\"")).to(new LinkedList<>(), null)
+                .exec().getOut();
+        String name;
+        for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
+            name = it.next();
+            if (filter != null && !filter.accept(this, name))
+                it.remove();
+            if (defFilter.accept(this, name))
+                it.remove();
         }
-        List<String> v = new ArrayList<>();
-        for (String name : names) {
-            if (filter.accept(this, name)) {
-                v.add(name);
-            }
-        }
-        return v.toArray(new String[v.size()]);
+        return out.toArray(new String[0]);
     }
 
     @Override
