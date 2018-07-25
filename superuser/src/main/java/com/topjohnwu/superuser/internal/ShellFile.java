@@ -67,14 +67,13 @@ public class ShellFile extends File {
                 break;
             }
         }
-        String newCmd[] = new String[cmds.length + 2];
+        String newCmd[] = new String[cmds.length + 1];
         if (needCfile) {
             newCmd[0] = String.format("FILE='%s';CFILE=\"`readlink -f \"$FILE\"`\"", getAbsolutePath());
         } else {
             newCmd[0] = String.format("FILE='%s'", getAbsolutePath());
         }
         System.arraycopy(cmds, 0, newCmd, 1, cmds.length);
-        newCmd[newCmd.length - 1] = "FILE=;CFILE=";
         return newCmd;
     }
 
