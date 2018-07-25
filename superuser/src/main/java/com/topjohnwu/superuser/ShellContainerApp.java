@@ -33,7 +33,7 @@ public class ShellContainerApp extends Application implements Shell.Container {
      * Set the {@code ShellContainerApp} as the global container as soon as it is constructed.
      */
     public ShellContainerApp() {
-        Shell.setContainer(this);
+        Shell.Config.setContainer(this);
     }
 
     @Nullable

@@ -33,7 +33,7 @@ public final class InternalUtils {
     }
 
     public static boolean hasFlag(int flags) {
-        return hasFlag(Shell.getFlags(), flags);
+        return hasFlag(Shell.Config.getFlags(), flags);
     }
 
     public static boolean hasFlag(int base, int flags) {

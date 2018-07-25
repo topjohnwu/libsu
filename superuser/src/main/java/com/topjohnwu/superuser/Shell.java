@@ -38,28 +38,24 @@ import java.util.concurrent.Executors;
 /**
  * A class providing an API to an interactive (root) shell.
  * <p>
- * This class can be put into 3 categories: the static utility/configuration functions;
- * the static {@code sh(...)}/{@code su(...)} high level APIs using the global {@code Shell} instance;
- * and the lower level API instance methods interacting with the invoking {@code Shell} instance.
- * <p>
  * Sharing shells means that the {@code Shell} instance would need to be stored somewhere.
  * Generally, most developers would want to have the {@code Shell} instance shared globally
- * across the application. In that case, the developer can directly subclass the the readily
- * available {@link ShellContainerApp}, or assign {@code com.topjohnwu.superuser.ShellContainerApp}
- * in {@code <application>} of {@code Manifest.xml}, and the setup is all done.
- * If it is impossible to subclass {@link ShellContainerApp}, or for some reason one would
- * want to store the {@code Shell} instance somewhere else, check the documentation of
- * {@link Container} for more info. If no {@link Container} is registered, every shell related methods
- * (including {@link #rootAccess()}) will respawn a new shell process, which is very inefficient.
- * Once a global {@link Container} is registered, use {@link #getShell()} (synchronously) or
- * {@link #getShell(GetShellCallback)} (asynchronously) to get the global {@code Shell} instance.
- * However in most cases, developers do not need a {@code Shell} instance; instead call
- * {@code sh(...)}/{@code su(...)} as they use the global shell and provides a higher level API.
+ * across the application. In that case, the developer can directly use or subclass the the readily
+ * available {@link ShellContainerApp} and the setup is all done. If you already overridden the
+ * {@link android.app.Application} class, and it is impossible to change the base class,
+ * or for some reason one would want to store the {@code Shell} instance somewhere else, check the
+ * documentation of {@link Container} for more info. Once a global {@link Container} is registered,
+ * use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get the global {@code Shell}.
  * <p>
- * When you run a {@link Job} in a background thread or calling {@link Job#submit()}, you can
- * access the output reactively by using a more advanced callback with {@link CallbackList}:
- * {@link CallbackList#onAddElement(Object)} will be invoked on the main thread every time the shell
- * outputs a new line.
+ * However in most cases, developers do not need to deal with a {@code Shell} instance.
+ * Use these high level APIs:
+ * <ul>
+ *     <li>{@link #sh(String...)}</li>
+ *     <li>{@link #su(String...)}</li>
+ *     <li>{@link #sh(InputStream)}</li>
+ *     <li>{@link #su(InputStream)}</li>
+ * </ul>
+ * These methods will use the global shell and are more convenient for normal usage.
  * <p>
  * Developers can check the example that came along with the library, it demonstrates many features
  * the library has to offer.
@@ -133,68 +129,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
     private static Class<? extends Initializer> initClass = null;
-
-    /* **************************************
-    * Static utility / configuration methods
-    * ***************************************/
-
-    /**
-     * Set the container to store the global {@code Shell} instance.
-     * <p>
-     * Future shell commands using static method APIs will automatically obtain a {@code Shell}
-     * from the container with {@link #getShell()} or {@link #getShell(GetShellCallback)}.
-     * <p>
-     * A {@link WeakReference} of the registered container would be saved statically
-     * so the container could be garbage collected to prevent memory leak if you decide to
-     * store {@code Shell} in places like {@link android.app.Activity}.
-     * @param container the container to store the global {@code Shell} instance.
-     */
-    public static void setContainer(@Nullable Container container) {
-        weakContainer = new WeakReference<>(container);
-    }
-
-    /**
-     * Set a desired {@code Initializer}.
-     * @see Initializer
-     * @param init the class of the desired initializer.
-     *             <strong>If it is a nested class, it MUST be a static nested class!!</strong>
-     */
-    public static void setInitializer(@NonNull Class<? extends Initializer> init) {
-        initClass = init;
-    }
-
-    /**
-     * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
-     * constructed.
-     * @param flags the desired flags.
-     *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
-     *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
-     *              {@link #FLAG_REDIRECT_STDERR}
-     */
-    public static void setFlags(int flags) {
-        Shell.flags = flags;
-    }
-
-    /**
-     * Get the flags that controls how {@code Shell} works and how a new {@code Shell} will be
-     * constructed.
-     * @return the flags
-     */
-    public static int getFlags() {
-        return flags;
-    }
-
-    /**
-     * Set whether enable verbose logging.
-     * <p>
-     * This is just a handy function to toggle verbose logging with a boolean value.
-     * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
-     * @param verbose if true, add {@link #FLAG_VERBOSE_LOGGING} to flags.
-     */
-    public static void verboseLogging(boolean verbose) {
-        if (verbose)
-            flags |= FLAG_VERBOSE_LOGGING;
-    }
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
@@ -273,8 +207,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
      * since it may return the result of any of the 3 possible methods.
      * @return a new {@code Shell} instance.
-     * @throws NoShellException impossible to construct {@code Shell} instance, or initialization
-     * failed when using the {@link Initializer} set in {@link #setInitializer(Class)}.
+     * @throws NoShellException impossible to construct a {@link Shell} instance, or initialization
+     * failed when using the configured {@link Initializer}.
      */
     @NonNull
     public static Shell newInstance() {
@@ -310,8 +244,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
      *                 a new {@link Process}.
      * @return a new {@code Shell} instance.
-     * @throws NoShellException the provided command cannot create a {@code Shell} instance, or
-     * initialization failed when using the {@link Initializer} set in {@link #setInitializer(Class)}.
+     * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
+     * initialization failed when using the configured {@link Initializer}.
      */
     @NonNull
     public static Shell newInstance(String... commands) {
@@ -457,6 +391,72 @@ public abstract class Shell extends ShellCompat implements Closeable {
     * ***********/
 
     /**
+     * Static methods for configuring the behavior of {@link Shell}.
+     */
+    public static final class Config {
+
+        private Config() {}
+
+        /**
+         * Set the container to store the global {@code Shell} instance.
+         * <p>
+         * Future shell commands using static method APIs will automatically obtain a {@code Shell}
+         * from the container with {@link #getShell()} or {@link #getShell(GetShellCallback)}.
+         * <p>
+         * A {@link WeakReference} of the registered container would be saved statically
+         * so the container could be garbage collected to prevent memory leak if you decide to
+         * store {@code Shell} in places like {@link android.app.Activity}.
+         * @param container the container to store the global {@code Shell} instance.
+         */
+        public static void setContainer(@Nullable Container container) {
+            weakContainer = new WeakReference<>(container);
+        }
+
+        /**
+         * Set a desired {@code Initializer}.
+         * @see Initializer
+         * @param init the class of the desired initializer.
+         *             <strong>If it is a nested class, it MUST be a static nested class!!</strong>
+         */
+        public static void setInitializer(@NonNull Class<? extends Initializer> init) {
+            initClass = init;
+        }
+
+        /**
+         * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
+         * constructed.
+         * @param flags the desired flags.
+         *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
+         *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
+         *              {@link #FLAG_REDIRECT_STDERR}
+         */
+        public static void setFlags(int flags) {
+            Shell.flags = flags;
+        }
+
+        /**
+         * Get the flags that controls how {@code Shell} works and how a new {@code Shell} will be
+         * constructed.
+         * @return the flags
+         */
+        public static int getFlags() {
+            return flags;
+        }
+
+        /**
+         * Set whether enable verbose logging.
+         * <p>
+         * This is just a handy function to toggle verbose logging with a boolean value.
+         * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
+         * @param verbose if true, add {@link #FLAG_VERBOSE_LOGGING} to flags.
+         */
+        public static void verboseLogging(boolean verbose) {
+            if (verbose)
+                flags |= FLAG_VERBOSE_LOGGING;
+        }
+    }
+
+    /**
      * A task that can be executed by a shell with the method {@link #execTask(Task)}.
      */
     public interface Task {
@@ -591,7 +591,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * <p>
      * Create a volatile field for storing the {@code Shell} instance, implement {@link #getShell()}
      * and {@link #setShell(Shell)} to expose the new field, and don't forget to register yourself
-     * in the constructor by calling {@link #setContainer(Container)} with {@code this}.
+     * in the constructor by calling {@link Config#setContainer(Container)} with {@code this}.
      */
     public interface Container {
         /**
@@ -611,7 +611,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
      * is constructed, subclass this class, add your own implementation, and register it with
-     * {@link #setInitializer(Class)}.
+     * {@link Config#setInitializer(Class)}.
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
@@ -628,11 +628,11 @@ public abstract class Shell extends ShellCompat implements Closeable {
 
         /**
          * Called when a new shell is constructed.
-         * Do <strong>NOT</strong> call the super method when implementing the override method!
+         * Do <strong>NOT</strong> call the super method when overriding this method!
          * The default implementation is only for backwards compatibility.
          * @param context the application context.
          * @param shell the newly constructed shell.
-         * @return {@code false} when initialization fails, otherwise {@code true}
+         * @return {@code false} when initialization fails, otherwise {@code true}.
          */
         public boolean onInit(Context context, @NonNull Shell shell) {
             return super.onInit(context, shell);

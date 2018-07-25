@@ -35,6 +35,31 @@ public abstract class ShellCompat {
     protected static Shell.Initializer initializer = null;
 
     @Deprecated
+    public static void setContainer(@Nullable Shell.Container container) {
+        Shell.Config.setContainer(container);
+    }
+
+    @Deprecated
+    public static void setInitializer(@NonNull Class<? extends Shell.Initializer> init) {
+        Shell.Config.setInitializer(init);
+    }
+
+    @Deprecated
+    public static void setFlags(int flags) {
+        Shell.Config.setFlags(flags);
+    }
+
+    @Deprecated
+    public static int getFlags() {
+        return Shell.Config.getFlags();
+    }
+
+    @Deprecated
+    public static void verboseLogging(boolean verbose) {
+        Shell.Config.verboseLogging(verbose);
+    }
+
+    @Deprecated
     public abstract Throwable run(List<String> outList, List<String> errList, @NonNull String... commands);
 
     @Deprecated

@@ -32,8 +32,7 @@ import java.util.List;
  * <p>
  * {@code libsu} bundles busybox binaries with arm/arm64 and x86/x64 covered.
  * Developers using {@code libsu} can setup busybox by calling {@link #setup(Context)}
- * before any new shell is created (e.g. the place where you call {@link Shell#setFlags(int)}), or
- * in the callback methods in {@link Shell.Initializer}.
+ * before any new shell is created (e.g. where you call {@link Shell.Config#setFlags(int)}).
  * After calling {@link #setup(Context)}, busybox will be installed in the app's internal storage,
  * and all new shells created will have the path to busybox <b>prepended</b> to {@code PATH}.
  * This makes sure all commands are using the applets from busybox, providing predictable
