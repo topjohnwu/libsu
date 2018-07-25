@@ -21,7 +21,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ShellContainerApp;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -79,7 +78,7 @@ public abstract class ShellCompat {
     }
 
     @Deprecated
-    public static class ContainerApp extends ShellContainerApp {}
+    public static class ContainerApp extends com.topjohnwu.superuser.ContainerApp {}
 
     @Deprecated
     public final static class Sync {

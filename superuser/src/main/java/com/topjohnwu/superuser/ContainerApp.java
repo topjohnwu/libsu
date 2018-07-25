@@ -22,7 +22,7 @@ import android.support.annotation.Nullable;
 /**
  * A subclass of {@link Application} that implements {@link Shell.Container}.
  */
-public class ShellContainerApp extends Application implements Shell.Container {
+public class ContainerApp extends Application implements Shell.Container {
 
     /**
      * The actual field to save the global {@code Shell} instance.
@@ -32,7 +32,7 @@ public class ShellContainerApp extends Application implements Shell.Container {
     /**
      * Set the {@code ShellContainerApp} as the global container as soon as it is constructed.
      */
-    public ShellContainerApp() {
+    public ContainerApp() {
         Shell.Config.setContainer(this);
     }
 

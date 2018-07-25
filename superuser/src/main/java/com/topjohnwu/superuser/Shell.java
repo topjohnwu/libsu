@@ -41,11 +41,11 @@ import java.util.concurrent.Executors;
  * Sharing shells means that the {@code Shell} instance would need to be stored somewhere.
  * Generally, most developers would want to have the {@code Shell} instance shared globally
  * across the application. In that case, the developer can directly use or subclass the the readily
- * available {@link ShellContainerApp} and the setup is all done. If you already overridden the
- * {@link android.app.Application} class, and it is impossible to change the base class,
+ * available {@link com.topjohnwu.superuser.ContainerApp} and the setup is all done. If you already
+ * overridden {@link android.app.Application}, and it is impossible to change the base class,
  * or for some reason one would want to store the {@code Shell} instance somewhere else, check the
  * documentation of {@link Container} for more info. Once a global {@link Container} is registered,
- * use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get the global {@code Shell}.
+ * use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get/construct {@code Shell}.
  * <p>
  * However in most cases, developers do not need to deal with a {@code Shell} instance.
  * Use these high level APIs:
@@ -454,6 +454,31 @@ public abstract class Shell extends ShellCompat implements Closeable {
             if (verbose)
                 flags |= FLAG_VERBOSE_LOGGING;
         }
+
+        /**
+         * Construct a container object.
+         * This method will automatically register the returned object to be the global container
+         * by calling {@link Config#setContainer(Container)}. The developer will only need to
+         * assign the returned value into a field of the target class.
+         * @return an implementation of {@link Container}.
+         */
+        public static Container newContainer() {
+            Container c = new Container() {
+                private volatile Shell mShell;
+                @Nullable
+                @Override
+                public Shell getShell() {
+                    return mShell;
+                }
+
+                @Override
+                public void setShell(@Nullable Shell shell) {
+                    mShell = shell;
+                }
+            };
+            setContainer(c);
+            return c;
+        }
     }
 
     /**
@@ -589,9 +614,14 @@ public abstract class Shell extends ShellCompat implements Closeable {
     /**
      * The container to store the global {@code Shell} instance.
      * <p>
-     * Create a volatile field for storing the {@code Shell} instance, implement {@link #getShell()}
-     * and {@link #setShell(Shell)} to expose the new field, and don't forget to register yourself
-     * in the constructor by calling {@link Config#setContainer(Container)} with {@code this}.
+     * In order to store a shell instance somewhere in a component of your app, the easiest way
+     * is to create a new non-static {@link Container} field in your class and assign the value with
+     * the object returned from {@link Config#newContainer()}.
+     * <p>
+     * If you decide to go the more complicated route by implementing {@link Container} in your
+     * class, create a volatile {@code Shell} field, implement {@link #getShell()} and
+     * {@link #setShell(Shell)} to expose the new field, and don't forget to register {@code this}
+     * in the constructor by calling {@code Shell.Config.setContainer(this)}.
      */
     public interface Container {
         /**

@@ -5,9 +5,9 @@ import android.util.Log;
 
 import com.topjohnwu.superuser.BusyBox;
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ShellContainerApp;
+import com.topjohnwu.superuser.ContainerApp;
 
-public class ExampleApp extends ShellContainerApp {
+public class ExampleApp extends ContainerApp {
 
     public static final String TAG = "EXAMPLE";
 
@@ -16,10 +16,10 @@ public class ExampleApp extends ShellContainerApp {
         super.onCreate();
         // Use internal busybox
         BusyBox.setup(this);
-        // Set flags
-        Shell.setFlags(Shell.FLAG_REDIRECT_STDERR);
-        Shell.verboseLogging(BuildConfig.DEBUG);
-        Shell.setInitializer(ExampleInitializer.class);
+        // Configuration
+        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+        Shell.Config.verboseLogging(BuildConfig.DEBUG);
+        Shell.Config.setInitializer(ExampleInitializer.class);
     }
 
     // Demonstrate Shell.Initializer
