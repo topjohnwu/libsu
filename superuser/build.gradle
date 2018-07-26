@@ -21,6 +21,7 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion rootProject.ext.compileSdkVersion
+        consumerProguardFiles 'proguard-rules.pro'
     }
 
     compileOptions {

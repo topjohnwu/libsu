@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Strip out verbose logging
+-assumenosideeffects class com.topjohnwu.superuser.internal.InternalUtils {
+  public static *** log(...);
+}
