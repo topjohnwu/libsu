@@ -45,9 +45,10 @@ class StreamGobbler implements Callable<Integer> {
     }
 
     private void output(String s) {
-        if (list != null)
+        if (list != null) {
             list.add(s);
-        InternalUtils.log(TAG, s);
+            InternalUtils.log(TAG, s);
+        }
     }
 
     @Override
