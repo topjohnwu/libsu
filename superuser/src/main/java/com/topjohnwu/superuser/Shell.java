@@ -467,7 +467,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
         /**
          * Construct a container object.
          * This method will automatically register the returned object to be the global container
-         * by calling {@link Config#setContainer(Container)}. The developer will only need to
+         * by calling {@link Config#setContainer(Shell.Container)}. The developer will only need to
          * assign the returned value into a field of the target class.
          * @return an implementation of {@link Container}.
          */
