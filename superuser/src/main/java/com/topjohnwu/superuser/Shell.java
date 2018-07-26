@@ -129,6 +129,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
     private static int flags = 0;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
     private static Class<? extends Initializer> initClass = null;
+    private static boolean isInitGlobal;
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
@@ -141,10 +142,8 @@ public abstract class Shell extends ShellCompat implements Closeable {
     public static Shell getShell() {
         Shell shell = getCachedShell();
         if (shell == null) {
+            isInitGlobal = true;
             shell = newInstance();
-            Container container = weakContainer.get();
-            if (container != null)
-                container.setShell(shell);
         }
         return shell;
     }
@@ -188,6 +187,16 @@ public abstract class Shell extends ShellCompat implements Closeable {
             shell = null;
 
         return shell;
+    }
+
+    static void setCachedShell(Shell shell) {
+        if (isInitGlobal) {
+            // Set the global shell
+            Container container = weakContainer.get();
+            if (container != null)
+                container.setShell(shell);
+            isInitGlobal = false;
+        }
     }
 
     /**
@@ -386,9 +395,9 @@ public abstract class Shell extends ShellCompat implements Closeable {
         return getStatus() >= ROOT_SHELL;
     }
 
-    /* **********
-    * Subclasses
-    * ***********/
+    /* **************
+    * Nested classes
+    * ***************/
 
     /**
      * Static methods for configuring the behavior of {@link Shell}.
@@ -669,6 +678,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
         }
 
         private boolean init(Shell shell) {
+            setCachedShell(shell);
             if (shell.isRoot())
                 BusyBox.init(shell);
             return onInit(InternalUtils.getContext(), shell);

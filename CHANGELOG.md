@@ -8,6 +8,7 @@ However, the compatibility layer **will** be removed in a future update, please 
 - Remove `readFully(InputStream, byte[])` and `readFully(InputStream, byte[], int, int)` from `ShellUtils`.
 
 ### Fixes / Improvements / Behavior Changes
+- Global shell is now set before `Shell.Initializer` runs: this means you can now use high level APIs and root I/O classes in your initializer
 - No more `null` lists will be returned from `libsu`: all methods will return empty lists if no output is available
 - `SuFile.list()` family methods shall return hidden files now (filenames starting with `'.'`) (also fix #15)
 - `SuFile` will use the tool `stat` in more methods for consistent results (fix #11)

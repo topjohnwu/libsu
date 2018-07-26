@@ -25,9 +25,11 @@ public class NoShellException extends RuntimeException {
 
     NoShellException(String msg) {
         super(msg);
+        Shell.setCachedShell(null);
     }
 
     NoShellException(String message, Throwable cause) {
         super(message, cause);
+        Shell.setCachedShell(null);
     }
 }
