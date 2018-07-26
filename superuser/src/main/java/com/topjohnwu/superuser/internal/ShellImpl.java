@@ -41,7 +41,6 @@ class ShellImpl extends ShellCompat.Impl {
 
     private int status;
 
-    private final String token;
     private final Process process;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
@@ -49,6 +48,7 @@ class ShellImpl extends ShellCompat.Impl {
     private final StreamGobbler outGobbler;
     private final StreamGobbler errGobbler;
     private final ExecutorService SERIAL_EXECUTOR;
+    private final byte[] endCmd;
 
     private static class NoCloseInputStream extends FilterInputStream {
 
@@ -97,6 +97,13 @@ class ShellImpl extends ShellCompat.Impl {
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
 
+        String token = ShellUtils.genRandomAlphaNumString(32).toString();
+        InternalUtils.log(TAG, "token: " + token);
+        outGobbler = new StreamGobbler(token, true);
+        errGobbler = new StreamGobbler(token, false);
+        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;__RET=\n", token, token).getBytes("UTF-8");
+        SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
+
         process = Runtime.getRuntime().exec(cmd);
         STDIN = new NoCloseOutputStream(process.getOutputStream());
         STDOUT = new NoCloseInputStream(process.getInputStream());
@@ -128,12 +135,6 @@ class ShellImpl extends ShellCompat.Impl {
             status = ROOT_MOUNT_MASTER;
 
         br.close();
-
-        token = ShellUtils.genRandomAlphaNumString(32).toString();
-        InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(token, true);
-        errGobbler = new StreamGobbler(token, false);
-        SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -198,22 +199,15 @@ class ShellImpl extends ShellCompat.Impl {
 
         @Override
         public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
-            Future<Integer> outFuture = EXECUTOR.submit(outGobbler.set(stdout, res.out));
-            Future<Integer> errFuture = res.err == null ? null :
-                    EXECUTOR.submit(errGobbler.set(stderr, res.err));
+            Future<Integer> out = EXECUTOR.submit(outGobbler.set(stdout, res.out));
+            Future<Integer> err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
             for (InputHandler handler : handlers)
                 handler.handleInput(stdin);
-            byte[] end = String.format("__RET=$?;echo %s;echo $__RET;__RET=\n", token).getBytes("UTF-8");
-            stdin.write(end);
-            if (res.err != null) {
-                end = String.format("echo %s >&2\n", token).getBytes("UTF-8");
-                stdin.write(end);
-            }
+            stdin.write(endCmd);
             stdin.flush();
             try {
-                if (errFuture != null)
-                    errFuture.get();
-                res.code = outFuture.get();
+                res.code = out.get();
+                err.get();
             } catch (ExecutionException | InterruptedException e) {
                 throw (InterruptedIOException) new InterruptedIOException().initCause(e);
             }

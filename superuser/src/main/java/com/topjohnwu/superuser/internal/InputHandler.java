@@ -24,12 +24,13 @@ import java.io.OutputStream;
 
 interface InputHandler {
     String TAG = "SHELL_IN";
+    String IMPLTAG = "SHELLIMPL";
 
     void handleInput(OutputStream in) throws IOException;
 
     static InputHandler newInstance(String... cmd) {
         return in -> {
-            InternalUtils.log(TAG, "CommandHandler");
+            InternalUtils.log(IMPLTAG, "CommandHandler");
             for (String command : cmd) {
                 in.write(command.getBytes("UTF-8"));
                 in.write('\n');
@@ -41,7 +42,7 @@ interface InputHandler {
 
     static InputHandler newInstance(InputStream is) {
         return in -> {
-            InternalUtils.log(TAG, "InputStreamHandler");
+            InternalUtils.log(IMPLTAG, "InputStreamHandler");
             ShellUtils.pump(is, in);
             is.close();
             // Make sure it flushes the shell
