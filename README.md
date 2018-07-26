@@ -10,7 +10,7 @@ This library bundles with full featured `busybox` binaries. App developers can e
 
 `libsu` also comes with a whole suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on all files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
 
-One complex Android application using `libsu` for all root related operations is [Magisk Manager](https://github.com/topjohnwu/MagiskManager).
+One complex Android application using `libsu` for all root related operations is [Magisk Manager](https://github.com/topjohnwu/Magisk/tree/master/app).
 
 ## Changelog
 
@@ -26,82 +26,112 @@ dependencies {
 }
 ```
 
-## Simple Tutorial
+## Quick Tutorial
 
-### Setup
-Subclass `Shell.ContainerApp` and use it as your `Application`.  
-Set flags, initializers as soon as possible:
-
-```java
-public class ExampleApp extends Shell.ContainerApp {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        // Set flags
-        Shell.setFlags(Shell.FLAG_REDIRECT_STDERR);
-        Shell.verboseLogging(BuildConfig.DEBUG);
-    }
-}
-```
-
-Specify the custom Application in `AndroidManifest.xml`
-
+### Setup Container
+If you don't extend `Application` in your app, directly use `ContainerApp` as application:
 ```xml
+<!-- AndroidManifest.xml -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     ...>
     <application
-        android:name=".ExampleApp"
+        android:name="com.topjohnwu.superuser.ContainerApp"
         ...>
         ...
     </application>
 </manifest>
 ```
 
-### Synchronous Shell Operations
-
-High level synchronous APIs are under `Shell.Sync`. Think twice before calling these methods in the main thread, as they could cause the app to freeze and end up with ANR errors.
-
+Or if you use your own `Application` class, extend `ContainerApp`:
 ```java
-/* Simple root shell commands, get results immediately */
-List<String> result = Shell.Sync.su("find /dev/block -iname 'boot'");
+public class MyApplication extends ContainerApp {
+    @Override
+    public void onCreate() {
+        super.onCreate();
 
-/* Do something with the result */
+        // You can configure Shell here
+        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+        Shell.Config.verboseLogging(BuildConfig.DEBUG);
 
-/* Execute scripts from raw resources */
-result = Shell.Sync.loadScript(getResources().openRawResource(R.raw.script)));
+        // Use libsu's internal BusyBox
+        BusyBox.setup(this);
+
+        /* Your other code */
+        ...
+    }
+}
 ```
 
-### Asynchronous Shell Operations
+Or if you cannot change you base class, here is a workaround:
+```java
+public class MyApplication extends CustomApplication {
+    // Create a new Container field to store the root shell
+    private Shell.Container container;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // Assign the container with a pre-configured Container
+        container = Shell.Config.newContainer();
 
-High level asynchronous APIs are under `Shell.Async`. These methods will return immediately and will not get the output synchronously. Use callbacks to receive the results, or update UI asynchronously.
+        /* Configure shell and your other code */
+        ...
+    }
+}
+```
+
+### Shell Operations
+Once you have the container setup, you can directly use the high level APIs: `Shell.su()`/`Shell.sh()`:
 
 ```java
-/* Run commands and don't care the result */
-Shell.Async.su("setenforce 0", "setprop test.prop test");
+// Run commands and get output immediately
+List<String> output = Shell.su("find /dev/block -iname boot").exec().getOut();
 
-/* Get results after commands are done with a callback */
-Shell.Async.su(new Shell.Async.Callback() {
-    @Override
-    public void onTaskResult(List<String> out, List<String> err) {
-        /* Do something with the result */
-    }
-    @Override
-    public void onTaskError(Throwable err) {
-        /* Throwable thrown, handle the error */
-    }
-}, "cat /proc/mounts");
+// Aside from commands, you can also load scripts from InputStream
+Shell.Result result = Shell.su(getResources().openRawResource(R.raw.script)).exec();
 
-/* Use a CallbackList to receive a callback every time a new line is outputted */
+// You can get more stuffs from the results
+int code = result.getCode();
+boolean ok = result.isSuccess();
+output = result.getOut();
 
+// Run commands and output to a specific List
+List<String> logs = new ArrayList<>();
+Shell.su("cat /cache/magisk.log").to(logs).exec();
+
+// Run commands in the background and don't care results
+Shell.su("setenfoce 0").submit();
+
+// Run commands in the background and get results via a callback
+Shell.su("sleep 5", "echo hello").submit(result -> {
+    /* This callback will be called on the main (UI) thread
+     * after the operation is done (5 seconds after submit) */
+    result.getOut();  /* Should return a list with a single string "hello" */
+})
+
+// Create a reactive callback List, and update the UI on each line of output
 List<String> callbackList = new CallbackList<String>() {
     @Override
     public void onAddElement(String s) {
-        /* Do something with the new line */
+        /* This callback will be called on the main (UI) thread each time
+         * the list adds a new element (in this case: shell outputs a new line)*/
+        uiUpdate(s);  /* Some method to update the UI */
     }
 };
+Shell.su(
+    "for i in 1 2 3 4 5;do",
+    "  echo $i"
+    "  sleep 1"
+    "done",
+    "echo 'countdown done!'").to(callbackList).submit(result -> {
+        /* Some stuffs cannot be acquired from callback lists
+         * e.g. return codes */
+        uiUpdate(result.getCode());
+    });
 
-// Pass the callback list to receive shell outputs
-Shell.Async.su(callbackList, "for i in 1 2 3 4 5; do echo $i; sleep 1; done");
+// Also get STDERR
+List<String> stdout = new ArrayList<>();
+List<String> stderr = new ArrayList<>();
+Shell.su("echo hello", "echo hello >&2").to(stdout, stderr).exec();
 ```
 
 ### I/O
@@ -127,20 +157,24 @@ if (logs.exists()) {
 Initialize the shell with custom `Shell.Initializer`, similar to what `.bashrc` will do.
 
 ```java
-Shell.setInitializer(ExampleInitializer.class);
-
 class ExampleInitializer extends Shell.Initializer {
     @Override
-    public boolean onRootShellInit(Context context, Shell shell) throws IOException {
-        // Use internal busybox
-        BusyBox.setup(context);
+    public boolean onInit(Context context, Shell shell) {
         try (InputStream bashrc = context.getResources().openRawResource(R.raw.bashrc)) {
             // Load a script from raw resources
-            shell.loadInputStream(null, null, bashrc);
+            shell.newJob()
+                .add(bashrc)                            /* Load a script from raw resources */
+                .add("export PATH=/custom/path:$PATH")  /* Run some commands */
+                .exec();
+        } catch (IOException e) {
+            return false;
         }
         return true;
     }
 }
+
+// Register the class as initializer
+Shell.Config.setInitializer(ExampleInitializer.class);
 ```
 
 ## Documentation
