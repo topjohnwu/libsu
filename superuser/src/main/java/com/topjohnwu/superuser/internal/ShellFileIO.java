@@ -23,6 +23,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
+import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
@@ -74,7 +75,8 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             in.write(b, off, len);
             in.flush();
             // Wait till the operation is done
-            ShellUtils.readFully(out, new byte[5]);
+            DataInputStream dis = new DataInputStream(out);
+            dis.readFully(new byte[5]);
         });
         fileOff += len;
         fileSize = Math.max(fileSize, fileOff);
@@ -97,7 +99,8 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             in.write(b, off, len);
             in.flush();
             // Wait till the operation is done
-            ShellUtils.readFully(out, new byte[5]);
+            DataInputStream dis = new DataInputStream(out);
+            dis.readFully(new byte[5]);
         });
         fileSize += len;
         fileOff = fileSize;
@@ -142,7 +145,8 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();
-            ShellUtils.readFully(out, b, off, len);
+            DataInputStream dis = new DataInputStream(out);
+            dis.readFully(b, off, len);
         });
     }
 
@@ -162,7 +166,8 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
             in.write('\n');
             in.flush();
             // Wait till the operation is done
-            ShellUtils.readFully(out, new byte[5]);
+            DataInputStream dis = new DataInputStream(out);
+            dis.readFully(new byte[5]);
         });
         fileSize = newLength;
     }

@@ -20,7 +20,6 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -186,32 +185,6 @@ public final class ShellUtils {
             while (in.available() != 0)
                 in.skip(in.available());
         } catch (IOException ignored) {}
-    }
-
-    /**
-     * Same as {@code readFully(in, b, 0, b.length)}
-     */
-    public static void readFully(InputStream in, byte[] b) throws IOException {
-        readFully(in, b, 0, b.length);
-    }
-
-    /**
-     * Read exactly len bytes from the {@link InputStream}.
-     * @param in source.
-     * @param b the byte array to store the data.
-     * @param off the start offset in the data.
-     * @param len the number of bytes to be read.
-     * @throws EOFException if this stream reaches the end before reading all the bytes.
-     * @throws IOException if an I/O error occurs.
-     */
-    public static void readFully(InputStream in, byte[] b, int off, int len) throws IOException {
-        int n = 0;
-        while (n < len) {
-            int count = in.read(b, off + n, len - n);
-            if (count < 0)
-                throw new EOFException();
-            n += count;
-        }
     }
 
     /**
