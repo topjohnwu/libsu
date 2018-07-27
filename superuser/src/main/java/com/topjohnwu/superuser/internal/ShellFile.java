@@ -300,7 +300,7 @@ public class ShellFile extends File {
             if (defFilter.accept(this, name))
                 it.remove();
         }
-        return out.toArray(new String[0]);
+        return out.toArray(new String[out.size()]);
     }
 
     @Override
