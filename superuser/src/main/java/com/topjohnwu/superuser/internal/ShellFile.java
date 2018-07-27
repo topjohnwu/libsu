@@ -293,8 +293,10 @@ public class ShellFile extends File {
         String name;
         for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
             name = it.next();
-            if (filter != null && !filter.accept(this, name))
+            if (filter != null && !filter.accept(this, name)) {
                 it.remove();
+                continue;
+            }
             if (defFilter.accept(this, name))
                 it.remove();
         }
