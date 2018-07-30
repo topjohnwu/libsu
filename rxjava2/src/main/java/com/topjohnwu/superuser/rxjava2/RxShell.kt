@@ -1,4 +1,4 @@
-package com.github.topjohnwu.libsu.rxjava2
+package com.topjohnwu.superuser.rxjava2
 
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
