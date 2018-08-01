@@ -18,11 +18,11 @@ package com.topjohnwu.superuser.internal;
 
 import com.topjohnwu.superuser.Shell;
 
-class PlaceHolderJob extends JobImpl {
+class PendingJob extends JobImpl {
 
     private boolean isSU;
 
-    PlaceHolderJob(boolean su) {
+    PendingJob(boolean su) {
         isSU = su;
         to(NOPList.getInstance());
     }

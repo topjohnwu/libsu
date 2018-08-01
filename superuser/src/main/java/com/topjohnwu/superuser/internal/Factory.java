@@ -65,10 +65,10 @@ public final class Factory {
     }
 
     public static Shell.Job createJob(boolean su, InputStream in) {
-        return new PlaceHolderJob(su).add(in);
+        return new PendingJob(su).add(in);
     }
 
     public static Shell.Job createJob(boolean su, String... cmds) {
-        return new PlaceHolderJob(su).add(cmds);
+        return new PendingJob(su).add(cmds);
     }
 }

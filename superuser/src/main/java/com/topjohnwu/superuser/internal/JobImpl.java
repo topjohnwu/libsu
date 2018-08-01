@@ -45,8 +45,7 @@ class JobImpl extends Shell.Job {
         this.task = task;
     }
 
-    @Override
-    public Shell.Result exec() {
+    private Shell.Result exec0() {
         InternalUtils.log(TAG, "exec");
         if (out instanceof NOPList)
             out = new ArrayList<>();
@@ -66,6 +65,11 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
+    public Shell.Result exec() {
+        return exec0();
+    }
+
+    @Override
     public void submit() {
         submit(null);
     }
@@ -76,7 +80,7 @@ class JobImpl extends Shell.Job {
         if (out instanceof NOPList && cb == null)
             out = null;
         task.getExecutor().execute(() -> {
-            Shell.Result result = exec();
+            Shell.Result result = exec0();
             if (cb != null)
                 UiThreadHandler.run(() -> cb.onResult(result));
         });
