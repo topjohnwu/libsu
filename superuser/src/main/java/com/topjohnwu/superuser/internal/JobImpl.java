@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
@@ -102,14 +100,15 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public Shell.Job add(@NonNull InputStream in) {
-        handlers.add(InputHandler.newInstance(in));
+    public Shell.Job add(InputStream in) {
+        if (in != null)
+            handlers.add(InputHandler.newInstance(in));
         return this;
     }
 
     @Override
     public Shell.Job add(String... cmds) {
-        if (cmds.length > 0)
+        if (cmds != null && cmds.length > 0)
             handlers.add(InputHandler.newInstance(cmds));
         return this;
     }
