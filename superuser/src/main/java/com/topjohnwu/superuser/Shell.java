@@ -144,6 +144,7 @@ public abstract class Shell extends ShellCompat implements Closeable {
         if (shell == null) {
             isInitGlobal = true;
             shell = newInstance();
+            isInitGlobal = false;
         }
         return shell;
     }
@@ -195,7 +196,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
             Container container = weakContainer.get();
             if (container != null)
                 container.setShell(shell);
-            isInitGlobal = false;
         }
     }
 
@@ -275,8 +275,10 @@ public abstract class Shell extends ShellCompat implements Closeable {
             }
             if (init == null)
                 init = new Initializer();
-            if (!init.init(shell))
+            if (!init.init(shell)) {
+                setCachedShell(null);
                 throw new NoShellException("Unable to init shell");
+            }
             return shell;
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
