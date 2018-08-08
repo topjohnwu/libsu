@@ -1,3 +1,10 @@
+# 2.0.1
+
+## Fixes / Improvements
+- Calling `submit` in `PendingJob` used to end up calling the overridden `exec` instead of `exec` in `JobImpl`. Proxy through a private method in `JobImpl` to prevent changed behavior of `JobImpl` subclasses.
+- Even though the parameters of `Shell.Job.add(...)` is labeled `@NonNull`, it is still possible that developers still pass in `null` and cause NPE. Check `null` before proceed any further.
+- Fix a bug that constructed shell instances weren't cached in the container when created using fallback methods (e.g. no root -> fallback to non-root shell). This would cause infinite loop when no root is available.
+
 # 2.0.0
 
 Massive API improvements! Nearly all APIs in 1.x.x versions are deprecated. A compatibility layer is created to make the migration easier for existing developers: your existing code will work with `libsu` 2.0.0 without any modifications.
