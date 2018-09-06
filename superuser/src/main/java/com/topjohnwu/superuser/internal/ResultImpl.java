@@ -37,7 +37,7 @@ class ResultImpl extends Shell.Result {
     @NonNull
     @Override
     public List<String> getErr() {
-        return err == null ? Collections.emptyList() : out;
+        return err == null ? Collections.emptyList() : err;
     }
 
     @Override
