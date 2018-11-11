@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,14 @@ import androidx.annotation.NonNull;
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
     private static final int UNINT = -2;
+
+    /* -1: not determined
+    * 0: unknown, use fallback
+    * 1: Java 7 (Integer exitValue)
+    * 2: Java 8 (boolean hasExited)
+    * */
+    private static int processImpl = -1;
+    private static Field processStatus;
 
     private int status;
 
@@ -111,6 +120,27 @@ class ShellImpl extends Shell {
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
 
+        // Try to get the field of the process status
+        if (processImpl < 0) {
+            Class<?> clazz = process.getClass();
+            try {
+                // Java 8 UNIXProcess
+                processStatus = clazz.getDeclaredField("hasExited");
+                processImpl = 2;
+            } catch (NoSuchFieldException e) {
+                // Java 7 ProcessManager$ProcessImpl
+                try {
+                    processStatus = clazz.getDeclaredField("exitValue");
+                    processImpl = 1;
+                } catch (NoSuchFieldException e1) {
+                    processImpl = 0;
+                }
+            }
+            if (processImpl > 0) {
+                processStatus.setAccessible(true);
+            }
+        }
+
         status = Shell.UNKNOWN;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
@@ -167,13 +197,34 @@ class ShellImpl extends Shell {
         // If status is unknown, it is not alive
         if (status < 0)
             return false;
-        try {
-            process.exitValue();
-            // Process is dead, shell is not alive
-            return false;
-        } catch (IllegalThreadStateException e) {
-            // Process is still running
-            return true;
+
+        switch (processImpl) {
+            case 1:
+                /* Integer exitValue */
+                try {
+                    return processStatus.get(process) == null;
+                } catch (IllegalAccessException e) {
+                    /* Impossible */
+                    return false;
+                }
+            case 2:
+                /* boolean hasExited */
+                try {
+                    return !processStatus.getBoolean(process);
+                } catch (IllegalAccessException e) {
+                    /* Impossible */
+                    return false;
+                }
+            case 0:
+            default:
+                try {
+                    process.exitValue();
+                    // Process is dead, shell is not alive
+                    return false;
+                } catch (IllegalThreadStateException e) {
+                    // Process is still running
+                    return true;
+                }
         }
     }
 
