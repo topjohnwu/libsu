@@ -17,8 +17,6 @@
 package com.topjohnwu.superuser.io;
 
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.Factory;
@@ -32,6 +30,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 /**
  * A {@link File} implementation with root access.

@@ -16,12 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
+
+import androidx.annotation.NonNull;
 
 interface DataOutputImpl extends DataOutput {
 

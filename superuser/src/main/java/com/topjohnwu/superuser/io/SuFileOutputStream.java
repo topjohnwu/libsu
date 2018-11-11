@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.io;
 
-import android.support.annotation.NonNull;
-
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.Factory;
 
@@ -27,6 +25,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+
+import androidx.annotation.NonNull;
 
 /**
  * An {@link java.io.OutputStream} that read files using the global shell instance.

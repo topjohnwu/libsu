@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.io;
 
-import android.support.annotation.NonNull;
-
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import androidx.annotation.NonNull;
 
 /**
  * An {@link java.io.OutputStream} that write files by opening a new root process.

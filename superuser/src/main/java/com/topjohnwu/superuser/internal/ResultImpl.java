@@ -16,12 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import com.topjohnwu.superuser.Shell;
 
 import java.util.Collections;
 import java.util.List;
+
+import androidx.annotation.NonNull;
 
 class ResultImpl extends Shell.Result {
     List<String> out;

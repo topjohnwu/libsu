@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.io;
 
-import android.support.annotation.NonNull;
-
 import com.topjohnwu.superuser.internal.Factory;
 
 import java.io.Closeable;
@@ -27,6 +25,8 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import androidx.annotation.NonNull;
 
 /**
  * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.

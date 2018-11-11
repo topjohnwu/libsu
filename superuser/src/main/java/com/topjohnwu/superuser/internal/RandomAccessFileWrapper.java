@@ -16,14 +16,14 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
+import androidx.annotation.NonNull;
 
 class RandomAccessFileWrapper extends SuRandomAccessFile {
 

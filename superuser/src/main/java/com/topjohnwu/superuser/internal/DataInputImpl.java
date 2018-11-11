@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +24,8 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import androidx.annotation.NonNull;
 
 interface DataInputImpl extends DataInput {
 

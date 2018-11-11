@@ -17,7 +17,8 @@
 package com.topjohnwu.superuser;
 
 import android.app.Application;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.Nullable;
 
 /**
  * A subclass of {@link Application} that implements {@link Shell.Container}.

@@ -17,14 +17,15 @@
 package com.topjohnwu.superuser.internal;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import static com.topjohnwu.superuser.Shell.FLAG_REDIRECT_STDERR;
 import static com.topjohnwu.superuser.Shell.NON_ROOT_SHELL;

@@ -1,6 +1,5 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'me.tatarka.retrolambda'
 
 group='com.github.topjohnwu'
 
@@ -10,7 +9,6 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
-        classpath 'me.tatarka:gradle-retrolambda:3.7.0'
     }
 }
 
@@ -30,11 +28,6 @@ android {
     }
 }
 
-retrolambda {
-    javaVersion JavaVersion.VERSION_1_7
-    defaultMethods true
-}
-
 task javadoc(type: Javadoc) {
     failOnError false
     title = 'libsu API'
@@ -51,6 +44,5 @@ task javadoc(type: Javadoc) {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
-    retrolambdaConfig 'net.orfjackal.retrolambda:retrolambda:2.5.5'
+    implementation 'androidx.annotation:annotation:1.0.0'
 }

@@ -16,11 +16,11 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import androidx.annotation.NonNull;
 
 class ShellOutputStream extends OutputStream {
 

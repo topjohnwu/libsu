@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.topjohnwu.superuser.ShellUtils;
@@ -34,6 +33,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import androidx.annotation.NonNull;
 
 class ShellImpl extends ShellCompat.Impl {
     private static final String TAG = "SHELLIMPL";

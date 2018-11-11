@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.topjohnwu.superuser.Shell;
@@ -27,6 +26,8 @@ import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
+
+import androidx.annotation.NonNull;
 
 class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImpl {
 
