@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.internal;
 
 import android.text.TextUtils;
 
+import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.BufferedReader;
@@ -36,7 +37,7 @@ import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
 
-class ShellImpl extends ShellCompat.Impl {
+class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
     private static final int UNINT = -2;
 
@@ -110,7 +111,7 @@ class ShellImpl extends ShellCompat.Impl {
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
 
-        status = UNKNOWN;
+        status = Shell.UNKNOWN;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
 

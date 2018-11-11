@@ -20,7 +20,6 @@ import android.content.Context;
 
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
-import com.topjohnwu.superuser.internal.ShellCompat;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.io.Closeable;
@@ -62,7 +61,7 @@ import androidx.annotation.Nullable;
  * the library has to offer.
  */
 
-public abstract class Shell extends ShellCompat implements Closeable {
+public abstract class Shell implements Closeable {
 
     /**
      * Shell status: Unknown. One possible result of {@link #getStatus()}.
@@ -271,8 +270,6 @@ public abstract class Shell extends ShellCompat implements Closeable {
                 } catch (Exception e) {
                     InternalUtils.stackTrace(e);
                 }
-            } else if (initializer != null) {
-                init = initializer;
             }
             if (init == null)
                 init = new Initializer();
@@ -666,19 +663,15 @@ public abstract class Shell extends ShellCompat implements Closeable {
      * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
      * access resources within the APK (e.g. shell scripts).
      */
-    public static class Initializer extends InitializerCompat {
+    public static class Initializer {
 
         /**
          * Called when a new shell is constructed.
-         * Do <strong>NOT</strong> call the super method when overriding this method!
-         * The default implementation is only for backwards compatibility.
          * @param context the application context.
          * @param shell the newly constructed shell.
          * @return {@code false} when initialization fails, otherwise {@code true}.
          */
-        public boolean onInit(Context context, @NonNull Shell shell) {
-            return super.onInit(context, shell);
-        }
+        public boolean onInit(Context context, @NonNull Shell shell) { return true; }
 
         private boolean init(Shell shell) {
             setCachedShell(shell);
