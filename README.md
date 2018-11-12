@@ -18,11 +18,18 @@ One complex Android application using `libsu` for all root related operations is
 
 ## Download
 ```java
+android {
+    /* Android Gradle Plugin 3.0.0+ is required to support Java 8 desugaring */
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
 repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.topjohnwu:libsu:2.0.2'
+    implementation 'com.github.topjohnwu:libsu:2.0.3'
 }
 ```
 

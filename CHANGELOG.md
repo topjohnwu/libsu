@@ -1,3 +1,12 @@
+# 2.0.3
+
+## Improvements
+- `Shell.isAlive()` method is updated to get process status directly via reflection rather than the traditional `Process.exitValue()` exception handling. This optimization significantly reduces the overhead when switching between Shell tasks.
+
+## API Changes
+- The 1.x version APIs are completely removed
+- Retrolambda is removed, you should start using AGP 3.0.0+ which comes with official Java 8 desugaring
+
 # 2.0.2
 
 ## Fixes
