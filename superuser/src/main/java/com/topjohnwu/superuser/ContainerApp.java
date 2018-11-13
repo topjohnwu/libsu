@@ -17,34 +17,15 @@
 package com.topjohnwu.superuser;
 
 import android.app.Application;
-
-import androidx.annotation.Nullable;
+import android.content.Context;
 
 /**
- * A subclass of {@link Application} that implements {@link Shell.Container}.
+ * A subclass of {@link Application} with a {@link Shell.Container} injected.
  */
-public class ContainerApp extends Application implements Shell.Container {
-
-    /**
-     * The actual field to save the global {@code Shell} instance.
-     */
-    protected volatile Shell mShell;
-
-    /**
-     * Set the {@code ShellContainerApp} as the global container as soon as it is constructed.
-     */
-    public ContainerApp() {
-        Shell.Config.setContainer(this);
-    }
-
-    @Nullable
+public class ContainerApp extends Application {
     @Override
-    public Shell getShell() {
-        return mShell;
-    }
-
-    @Override
-    public void setShell(@Nullable Shell shell) {
-        mShell = shell;
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        Shell.Container.inject(this);
     }
 }

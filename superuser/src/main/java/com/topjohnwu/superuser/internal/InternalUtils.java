@@ -17,11 +17,34 @@
 package com.topjohnwu.superuser.internal;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 public final class InternalUtils {
+
+    private static Field mBaseContext;
+    private static Method currentApplication;
+
+    static {
+        try {
+            mBaseContext = ContextWrapper.class.getDeclaredField("mBase");
+            mBaseContext.setAccessible(true);
+            currentApplication = Class.forName("android.app.ActivityThread")
+                    .getMethod("currentApplication");
+        } catch (NoSuchFieldException e) {
+            /* Impossible */
+        } catch (ClassNotFoundException e) {
+            /* Impossible */
+        } catch (NoSuchMethodException e) {
+            /* Impossible */
+        }
+    }
+
     public static void log(String tag, Object log) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());
@@ -42,11 +65,17 @@ public final class InternalUtils {
 
     public static Context getContext() {
         try {
-            return (Context) Class.forName("android.app.ActivityThread")
-                    .getMethod("currentApplication").invoke(null);
+            return (Context) currentApplication.invoke(null);
         } catch (Exception e) {
             return null;
         }
+    }
 
+    public static void replaceBaseContext(ContextWrapper wrapper, Context base) {
+        try {
+            mBaseContext.set(wrapper, base);
+        } catch (IllegalAccessException e) {
+            /* Impossible */
+        }
     }
 }
