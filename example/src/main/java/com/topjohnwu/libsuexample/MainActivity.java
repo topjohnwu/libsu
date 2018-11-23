@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
@@ -14,7 +13,6 @@ import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -40,78 +38,81 @@ public class MainActivity extends Activity {
         Button clear = findViewById(R.id.clear);
 
         // Run the shell command in the input box synchronously
-        sync_cmd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Shell.sh(input.getText().toString()).to(consoleList).exec();
-                input.setText("");
-            }
+        sync_cmd.setOnClickListener(v -> {
+            Shell.sh(input.getText().toString()).to(consoleList).exec();
+            input.setText("");
         });
 
         // Run the shell command in the input box asynchronously.
         // Also demonstrates that Async.Callback works
-        async_cmd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Shell.sh(input.getText().toString())
-                        .to(consoleList)
-                        .submit(new Shell.ResultCallback() {
-                            @Override
-                            public void onResult(Shell.Result out) {
-                                Log.d(ExampleApp.TAG, "async_cmd_result: " + out.getCode());
-                            }
-                        });
-                input.setText("");
-            }
+        async_cmd.setOnClickListener(v -> {
+            Shell.sh(input.getText().toString())
+                    .to(consoleList)
+                    .submit(out -> Log.d(ExampleApp.TAG, "async_cmd_result: " + out.getCode()));
+            input.setText("");
         });
 
         // Closing a shell is always synchronous
-        close_shell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Shell shell = Shell.getCachedShell();
-                    if (shell != null)
-                        shell.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        close_shell.setOnClickListener(v -> {
+            try {
+                Shell shell = Shell.getCachedShell();
+                if (shell != null)
+                    shell.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
 
         // Load a script from raw resources synchronously
-        sync_script.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Shell.sh(getResources().openRawResource(R.raw.info)).to(consoleList).exec();
-            }
-        });
+        sync_script.setOnClickListener(v ->
+                Shell.sh(getResources().openRawResource(R.raw.info)).to(consoleList).exec());
 
         // Load a script from raw resources asynchronously
-        async_script.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Shell.sh(getResources().openRawResource(R.raw.count))
-                        .to(consoleList)
-                        .submit();
-                }
-        });
+        async_script.setOnClickListener(v ->
+                Shell.sh(getResources().openRawResource(R.raw.count)).to(consoleList).submit());
 
-        clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                consoleList.clear();
-            }
-        });
+        clear.setOnClickListener(v -> consoleList.clear());
 
         /* Create a CallbackList to update the UI with Shell output
          * Here I demonstrate 2 ways to implement a CallbackList
-         * Use either ContainerCallbackList or StringBuilderCallbackList
-         * Both implementation will have the same result
+         *
+         * Both ContainerCallbackList or AppendCallbackList will have
+         * the same behavior.
          */
-        consoleList = new ContainerCallbackList(new ArrayList<String>());
+        consoleList = new AppendCallbackList();
+        // consoleList = new ContainerCallbackList(new ArrayList<>());
     }
 
+    /**
+     * This class does not store the output anywhere. It is used only as an
+     * callback API every time a new output is created.
+     */
+    private class AppendCallbackList extends CallbackList<String> {
+
+        @Override
+        public void onAddElement(String s) {
+            console.append(s);
+            console.append("\n");
+            sv.postDelayed(() -> sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
+        }
+
+        @Override
+        public synchronized void clear() {
+            runOnUiThread(() -> console.setText(""));
+        }
+    }
+
+    /**
+     * This class stores all outputs to the provided List<String> every time
+     * a new output is created.
+     *
+     * To make it behave exactly the same as AppendCallbackList, I joined
+     * all output together with newline and set the whole TextView with the result.
+     * It doesn't make sense to do this in this scenario since we do not actually
+     * need to store the output. However, it is here to demonstrate that CallbackList
+     * can also be used to store outputs and behaves just like normal List<String> if
+     * provided a container for storage.
+     */
     private class ContainerCallbackList extends CallbackList<String> {
 
         private ContainerCallbackList(List<String> l) {
@@ -121,55 +122,13 @@ public class MainActivity extends Activity {
         @Override
         public void onAddElement(String s) {
             console.setText(TextUtils.join("\n", this));
-            sv.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    sv.fullScroll(ScrollView.FOCUS_DOWN);
-                }
-            }, 10);
-        }
-
-        @Override
-        public void clear() {
-            super.clear();
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    console.setText("");
-                }
-            });
-        }
-    }
-
-    private class StringBuilderCallbackList extends CallbackList<String> {
-
-        private StringBuilder builder;
-
-        private StringBuilderCallbackList() {
-            builder = new StringBuilder();
-        }
-
-        @Override
-        public void onAddElement(String s) {
-            builder.append(s).append('\n');
-            console.setText(builder);
-            sv.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    sv.fullScroll(ScrollView.FOCUS_DOWN);
-                }
-            }, 10);
+            sv.postDelayed(() -> sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
         }
 
         @Override
         public synchronized void clear() {
-            builder = new StringBuilder();
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    console.setText("");
-                }
-            });
+            super.clear();
+            runOnUiThread(() -> console.setText(""));
         }
     }
 }

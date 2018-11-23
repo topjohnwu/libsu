@@ -4,8 +4,8 @@ import android.content.Context;
 import android.util.Log;
 
 import com.topjohnwu.superuser.BusyBox;
-import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ContainerApp;
+import com.topjohnwu.superuser.Shell;
 
 public class ExampleApp extends ContainerApp {
 
