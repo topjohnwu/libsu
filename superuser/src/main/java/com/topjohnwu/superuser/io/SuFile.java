@@ -80,33 +80,11 @@ public class SuFile extends File {
     }
 
     public SuFile(File parent, @NonNull String child) {
-        this(new File(parent, child));
+        this(parent.getAbsolutePath(), child);
     }
 
     public SuFile(@NonNull URI uri) {
         this(new File(uri));
-    }
-
-    /**
-     * @deprecated
-     * Create a new {@code SuFile} using the path of the given {@code File}.
-     * @param file the base file.
-     * @param shell whether use shell for operations.
-     */
-    @Deprecated
-    public SuFile(@NonNull File file, boolean shell) {
-        this(file);
-    }
-
-    /**
-     * @deprecated
-     * Create a new {@code SuFile} using a path.
-     * @param pathname the path to the file.
-     * @param shell whether use shell for operations.
-     */
-    @Deprecated
-    public SuFile(@NonNull String pathname, boolean shell) {
-        this(pathname);
     }
 
     boolean isSU() {
