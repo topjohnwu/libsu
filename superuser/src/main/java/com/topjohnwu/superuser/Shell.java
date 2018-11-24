@@ -33,6 +33,7 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -395,6 +396,38 @@ public abstract class Shell implements Closeable {
      */
     public boolean isRoot() {
         return getStatus() >= ROOT_SHELL;
+    }
+
+    /**
+     * Wait for all tasks to be done before closing this shell
+     * and releasing any system resources associated with the shell.
+     *
+     * Blocks until all tasks have completed execution, or
+     * the timeout occurs, or the current thread is interrupted,
+     * whichever happens first.
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of the timeout argument
+     * @return {@code true} if this shell is terminated and
+     *         {@code false} if the timeout elapsed before termination.
+     *         The shell can still to be used afterwards in this case.
+     * @throws IOException if an I/O error occurs.
+     * @throws InterruptedException if interrupted while waiting.
+     */
+    public abstract boolean waitAndClose(long timeout, TimeUnit unit)
+            throws IOException, InterruptedException;
+
+    /**
+     * Wait for all tasks to be done indefinitely before closing the shell
+     * and releasing any system resources associated with the shell.
+     * @throws IOException if an I/O error occurs.
+     */
+    public void waitAndClose() throws IOException {
+        while (true) {
+            try {
+                if (waitAndClose(Long.MAX_VALUE, TimeUnit.NANOSECONDS))
+                    break;
+            } catch (InterruptedException ignored) {}
+        }
     }
 
     /* **************

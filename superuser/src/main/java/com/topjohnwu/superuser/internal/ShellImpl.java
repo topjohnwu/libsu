@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 
@@ -51,6 +52,7 @@ class ShellImpl extends Shell {
     private static Field processStatus;
 
     private int status;
+    private ExecutorService SERIAL_EXECUTOR;
 
     private final Process process;
     private final NoCloseOutputStream STDIN;
@@ -58,7 +60,6 @@ class ShellImpl extends Shell {
     private final NoCloseInputStream STDERR;
     private final StreamGobbler outGobbler;
     private final StreamGobbler errGobbler;
-    private final ExecutorService SERIAL_EXECUTOR;
     private final byte[] endCmd;
 
     private static class NoCloseInputStream extends FilterInputStream {
@@ -174,17 +175,37 @@ class ShellImpl extends Shell {
         close();
     }
 
+    private void release() throws IOException {
+        status = UNINT;
+        STDIN.close0();
+        STDERR.close0();
+        STDOUT.close0();
+        process.destroy();
+    }
+
+    @Override
+    public boolean waitAndClose(long timeout, TimeUnit unit) throws InterruptedException, IOException {
+        if (status < UNKNOWN)
+            return true;
+        InternalUtils.log(TAG, "waitAndClose");
+        SERIAL_EXECUTOR.shutdown();
+        if (SERIAL_EXECUTOR.awaitTermination(timeout, unit)) {
+            release();
+            return true;
+        } else {
+            /* Use a new serial executor since the old one already shutdown */
+            SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
+            return false;
+        }
+    }
+
     @Override
     public void close() throws IOException {
         if (status < UNKNOWN)
             return;
         InternalUtils.log(TAG, "close");
-        status = UNINT;
         SERIAL_EXECUTOR.shutdownNow();
-        STDIN.close0();
-        STDERR.close0();
-        STDOUT.close0();
-        process.destroy();
+        release();
     }
 
     @Override
