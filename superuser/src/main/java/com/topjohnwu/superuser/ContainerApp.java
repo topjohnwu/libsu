@@ -17,12 +17,15 @@
 package com.topjohnwu.superuser;
 
 import android.app.Application;
+import android.content.Context;
 
 /**
- * @deprecated
  * A subclass of {@link Application} with a {@link Shell.Container} injected.
  */
-@Deprecated
 public class ContainerApp extends Application {
-    /* libsu by default injects shells into application context */
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        Shell.Container.inject(this);
+    }
 }

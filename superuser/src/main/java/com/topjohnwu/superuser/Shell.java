@@ -17,7 +17,9 @@
 package com.topjohnwu.superuser;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 
+import com.topjohnwu.superuser.internal.ContainerContext;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -39,14 +41,17 @@ import androidx.annotation.Nullable;
 /**
  * A class providing an API to an interactive (root) shell.
  * <p>
- * Sharing shells means that a {@code Shell} instance would need to be stored somewhere globally.
- * By default, libsu will inject a root shell directly into the application context, so the shell
- * lives along with the application lifecycle. If for some reason one would want to store the
- * global {@code Shell} instance somewhere else, check the documentation of {@link Container}.
+ * Sharing shells means that the {@code Shell} instance would need to be stored somewhere.
+ * Generally, most developers would want to have the {@code Shell} instance shared globally
+ * across the application. In that case, the developer can directly use or subclass the the readily
+ * available {@link com.topjohnwu.superuser.ContainerApp} and the setup is all done. If you already
+ * overridden {@link android.app.Application}, and it is impossible to change the base class,
+ * or for some reason one would want to store the {@code Shell} instance somewhere else, check the
+ * documentation of {@link Container} for more info. Once a global {@link Container} is registered,
+ * use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get/construct {@code Shell}.
  * <p>
- * Use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get/construct {@code Shell}.
- * However in most cases, developers do not need to use a {@code Shell} instance directly.
- * Use these high level APIs instead:
+ * However in most cases, developers do not need to deal with a {@code Shell} instance.
+ * Use these high level APIs:
  * <ul>
  *     <li>{@link #sh(String...)}</li>
  *     <li>{@link #su(String...)}</li>
@@ -106,8 +111,15 @@ public abstract class Shell implements Closeable {
     /**
      * If set, STDERR outputs will be stored in STDOUT outputs.
      * <p>
-     * This flag will NOT affect {@link Job#to(List, List)}, since
-     * that method explicitly requests to store stderr outputs to a specific List.
+     * Note: This flag only affects the following methods:
+     * <ul>
+     *     <li>{@link #sh(String...)}</li>
+     *     <li>{@link #su(String...)}</li>
+     *     <li>{@link #sh(InputStream)}</li>
+     *     <li>{@link #su(InputStream)}</li>
+     *     <li>{@link Job#to(List)}</li>
+     * </ul>
+     * Check the descriptions of each method above for more details.
      * <p>
      * Constant value {@value}.
      */
@@ -170,9 +182,12 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
+        Shell shell = null;
         Container container = weakContainer.get();
-        container = container == null ? Factory.defaultContainer : container;
-        Shell shell = container.getShell();
+
+        if (container != null)
+            shell = container.getShell();
+
         if (shell != null && !shell.isAlive())
             shell = null;
 
@@ -183,8 +198,8 @@ public abstract class Shell implements Closeable {
         if (isInitGlobal) {
             // Set the global shell
             Container container = weakContainer.get();
-            container = container == null ? Factory.defaultContainer : container;
-            container.setShell(shell);
+            if (container != null)
+                container.setShell(shell);
         }
     }
 
@@ -654,10 +669,10 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * A container to store the global {@code Shell} instance.
+     * The container to store the global {@code Shell} instance.
      * <p>
      * In order to store a shell instance somewhere in a component of your app, the easiest way
-     * is to create a new non-static {@link Container} field in the class and assign it with
+     * is to create a new non-static {@link Container} field in your class and assign the value with
      * the object returned from {@link Config#newContainer()}.
      * <p>
      * If you decide to go the more complicated route by implementing {@link Container} in your
@@ -677,6 +692,16 @@ public abstract class Shell implements Closeable {
          * @param shell replaces the instance stored in the implementing class.
          */
         void setShell(@Nullable Shell shell);
+
+        /**
+         * Inject a {@link Container} into a {@link ContextWrapper}.
+         * Most contexts you can get directly is a ContextWrapper, e.g. Activity, Application,
+         * Service..., all of them can be passed to this method.
+         * @param ctx the {@link ContextWrapper} to be injected.
+         */
+        static void inject(ContextWrapper ctx) {
+            InternalUtils.replaceBaseContext(ctx, new ContainerContext(ctx.getBaseContext()));
+        }
     }
 
     /**
