@@ -518,7 +518,7 @@ public abstract class Shell implements Closeable {
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
          */
-        void setTimeout(long timeout) {
+        public static void setTimeout(long timeout) {
             Shell.timeout = timeout;
         }
     }
