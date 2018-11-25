@@ -188,6 +188,14 @@ public class ShellFile extends File {
         return cmdBoolean("[ -f \"$FILE\" ]");
     }
 
+    boolean isBlock() {
+        return cmdBoolean("[ -b \"$FILE\" ]");
+    }
+
+    boolean isCharacter() {
+        return cmdBoolean("[ -c \"$FILE\" ]");
+    }
+
     @Override
     public long lastModified() {
         try {

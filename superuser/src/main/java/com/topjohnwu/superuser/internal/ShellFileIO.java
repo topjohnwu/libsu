@@ -38,22 +38,27 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     private long fileSize;
 
     ShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
+        if (file.isCharacter())
+            throw new FileNotFoundException("Does not support character files");
+        FileNotFoundException fnf = new FileNotFoundException("No such file or directory");
+        if (file.isDirectory())
+            throw fnf;
         path = file.getPath();
         fileOff = 0L;
         if (TextUtils.equals(mode, "r")) {
             // Read
             if (!file.exists())
-                throw new FileNotFoundException("No such file or directory");
+                throw fnf;
             fileSize = file.length();
         } else if (TextUtils.equals(mode, "w")) {
             // Write
             if (!file.clear())
-                throw new FileNotFoundException("No such file or directory");
+                throw fnf;
             fileSize = 0L;
         } else if (TextUtils.equals(mode, "rw")) {
             // Random rw
             if (!file.exists() && !file.createNewFile())
-                throw new FileNotFoundException("No such file or directory");
+                throw fnf;
             fileSize = file.length();
         } else {
             throw new IllegalArgumentException("Illegal mode: " + mode);
