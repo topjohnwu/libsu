@@ -22,23 +22,12 @@ api_level_arch_detect() {
   if [ "$ABILONG" = "x86_64" ]; then ARCH=x64; IS64BIT=true; fi;
 }
 
-TOOLPATH=`which toolbox`
-TOYPATH=`which toybox`
-BUSYPATH=`which busybox`
+TOOLPATH=`command -v toolbox`
+TOYPATH=`command -v toybox`
+BUSYPATH=`command -v busybox`
 
 api_level_arch_detect
 
-# Check A/B slot
-SLOT=`getprop ro.boot.slot_suffix`
-if [ -z $SLOT ]; then
-  SLOT=_`getprop ro.boot.slot`
-  [ $SLOT = "_" ] && SLOT=
-fi
-
-cat /proc/mounts | grep -E '/dev/root|/system_root' >/dev/null && SKIP_INITRAMFS=true || SKIP_INITRAMFS=false
-
-[ ! -z $SLOT ] && echo "Device A/B partition detected, current slot: $SLOT"
-$SKIP_INITRAMFS && echo "Device skip_initramfs detected"
 echo "Device API: $API"
 echo "Device ABI: $ARCH"
 [ ! -z $TOOLPATH ] && echo "toolbox at: $TOOLPATH"
