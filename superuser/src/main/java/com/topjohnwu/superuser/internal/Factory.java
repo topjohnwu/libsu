@@ -25,6 +25,8 @@ import java.io.InputStream;
 
 public final class Factory {
 
+    public static final AutoContainer defaultContainer = new AutoContainer();
+
     public static ShellImpl createShell(long timeout, String... cmd) throws IOException {
         return new ShellImpl(timeout, cmd);
     }

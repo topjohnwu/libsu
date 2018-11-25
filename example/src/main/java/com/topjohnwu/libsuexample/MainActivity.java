@@ -1,6 +1,7 @@
 package com.topjohnwu.libsuexample;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -9,6 +10,7 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.topjohnwu.superuser.BusyBox;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 
@@ -17,14 +19,36 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
+    public static final String TAG = "EXAMPLE";
+
     private TextView console;
     private EditText input;
     private ScrollView sv;
     private List<String> consoleList;
 
+    static {
+        // Setup Shell configs
+        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+        Shell.Config.verboseLogging(BuildConfig.DEBUG);
+        Shell.Config.setInitializer(ExampleInitializer.class);
+    }
+
+    // Demonstrate Shell.Initializer
+    private static class ExampleInitializer extends Shell.Initializer {
+
+        @Override
+        public boolean onInit(Context context, Shell shell) {
+            Log.d(TAG, "onInit");
+            return true;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Use internal busybox
+        BusyBox.setup(this);
+
         setContentView(R.layout.activity_main);
         console = findViewById(R.id.console);
         input = findViewById(R.id.cmd_input);
@@ -48,7 +72,7 @@ public class MainActivity extends Activity {
         async_cmd.setOnClickListener(v -> {
             Shell.sh(input.getText().toString())
                     .to(consoleList)
-                    .submit(out -> Log.d(ExampleApp.TAG, "async_cmd_result: " + out.getCode()));
+                    .submit(out -> Log.d(TAG, "async_cmd_result: " + out.getCode()));
             input.setText("");
         });
 

@@ -45,7 +45,7 @@ public final class InternalUtils {
         }
     }
 
-    public static void log(String tag, Object log) {
+    static void log(String tag, Object log) {
         if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
             Log.d(tag, log.toString());
     }
@@ -63,15 +63,15 @@ public final class InternalUtils {
         return (base & flags) == flags;
     }
 
-    public static Context getContext() {
+    public static ContextWrapper getContext() {
         try {
-            return (Context) currentApplication.invoke(null);
+            return (ContextWrapper) currentApplication.invoke(null);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static void replaceBaseContext(ContextWrapper wrapper, Context base) {
+    static void replaceBaseContext(ContextWrapper wrapper, Context base) {
         try {
             mBaseContext.set(wrapper, base);
         } catch (IllegalAccessException e) {
