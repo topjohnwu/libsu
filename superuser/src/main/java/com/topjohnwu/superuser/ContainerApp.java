@@ -17,15 +17,28 @@
 package com.topjohnwu.superuser;
 
 import android.app.Application;
-import android.content.Context;
+
+import androidx.annotation.Nullable;
 
 /**
  * A subclass of {@link Application} with a {@link Shell.Container} injected.
  */
-public class ContainerApp extends Application {
+public class ContainerApp extends Application implements Shell.Container {
+
+    private volatile Shell mShell;
+
+    public ContainerApp() {
+        Shell.Config.setContainer(this);
+    }
+
+    @Nullable
     @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
-        Shell.Container.inject(this);
+    public Shell getShell() {
+        return mShell;
+    }
+
+    @Override
+    public void setShell(@Nullable Shell shell) {
+        mShell = shell;
     }
 }

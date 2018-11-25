@@ -17,9 +17,7 @@
 package com.topjohnwu.superuser;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 
-import com.topjohnwu.superuser.internal.ContainerContext;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -692,16 +690,6 @@ public abstract class Shell implements Closeable {
          * @param shell replaces the instance stored in the implementing class.
          */
         void setShell(@Nullable Shell shell);
-
-        /**
-         * Inject a {@link Container} into a {@link ContextWrapper}.
-         * Most contexts you can get directly is a ContextWrapper, e.g. Activity, Application,
-         * Service..., all of them can be passed to this method.
-         * @param ctx the {@link ContextWrapper} to be injected.
-         */
-        static void inject(ContextWrapper ctx) {
-            InternalUtils.replaceBaseContext(ctx, new ContainerContext(ctx.getBaseContext()));
-        }
     }
 
     /**
