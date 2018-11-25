@@ -1,4 +1,4 @@
-# 2.1.0
+# 2.1.1
 ## Bug fixes
 - Fix a bug that could cause `new SuFile(parent, name)` to fail
 

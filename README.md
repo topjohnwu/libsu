@@ -29,7 +29,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.topjohnwu:libsu:2.1.0'
+    implementation 'com.github.topjohnwu:libsu:2.1.1'
 }
 ```
 
