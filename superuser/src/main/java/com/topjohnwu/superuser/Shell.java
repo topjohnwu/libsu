@@ -130,6 +130,7 @@ public abstract class Shell implements Closeable {
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
     
     private static int flags = 0;
+    private static long timeout = 20;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
     private static Class<? extends Initializer> initClass = null;
     private static boolean isInitGlobal;
@@ -262,7 +263,7 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static Shell newInstance(String... commands) {
         try {
-            Shell shell = Factory.createShell(commands);
+            Shell shell = Factory.createShell(timeout, commands);
             Initializer init = null;
             if (initClass != null) {
                 try {
@@ -401,7 +402,7 @@ public abstract class Shell implements Closeable {
     /**
      * Wait for all tasks to be done before closing this shell
      * and releasing any system resources associated with the shell.
-     *
+     * <p>
      * Blocks until all tasks have completed execution, or
      * the timeout occurs, or the current thread is interrupted,
      * whichever happens first.
@@ -522,6 +523,18 @@ public abstract class Shell implements Closeable {
             };
             setContainer(c);
             return c;
+        }
+
+        /**
+         * Set the maximum time to wait for a new shell construction.
+         * <p>
+         * After the timeout occurs and the new shell still have no response,
+         * the shell process will be force-closed and throw {@link NoShellException}.
+         * @param timeout the maximum time to wait in seconds.
+         *                The default timeout is 20 seconds.
+         */
+        void setTimeout(long timeout) {
+            Shell.timeout = timeout;
         }
     }
 

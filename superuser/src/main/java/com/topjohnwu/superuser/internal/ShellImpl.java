@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import androidx.annotation.NonNull;
 
@@ -105,7 +106,7 @@ class ShellImpl extends Shell {
         }
     }
 
-    ShellImpl(String... cmd) throws IOException {
+    ShellImpl(long timeout, String... cmd) throws IOException {
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         status = UNINT;
 
@@ -142,32 +143,43 @@ class ShellImpl extends Shell {
             }
         }
 
-        status = Shell.UNKNOWN;
+        status = UNKNOWN;
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
+        // Shell checks might get stuck indefinitely
+        Future<Void> future = SERIAL_EXECUTOR.submit(() -> {
+            BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
 
-        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
-        STDIN.flush();
-        String s = br.readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST")) {
-            throw new IOException();
-        }
-        status = NON_ROOT_SHELL;
+            STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
+            STDIN.flush();
+            String s = br.readLine();
+            if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
+                throw new IOException("Created process is not a shell");
+            status = NON_ROOT_SHELL;
 
-        try {
             STDIN.write(("id\n").getBytes("UTF-8"));
             STDIN.flush();
             s = br.readLine();
-            if (TextUtils.isEmpty(s) || !s.contains("uid=0")) {
-                throw new IOException();
-            }
-            status = ROOT_SHELL;
-        } catch (IOException ignored) {}
+            if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
+                status = ROOT_SHELL;
 
-        if (status == ROOT_SHELL && cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
-            status = ROOT_MOUNT_MASTER;
+            if (status == ROOT_SHELL && cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
+                status = ROOT_MOUNT_MASTER;
 
-        br.close();
+            br.close();
+            return null;
+        });
+
+        try {
+            future.get(timeout, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            release();
+            throw (IOException) e.getCause();
+        } catch (InterruptedException|TimeoutException e) {
+            SERIAL_EXECUTOR.shutdownNow();
+            release();
+            InternalUtils.stackTrace(e);
+            throw new IOException("Shell timeout");
+        }
     }
 
     @Override

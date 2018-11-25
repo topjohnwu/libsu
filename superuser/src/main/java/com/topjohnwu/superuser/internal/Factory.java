@@ -25,8 +25,8 @@ import java.io.InputStream;
 
 public final class Factory {
 
-    public static ShellImpl createShell(String... cmd) throws IOException {
-        return new ShellImpl(cmd);
+    public static ShellImpl createShell(long timeout, String... cmd) throws IOException {
+        return new ShellImpl(timeout, cmd);
     }
 
     public static ShellFileIO createShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
