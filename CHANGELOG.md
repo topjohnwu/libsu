@@ -1,4 +1,4 @@
-# 2.1.1
+# 2.1.2
 ## Bug fixes
 - Fix a bug that could cause `new SuFile(parent, name)` to fail
 
@@ -8,7 +8,6 @@
 ## API Changes
 - Add `boolean Shell.waitAndClose(long, TimeUnit)` and `void Shell.waitAndClose()`. You can now wait for all tasks to finish before closing the shell instance.
 - Add `Shell.Config.setTimeout(long)`. Use it to set the maximum time for waiting a new shell construction. The default value is 20 seconds.
-- Deprecate `ContainerApp`. libsu can now automatically inject root shells directly into Application contexts without any configuration, so `ContainerApp` is no longer needed. This class will be removed in the next update.
 
 # 2.0.3
 

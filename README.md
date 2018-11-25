@@ -29,14 +29,65 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.topjohnwu:libsu:2.1.1'
+    implementation 'com.github.topjohnwu:libsu:2.1.2'
 }
 ```
 
 ## Quick Tutorial
 
+### Setup Container
+If you don't extend `Application` in your app, directly use `ContainerApp` as application:
+```xml
+<!-- AndroidManifest.xml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    ...>
+    <application
+        android:name="com.topjohnwu.superuser.ContainerApp"
+        ...>
+        ...
+    </application>
+</manifest>
+```
+
+Or if you use your own `Application` class, extend `ContainerApp`:
+```java
+public class MyApplication extends ContainerApp {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        // You can configure Shell here
+        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+        Shell.Config.verboseLogging(BuildConfig.DEBUG);
+
+        // Use libsu's internal BusyBox
+        BusyBox.setup(this);
+
+        /* Your other code */
+        ...
+    }
+}
+```
+
+Or if you cannot change you base class, here is a workaround:
+```java
+public class MyApplication extends CustomApplication {
+    // Create a new Container field to store the root shell
+    private Shell.Container container;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // Assign the container with a pre-configured Container
+        container = Shell.Config.newContainer();
+
+        /* Configure shell and your other code */
+        ...
+    }
+}
+```
+
 ### Shell Operations
-High level APIs: `Shell.su()`/`Shell.sh()`:
+Once you have the container setup, you can directly use the high level APIs: `Shell.su()`/`Shell.sh()`:
 
 ```java
 // Run commands and get output immediately
