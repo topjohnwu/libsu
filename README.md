@@ -106,7 +106,7 @@ List<String> logs = new ArrayList<>();
 Shell.su("cat /cache/magisk.log").to(logs).exec();
 
 // Run commands in the background and don't care results
-Shell.su("setenfoce 0").submit();
+Shell.su("setenforce 0").submit();
 
 // Run commands in the background and get results via a callback
 Shell.su("sleep 5", "echo hello").submit(result -> {
