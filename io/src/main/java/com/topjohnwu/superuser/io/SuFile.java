@@ -48,10 +48,9 @@ import androidx.annotation.RequiresApi;
  * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, {@code stat}. For some methods,
  * {@code blockdev} could be utilized for additional functionality.
  * These tools are available on modern Android versions with toolbox, however for optimal results
- * installing {@code busybox}, especially the one bundled with libsu {@link com.topjohnwu.superuser.BusyBox}
+ * installing {@code busybox}, especially the one bundled with libsu busybox module
  * would be desirable. Some operations could have oddities without busybox due to the lack of tools
  * or inconsistency of the tools, check the method descriptions for more info before using it.
- * @see com.topjohnwu.superuser.BusyBox
  */
 public class SuFile extends File {
     private File f;

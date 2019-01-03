@@ -58,7 +58,7 @@ import androidx.annotation.Nullable;
  *     <li>{@link #sh(InputStream)}</li>
  *     <li>{@link #su(InputStream)}</li>
  * </ul>
- * These methods will use the global shell and are more convenient for normal usage.
+ * These methods uses the global shell and are more convenient to use.
  * <p>
  * Developers can check the example that came along with the library, it demonstrates many features
  * the library has to offer.
@@ -722,10 +722,6 @@ public abstract class Shell implements Closeable {
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
-     * <p>
-     * Note: If you want the initializer to run in a BusyBox environment, call
-     * {@link BusyBox#setup(Context)} or assign {@link BusyBox#BB_PATH} before any shell will
-     * be constructed.
      * <p>
      * An initializer will be constructed and the callbacks will be invoked each time a new
      * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
