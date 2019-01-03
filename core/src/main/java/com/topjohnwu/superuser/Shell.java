@@ -125,6 +125,13 @@ public abstract class Shell implements Closeable {
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
     /**
+     * If set, {@code /sbin/.magisk/busybox} will be prepended to {@code PATH}.
+     * This will make the shell use Magisk's internal busybox.
+     * <p>
+     * Constant value {@value}.
+     */
+    public static final int FLAG_USE_MAGISK_BUSYBOX = 0x10;
+    /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
      */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
@@ -264,6 +271,8 @@ public abstract class Shell implements Closeable {
     public static Shell newInstance(String... commands) {
         try {
             Shell shell = Factory.createShell(timeout, commands);
+            if (InternalUtils.hasFlag(FLAG_USE_MAGISK_BUSYBOX))
+                shell.newJob().add("export PATH=/sbin/.magisk/busybox:$PATH").exec();
             try {
                 Context ctx = InternalUtils.getContext();
                 setCachedShell(shell);
