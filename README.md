@@ -1,9 +1,9 @@
 # libsu
 
 [![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu) \
-[![](https://img.shields.io/badge/Javadoc-core-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
+[![](https://img.shields.io/badge/Javadoc-core-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/core/latest/javadoc/)
 [![](https://img.shields.io/badge/Javadoc-io-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
-[![](https://img.shields.io/badge/Javadoc-busybox-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
+[![](https://img.shields.io/badge/Javadoc-busybox-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/busybox/latest/javadoc/)
 
 An Android library that provides APIs to a Unix (root) shell.
 
