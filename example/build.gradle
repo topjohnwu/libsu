@@ -29,5 +29,5 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(':superuser')
+    implementation project(':core')
 }

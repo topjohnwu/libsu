@@ -1,1 +1,1 @@
-include ':superuser', ':example'
+include ':core', ':example'
