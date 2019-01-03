@@ -3,19 +3,19 @@ package com.topjohnwu.libsuexample;
 import android.content.Context;
 import android.util.Log;
 
-import com.topjohnwu.superuser.BusyBox;
+import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.ContainerApp;
 import com.topjohnwu.superuser.Shell;
+
+import androidx.annotation.NonNull;
 
 public class ExampleApp extends ContainerApp {
 
     public static final String TAG = "EXAMPLE";
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
+    static {
         // Use internal busybox
-        BusyBox.setup(this);
+        Shell.Config.addInitializers(BusyBoxInstaller.class);
         // Configuration
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
@@ -26,7 +26,7 @@ public class ExampleApp extends ContainerApp {
     private static class ExampleInitializer extends Shell.Initializer {
 
         @Override
-        public boolean onInit(Context context, Shell shell) {
+        public boolean onInit(Context context, @NonNull Shell shell) {
             Log.d(TAG, "onInit");
             return true;
         }

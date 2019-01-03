@@ -1,1 +1,1 @@
-include ':core', ':example'
+include ':core', ':example', ':busybox'

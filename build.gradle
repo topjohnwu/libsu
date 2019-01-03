@@ -1,24 +1,17 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    
+
     repositories {
         google()
         jcenter()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.2.1'
-        
+
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        jcenter()
     }
 }
 
@@ -29,4 +22,49 @@ ext {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+subprojects {
+    buildscript {
+        repositories {
+            google()
+            jcenter()
+        }
+    }
+
+    repositories {
+        google()
+        jcenter()
+    }
+
+    afterEvaluate {
+        if (getPlugins().hasPlugin('com.android.library')) {
+            task javadoc(type: Javadoc) {
+                failOnError false
+                title = 'libsu API'
+                exclude '**/internal/**'
+                source = android.sourceSets.main.java.sourceFiles
+                classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+                classpath += configurations.compile
+                options.links('https://docs.oracle.com/javase/8/docs/api/')
+                options.links('https://developer.android.com/reference/')
+                options.noDeprecated = true
+            }
+
+            task sourcesJar(type: Jar) {
+                classifier = 'sources'
+                from android.sourceSets.main.java.sourceFiles
+            }
+
+            task javadocJar(type: Jar, dependsOn: javadoc) {
+                classifier = 'javadoc'
+                from javadoc.destinationDir
+            }
+
+            artifacts {
+                archives javadocJar
+                archives sourcesJar
+            }
+        }
+    }
 }
