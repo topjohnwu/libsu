@@ -19,7 +19,7 @@ package com.topjohnwu.superuser.io;
 import android.os.Build;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.Factory;
+import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.internal.ShellFile;
 
 import java.io.File;
@@ -67,7 +67,7 @@ public class SuFile extends File {
         } else if (file instanceof ShellFile || !Shell.rootAccess()) {
             f = file;
         } else {
-            f = Factory.createShellFile(file);
+            f = IOFactory.createShellFile(file);
         }
     }
 

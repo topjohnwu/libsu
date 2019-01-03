@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group='com.github.topjohnwu'
+group='com.github.topjohnwu.libsu'
 
 buildscript {
     dependencies {
@@ -10,18 +10,8 @@ buildscript {
 }
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-
     defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion rootProject.ext.compileSdkVersion
         consumerProguardFiles 'proguard-rules.pro'
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 

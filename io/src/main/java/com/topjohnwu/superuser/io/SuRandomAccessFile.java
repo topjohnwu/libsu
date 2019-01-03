@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.io;
 
-import com.topjohnwu.superuser.internal.Factory;
+import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
 import java.io.DataInput;
@@ -73,12 +73,12 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      */
     public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile && ((SuFile) file).isSU()) {
-            return Factory.createShellFileIO(((SuFile) file).getShellFile(), mode);
+            return IOFactory.createShellFileIO(((SuFile) file).getShellFile(), mode);
         } else {
             try {
-                return Factory.createRandomAccessFileWrapper(file, mode);
+                return IOFactory.createRandomAccessFileWrapper(file, mode);
             } catch (FileNotFoundException e) {
-                return Factory.createShellFileIO(Factory.createShellFile(file), mode);
+                return IOFactory.createShellFileIO(IOFactory.createShellFile(file), mode);
             }
         }
     }

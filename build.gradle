@@ -15,11 +15,6 @@ buildscript {
     }
 }
 
-ext {
-    compileSdkVersion = 28
-    buildToolsVersion = "28.0.3"
-}
-
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
@@ -38,6 +33,21 @@ subprojects {
     }
 
     afterEvaluate {
+        android {
+            compileSdkVersion 28
+            buildToolsVersion "28.0.3"
+
+            defaultConfig {
+                minSdkVersion 9
+                targetSdkVersion 28
+            }
+
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+
         if (getPlugins().hasPlugin('com.android.library')) {
             task javadoc(type: Javadoc) {
                 failOnError false

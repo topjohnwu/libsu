@@ -17,7 +17,7 @@
 package com.topjohnwu.superuser.io;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.Factory;
+import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -67,7 +67,7 @@ public class SuFileOutputStream extends FilterOutputStream {
         super(null);
         if (file instanceof SuFile && ((SuFile) file).isSU()) {
             out = new BufferedOutputStream(
-                    Factory.createShellOutputStream(((SuFile) file).getShellFile(), append),
+                    IOFactory.createShellOutputStream(((SuFile) file).getShellFile(), append),
                     4 * 1024 * 1024);
         } else {
             try {
@@ -77,7 +77,7 @@ public class SuFileOutputStream extends FilterOutputStream {
                 if (!Shell.rootAccess())
                     throw e;
                 out = new BufferedOutputStream(
-                        Factory.createShellOutputStream(Factory.createShellFile(file), append),
+                        IOFactory.createShellOutputStream(IOFactory.createShellFile(file), append),
                         4 * 1024 * 1024);
             }
         }
