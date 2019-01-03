@@ -209,8 +209,7 @@ class ShellImpl extends Shell {
             release();
             return true;
         } else {
-            /* Use a new serial executor since the old one already shutdown */
-            SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
+            status = UNINT;
             return false;
         }
     }
