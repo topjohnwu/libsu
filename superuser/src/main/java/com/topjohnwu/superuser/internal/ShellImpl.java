@@ -147,6 +147,10 @@ class ShellImpl extends Shell {
 
         // Shell checks might get stuck indefinitely
         Future<Void> future = SERIAL_EXECUTOR.submit(() -> {
+            // Clean up potential garbage from InputStreams
+            ShellUtils.cleanInputStream(STDOUT);
+            ShellUtils.cleanInputStream(STDERR);
+
             BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
 
             STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
