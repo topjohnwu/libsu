@@ -1,14 +1,17 @@
 # libsu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
+[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu) \
+[![](https://img.shields.io/badge/Javadoc-core-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
+[![](https://img.shields.io/badge/Javadoc-io-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
+[![](https://img.shields.io/badge/Javadoc-busybox-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
 
 An Android library that provides APIs to a Unix (root) shell.
 
 Some poorly coded applications requests a new shell (call `su`, or worse `su -c <commands>`) for every single command, which is very inefficient. This library makes sharing a single, globally shared shell session in Android applications super easy: developers won't have to bother about concurrency issues, and with a rich selection of both synchronous and asynchronous APIs, it is much easier to create a powerful root app.
 
-This library bundles with full featured `busybox` binaries. App developers can easily setup and create an internal `busybox` environment with the built-in helper method without relying on potentially flawed (or even no) external `busybox`.
+Optionally, `libsu` comes with a whole suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on all files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
 
-`libsu` also comes with a whole suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on all files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
+Also optionally, this library bundles with prebuilt `busybox` binaries. App developers can easily setup and create an internal `busybox` environment without relying on potentially flawed (or even no) external `busybox`.
 
 One complex Android application using `libsu` for all root related operations is [Magisk Manager](https://github.com/topjohnwu/Magisk/tree/master/app).
 
@@ -19,7 +22,6 @@ One complex Android application using `libsu` for all root related operations is
 ## Download
 ```java
 android {
-    /* Android Gradle Plugin 3.0.0+ is required to support Java 8 desugaring */
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -29,7 +31,14 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    implementation 'com.github.topjohnwu:libsu:2.1.2'
+    def libsuVersion = '2.2.0'
+    implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
+
+    /* Optional: For using com.topjohnwu.superuser.io classes */
+    implementation "com.github.topjohnwu.libsu:io:${libsuVersion}"
+
+    /* Optional: For including a prebuild busybox */
+    implementation "com.github.topjohnwu.libsu:busybox:${libsuVersion}"
 }
 ```
 
@@ -52,26 +61,23 @@ If you don't extend `Application` in your app, directly use `ContainerApp` as ap
 Or if you use your own `Application` class, extend `ContainerApp`:
 ```java
 public class MyApplication extends ContainerApp {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-
-        // You can configure Shell here
+    static {
+        // Set configurations in a static block
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
-
-        // Use libsu's internal BusyBox
-        BusyBox.setup(this);
-
-        /* Your other code */
-        ...
+        Shell.Config.setTimeout(60);
     }
+    ...  /* Other code */
 }
 ```
 
 Or if you cannot change you base class, here is a workaround:
 ```java
 public class MyApplication extends CustomApplication {
+    static {
+        /* Set configurations in a static block */
+        ...
+    }
     // Create a new Container field to store the root shell
     private Shell.Container container;
     @Override
@@ -79,9 +85,7 @@ public class MyApplication extends CustomApplication {
         super.onCreate();
         // Assign the container with a pre-configured Container
         container = Shell.Config.newContainer();
-
-        /* Configure shell and your other code */
-        ...
+        ...  /* Other code */
     }
 }
 ```
@@ -117,6 +121,7 @@ Shell.su("sleep 5", "echo hello").submit(result -> {
 
 // Create a reactive callback List, and update the UI on each line of output
 List<String> callbackList = new CallbackList<String>() {
+    @MainThread
     @Override
     public void onAddElement(String s) {
         /* This callback will be called on the main (UI) thread each time
@@ -142,7 +147,7 @@ Shell.su("echo hello", "echo hello >&2").to(stdout, stderr).exec();
 ```
 
 ### I/O
-`libsu` also comes with a rich suite of I/O classes for developers to access files using the shared root shell:
+Add `com.github.topjohnwu.libsu:io` as dependency to access the I/O wrapper classes:
 
 ```java
 /* Treat files that require root access just like ordinary files */
@@ -160,8 +165,25 @@ if (logs.exists()) {
 }
 ```
 
+### BusyBox
+The I/O classes relies on several commandline tools. *Most* of the tools are availible in modern Android via `toybox` (Android 6+), however for compatibility and reliable/reproducible behavior (some applets included in `toybox` is not fully featured), it will be a good idea to have BusyBox included to the environment:
+
+```java
+/* If you want to bundle prebuilt busybox binaries with your app,
+ * add com.github.topjohnwu.libsu:busybox as a dependency, and
+ * register BusyBoxInstaller as an initializer to install the bundled BusyBox.
+ *
+ * Note that this will add 1.51 MB to your APK (compressed) */
+Shell.Config.addInitializers(BusyBoxInstaller.class);
+
+/* If your app only targets Magisk users, and you are not willing to
+ * add the additional size for the busybox binaries, you can tell libsu
+ * to use Magisk's internal busybox */
+Shell.Config.setFlags(Shell.FLAG_USE_MAGISK_BUSYBOX);
+```
+
 ### Advanced
-Initialize the shell with custom `Shell.Initializer`, similar to what `.bashrc` will do.
+Initialize shells with custom `Shell.Initializer`, similar to what `.bashrc` will do:
 
 ```java
 class ExampleInitializer extends Shell.Initializer {
@@ -171,7 +193,7 @@ class ExampleInitializer extends Shell.Initializer {
             // Load a script from raw resources
             shell.newJob()
                 .add(bashrc)                            /* Load a script from raw resources */
-                .add("export PATH=/custom/path:$PATH")  /* Run some commands */
+                .add("export ENVIRON_VAR=SOME_VALUE")   /* Run some commands */
                 .exec();
         } catch (IOException e) {
             return false;
@@ -181,11 +203,9 @@ class ExampleInitializer extends Shell.Initializer {
 }
 
 // Register the class as initializer
-Shell.Config.setInitializer(ExampleInitializer.class);
+Shell.Config.addInitializers(ExampleInitializer.class);
 ```
 
-## Documentation
+## Example
 
 This repo also comes with an example app (`:example`), check the code and play/experiment with it.
-
-I strongly recommend all developers to check out the more detailed full documentation: [JavaDoc Page](https://topjohnwu.github.io/libsu).

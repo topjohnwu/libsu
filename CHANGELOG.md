@@ -1,3 +1,19 @@
+# 2.2.0
+Starting from this release, `libsu` is modularized into 3 parts: `core`, `io`, and `busybox`.
+
+If you only use the shell implementation, you just need `com.github.topjohnwu.libsu:core`. `com.github.topjohnwu.libsu:io` and `com.github.topjohnwu.libsu:busybox` are optional: include the former to use the I/O wrapper classes, and the latter to bundle the prebuilt busybox binaries with your app. The old `com.github.topjohnwu:libsu` can still be used, but all 3 components will be pulled in.
+
+## Bug fixes
+- Clean up potential garbage output before testing shell
+- Prevent possible `Shell.waitAndClose(int, TimeUnit)` race conditions
+
+## API Changes
+- Add support for multiple `Shell.Initializer`s: new methods `void Shell.Config.setInitializers(...)` and `void Shell.Config.addInitializers(...)` are added; `void Shell.Config.setInitializer(Initializer.class)` is deprecated.
+
+## Breaking Changes
+- Remove the class `BusyBox`. To install the prebuilt busybox, add `com.github.topjohnwu.libsu:busybox` as a dependency, and register `BusyBoxInstaller` as an initializer (`Shell.Config.addInitializers(BusyBoxInstaller.class);`)
+- Introduce a new flag: `Shell.FLAG_USE_MAGISK_BUSYBOX`. With this flag set, `/sbin/.magisk/busybox` will be prepended to `PATH`, so the shell will use Magisk's internal busybox.
+
 # 2.1.2
 ## Bug fixes
 - Fix a bug that could cause `new SuFile(parent, name)` to fail
