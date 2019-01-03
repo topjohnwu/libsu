@@ -3,6 +3,7 @@ package com.topjohnwu.superuser;
 import android.content.Context;
 import android.os.Build;
 
+import com.topjohnwu.superuser.busybox.R;
 import com.topjohnwu.superuser.internal.InternalUtils;
 
 import java.io.File;
