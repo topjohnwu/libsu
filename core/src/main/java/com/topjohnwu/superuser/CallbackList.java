@@ -22,6 +22,8 @@ import java.util.AbstractList;
 import java.util.Collections;
 import java.util.List;
 
+import androidx.annotation.MainThread;
+
 /**
  * An {@link AbstractList} that calls {@code onAddElement} when a new element is added to the list.
  * <p>
@@ -61,6 +63,7 @@ public abstract class CallbackList<E> extends AbstractList<E> {
      * This method will be called after {@code add} is called.
      * @param e the new element added to the list.
      */
+    @MainThread
     public abstract void onAddElement(E e);
 
     /**

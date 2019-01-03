@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -171,7 +172,7 @@ public abstract class Shell implements Closeable {
         Shell shell = getCachedShell();
         if (shell != null) {
             // If cached shell exists, run synchronously
-            callback.onShell(shell);
+            UiThreadHandler.run(() -> callback.onShell(shell));
         } else {
             // Else we get shell in worker thread and call the callback when we get a Shell
             EXECUTOR.execute(() -> {
@@ -632,6 +633,7 @@ public abstract class Shell implements Closeable {
         /**
          * @param out the result of the job.
          */
+        @MainThread
         void onResult(Result out);
     }
 
@@ -754,6 +756,7 @@ public abstract class Shell implements Closeable {
         /**
          * @param shell the {@code Shell} obtained in the asynchronous operation.
          */
+        @MainThread
         void onShell(@NonNull Shell shell);
     }
 }

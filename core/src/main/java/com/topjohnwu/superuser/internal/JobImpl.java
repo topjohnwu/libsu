@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+
 class JobImpl extends Shell.Job {
 
     private static final String TAG = "JOBIMPL";
@@ -100,7 +102,7 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public Shell.Job add(InputStream in) {
+    public Shell.Job add(@NonNull InputStream in) {
         if (in != null)
             handlers.add(InputHandler.newInstance(in));
         return this;
