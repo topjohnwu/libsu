@@ -28,6 +28,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -130,7 +132,7 @@ public abstract class Shell implements Closeable {
     private static int flags = 0;
     private static long timeout = 20;
     private static WeakReference<Container> weakContainer = new WeakReference<>(null);
-    private static Class<? extends Initializer> initClass = null;
+    private static List<Class<? extends Initializer>> initClasses = new ArrayList<>();
     private static boolean isInitGlobal;
 
     /**
@@ -141,7 +143,7 @@ public abstract class Shell implements Closeable {
      * @return a {@code Shell} instance
      */
     @NonNull
-    public static Shell getShell() {
+    public synchronized static Shell getShell() {
         Shell shell = getCachedShell();
         if (shell == null) {
             isInitGlobal = true;
@@ -262,27 +264,27 @@ public abstract class Shell implements Closeable {
     public static Shell newInstance(String... commands) {
         try {
             Shell shell = Factory.createShell(timeout, commands);
-            Initializer init = null;
-            if (initClass != null) {
-                try {
-                    // Force enabling the default constructor as it might be private
-                    Constructor<? extends Initializer> ic = initClass.getDeclaredConstructor();
+            try {
+                Context ctx = InternalUtils.getContext();
+                setCachedShell(shell);
+                for (Class<? extends Initializer> cls : initClasses) {
+                    Constructor<? extends Initializer> ic = cls.getDeclaredConstructor();
                     ic.setAccessible(true);
-                    init = ic.newInstance();
-                } catch (Exception e) {
-                    InternalUtils.stackTrace(e);
+                    Initializer init = ic.newInstance();
+                    if (!init.onInit(ctx, shell)) {
+                        setCachedShell(null);
+                        throw new NoShellException("Unable to init shell");
+                    }
                 }
-            }
-            if (init == null)
-                init = new Initializer();
-            if (!init.init(shell)) {
-                setCachedShell(null);
-                throw new NoShellException("Unable to init shell");
+            } catch (Exception e) {
+                if (e instanceof RuntimeException)
+                    throw (RuntimeException) e;
+                InternalUtils.stackTrace(e);
             }
             return shell;
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
-            throw new NoShellException("Impossible to create a shell!", e);
+            throw new NoShellException("Unable to create a shell!", e);
         }
     }
 
@@ -456,13 +458,32 @@ public abstract class Shell implements Closeable {
         }
 
         /**
-         * Set a desired {@code Initializer}.
-         * @see Initializer
-         * @param init the class of the desired initializer.
-         *             <strong>If it is a nested class, it MUST be a static nested class!!</strong>
+         * @deprecated
          */
-        public static void setInitializer(@NonNull Class<? extends Initializer> init) {
-            initClass = init;
+        @Deprecated
+        public static void setInitializer(@NonNull Class<? extends Initializer> cls) {
+            setInitializers(cls);
+        }
+
+        /**
+         * Set {@code Initializer}s.
+         * @see Initializer
+         * @param classes the classes of desired initializers.
+         */
+        @SafeVarargs
+        public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
+            initClasses.clear();
+            addInitializers(classes);
+        }
+
+        /**
+         * Add additional {@code Initializer}s.
+         * @see Initializer
+         * @param classes the classes of desired initializers.
+         */
+        @SafeVarargs
+        public static void addInitializers(@NonNull Class<? extends Initializer>... classes) {
+            initClasses.addAll(Arrays.asList(classes));
         }
 
         /**
@@ -696,8 +717,8 @@ public abstract class Shell implements Closeable {
      * The initializer when a new {@code Shell} is constructed.
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
-     * is constructed, subclass this class, add your own implementation, and register it with
-     * {@link Config#setInitializer(Class)}.
+     * is constructed, extend this class, add your own implementation, and register it with
+     * {@link Config#addInitializers(Class[])} or {@link Config#setInitializers(Class[])}.
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
@@ -719,13 +740,6 @@ public abstract class Shell implements Closeable {
          * @return {@code false} when initialization fails, otherwise {@code true}.
          */
         public boolean onInit(Context context, @NonNull Shell shell) { return true; }
-
-        private boolean init(Shell shell) {
-            setCachedShell(shell);
-            if (shell.isRoot())
-                BusyBox.init(shell);
-            return onInit(InternalUtils.getContext(), shell);
-        }
     }
 
     /**

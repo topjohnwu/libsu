@@ -19,7 +19,7 @@ public class ExampleApp extends ContainerApp {
         // Configuration
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
-        Shell.Config.setInitializer(ExampleInitializer.class);
+        Shell.Config.addInitializers(ExampleInitializer.class);
     }
 
     // Demonstrate Shell.Initializer
