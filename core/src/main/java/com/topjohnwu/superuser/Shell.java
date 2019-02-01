@@ -175,7 +175,7 @@ public abstract class Shell implements Closeable {
             UiThreadHandler.run(() -> callback.onShell(shell));
         } else {
             // Else we get shell in worker thread and call the callback when we get a Shell
-            EXECUTOR.execute(() -> {
+            EXECUTOR.submit(() -> {
                 Shell s = getShell();
                 UiThreadHandler.run(() -> callback.onShell(s));
             });
@@ -303,7 +303,12 @@ public abstract class Shell implements Closeable {
      * @return {@code true} if the global shell has root access.
      */
     public static boolean rootAccess() {
-        return getShell().isRoot();
+        try {
+            return getShell().isRoot();
+        } catch (NoShellException e) {
+            return false;
+        }
+
     }
 
     /* ************

@@ -16,6 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
+import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 
 class PendingJob extends JobImpl {
@@ -29,7 +30,12 @@ class PendingJob extends JobImpl {
 
     @Override
     public Shell.Result exec() {
-        ShellImpl shell = (ShellImpl) Shell.getShell();
+        ShellImpl shell;
+        try {
+            shell = (ShellImpl) Shell.getShell();
+        } catch (NoShellException e) {
+            return new ResultImpl();
+        }
         if (isSU && !shell.isRoot())
             return new ResultImpl();
         task = shell.newOutputGobblingTask();
