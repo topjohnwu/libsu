@@ -1,3 +1,7 @@
+# 2.2.1
+## Behavior Changes
+- When using high level APIs (`Shell.su`, `Shell.sh`, `Shell.rootAccess()`), `NoShellException` is now silently suppressed to prevent unexpected crashes. Should no shell is possible to be created, `Shell.su/sh` will immediately return a `Shell.Result` with no output and show failure; `Shell.rootAccess()` will simply return `false`.
+
 # 2.2.0
 Starting from this release, `libsu` is modularized into 3 parts: `core`, `io`, and `busybox`.
 
