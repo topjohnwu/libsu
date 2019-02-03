@@ -18,6 +18,7 @@ package com.topjohnwu.superuser;
 
 import android.content.Context;
 
+import com.topjohnwu.superuser.internal.DefaultContainer;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -42,24 +43,17 @@ import androidx.annotation.Nullable;
 /**
  * A class providing an API to an interactive (root) shell.
  * <p>
- * Sharing shells means that the {@code Shell} instance would need to be stored somewhere.
- * Generally, most developers would want to have the {@code Shell} instance shared globally
- * across the application. In that case, the developer can directly use or subclass the the readily
- * available {@link com.topjohnwu.superuser.ContainerApp} and the setup is all done. If you already
- * overridden {@link android.app.Application}, and it is impossible to change the base class,
- * or for some reason one would want to store the {@code Shell} instance somewhere else, check the
- * documentation of {@link Container} for more info. Once a global {@link Container} is registered,
- * use {@link #getShell()} or {@link #getShell(GetShellCallback)} to get/construct {@code Shell}.
- * <p>
- * However in most cases, developers do not need to deal with a {@code Shell} instance.
- * Use these high level APIs:
+ * In most cases, developers do not need to directly access a {@code Shell} instance.
+ * Use these high level APIs instead:
  * <ul>
  *     <li>{@link #sh(String...)}</li>
  *     <li>{@link #su(String...)}</li>
  *     <li>{@link #sh(InputStream)}</li>
  *     <li>{@link #su(InputStream)}</li>
  * </ul>
- * These methods uses the global shell and are more convenient to use.
+ * These methods not only uses the global shell instance but are also more convenient to use.
+ * The global shell instance is constructed on-demand and cached.
+ * To get the instance directly, call {@link #getShell()} or {@link #getShell(GetShellCallback)}.
  * <p>
  * Developers can check the example that came along with the library, it demonstrates many features
  * the library has to offer.
@@ -182,6 +176,12 @@ public abstract class Shell implements Closeable {
         }
     }
 
+    @NonNull
+    private static Container getContainer() {
+        Container container = weakContainer.get();
+        return container == null ? DefaultContainer.CONTAINER : container;
+    }
+
     /**
      * Get a {@code Shell} instance from the global container, return {@code null} if no active
      * shell is stored in the container or no container is assigned.
@@ -190,24 +190,17 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        Shell shell = null;
-        Container container = weakContainer.get();
-
-        if (container != null)
-            shell = container.getShell();
-
+        Shell shell = getContainer().getShell();
         if (shell != null && !shell.isAlive())
             shell = null;
 
         return shell;
     }
 
-    static void setCachedShell(Shell shell) {
+    private static void setCachedShell(Shell shell) {
         if (isInitGlobal) {
             // Set the global shell
-            Container container = weakContainer.get();
-            if (container != null)
-                container.setShell(shell);
+            getContainer().setShell(shell);
         }
     }
 
@@ -458,17 +451,10 @@ public abstract class Shell implements Closeable {
         private Config() {}
 
         /**
-         * Set the container to store the global {@code Shell} instance.
-         * <p>
-         * Future shell commands using static method APIs will automatically obtain a {@code Shell}
-         * from the container with {@link #getShell()} or {@link #getShell(GetShellCallback)}.
-         * <p>
-         * A {@link WeakReference} of the registered container would be saved statically
-         * so the container could be garbage collected to prevent memory leak if you decide to
-         * store {@code Shell} in places like {@link android.app.Activity}.
-         * @param container the container to store the global {@code Shell} instance.
+         * @deprecated
          */
-        public static void setContainer(@Nullable Container container) {
+        @Deprecated
+        public static void setContainer(@NonNull Container container) {
             weakContainer = new WeakReference<>(container);
         }
 

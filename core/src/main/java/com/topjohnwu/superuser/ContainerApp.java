@@ -18,27 +18,8 @@ package com.topjohnwu.superuser;
 
 import android.app.Application;
 
-import androidx.annotation.Nullable;
-
 /**
- * A subclass of {@link Application} with a {@link Shell.Container} injected.
+ * @deprecated
  */
-public class ContainerApp extends Application implements Shell.Container {
-
-    private volatile Shell mShell;
-
-    public ContainerApp() {
-        Shell.Config.setContainer(this);
-    }
-
-    @Nullable
-    @Override
-    public Shell getShell() {
-        return mShell;
-    }
-
-    @Override
-    public void setShell(@Nullable Shell shell) {
-        mShell = shell;
-    }
-}
+@Deprecated
+public class ContainerApp extends Application {}
