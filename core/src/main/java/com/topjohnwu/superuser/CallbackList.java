@@ -89,7 +89,7 @@ public abstract class CallbackList<E> extends AbstractList<E> {
     public void add(int i, E s) {
         if (mBase != null)
             mBase.add(i, s);
-        UiThreadHandler.runSynchronized(this, () -> onAddElement(s));
+        UiThreadHandler.runWithLock(this, () -> onAddElement(s));
     }
 
     /**

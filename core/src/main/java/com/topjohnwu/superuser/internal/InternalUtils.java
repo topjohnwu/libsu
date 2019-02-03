@@ -22,6 +22,7 @@ import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -29,6 +30,7 @@ public final class InternalUtils {
 
     private static Field mBaseContext;
     private static Method currentApplication;
+    private static WeakReference<Context> weakContext;
 
     static {
         try {
@@ -36,11 +38,7 @@ public final class InternalUtils {
             mBaseContext.setAccessible(true);
             currentApplication = Class.forName("android.app.ActivityThread")
                     .getMethod("currentApplication");
-        } catch (NoSuchFieldException e) {
-            /* Impossible */
-        } catch (ClassNotFoundException e) {
-            /* Impossible */
-        } catch (NoSuchMethodException e) {
+        } catch (Exception e) {
             /* Impossible */
         }
     }
@@ -64,11 +62,16 @@ public final class InternalUtils {
     }
 
     public static Context getContext() {
-        try {
-            return (Context) currentApplication.invoke(null);
-        } catch (Exception e) {
-            return null;
+        if (weakContext == null || weakContext.get() == null) {
+            UiThreadHandler.runAndWait(() -> {
+                try {
+                    weakContext = new WeakReference<>((Context) currentApplication.invoke(null));
+                } catch (Exception e) {
+                    weakContext = new WeakReference<>(null);
+                }
+            });
         }
+        return weakContext.get();
     }
 
     public static void replaceBaseContext(ContextWrapper wrapper, Context base) {
