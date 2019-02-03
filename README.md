@@ -31,7 +31,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.2.1'
+    def libsuVersion = '2.3.0'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */
@@ -44,54 +44,21 @@ dependencies {
 
 ## Quick Tutorial
 
-### Setup Container
-If you don't extend `Application` in your app, directly use `ContainerApp` as application:
-```xml
-<!-- AndroidManifest.xml -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    ...>
-    <application
-        android:name="com.topjohnwu.superuser.ContainerApp"
-        ...>
-        ...
-    </application>
-</manifest>
-```
+### Configurations
+Set configurations within a static block in your MainActivity or Application class
 
-Or if you use your own `Application` class, extend `ContainerApp`:
 ```java
-public class MyApplication extends ContainerApp {
-    static {
-        // Set configurations in a static block
-        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
-        Shell.Config.verboseLogging(BuildConfig.DEBUG);
-        Shell.Config.setTimeout(60);
-    }
-    ...  /* Other code */
-}
-```
-
-Or if you cannot change you base class, here is a workaround:
-```java
-public class MyApplication extends CustomApplication {
-    static {
-        /* Set configurations in a static block */
-        ...
-    }
-    // Create a new Container field to store the root shell
-    private Shell.Container container;
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        // Assign the container with a pre-configured Container
-        container = Shell.Config.newContainer();
-        ...  /* Other code */
-    }
+static {
+    /* Shell.Config methods shall be called before any shell is created
+     * This is the reason why you should call it in a static block
+     * The followings are some examples, check Javadoc for more details */
+    Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
+    Shell.Config.verboseLogging(BuildConfig.DEBUG);
+    Shell.Config.setTimeout(10);
 }
 ```
 
 ### Shell Operations
-Once you have the container setup, you can directly use the high level APIs: `Shell.su()`/`Shell.sh()`:
 
 ```java
 // Run commands and get output immediately
