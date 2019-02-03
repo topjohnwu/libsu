@@ -521,12 +521,9 @@ public abstract class Shell implements Closeable {
         }
 
         /**
-         * Construct a container object.
-         * This method will automatically register the returned object to be the global container
-         * by calling {@link Config#setContainer(Shell.Container)}. The developer will only need to
-         * assign the returned value into a field of the target class.
-         * @return an implementation of {@link Container}.
+         * @deprecated
          */
+        @Deprecated
         public static Container newContainer() {
             Container c = new Container() {
                 private volatile Shell mShell;
@@ -690,17 +687,9 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * The container to store the global {@code Shell} instance.
-     * <p>
-     * In order to store a shell instance somewhere in a component of your app, the easiest way
-     * is to create a new non-static {@link Container} field in your class and assign the value with
-     * the object returned from {@link Config#newContainer()}.
-     * <p>
-     * If you decide to go the more complicated route by implementing {@link Container} in your
-     * class, create a volatile {@code Shell} field, implement {@link #getShell()} and
-     * {@link #setShell(Shell)} to expose the new field, and don't forget to register {@code this}
-     * in the constructor by calling {@code Shell.Config.setContainer(this)}.
+     * @deprecated
      */
+    @Deprecated
     public interface Container {
 
         /**
