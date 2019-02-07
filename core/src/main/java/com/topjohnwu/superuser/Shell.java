@@ -18,7 +18,6 @@ package com.topjohnwu.superuser;
 
 import android.content.Context;
 
-import com.topjohnwu.superuser.internal.DefaultContainer;
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -27,7 +26,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,7 +131,7 @@ public abstract class Shell implements Closeable {
     
     private static int flags = 0;
     private static long timeout = 20;
-    private static WeakReference<Container> weakContainer = new WeakReference<>(null);
+    private static Shell globalShell;
     private static List<Class<? extends Initializer>> initClasses = new ArrayList<>();
     private static boolean isInitGlobal;
 
@@ -176,12 +174,6 @@ public abstract class Shell implements Closeable {
         }
     }
 
-    @NonNull
-    private static Container getContainer() {
-        Container container = weakContainer.get();
-        return container == null ? DefaultContainer.CONTAINER : container;
-    }
-
     /**
      * Get a {@code Shell} instance from the global container, return {@code null} if no active
      * shell is stored in the container or no container is assigned.
@@ -190,17 +182,15 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        Shell shell = getContainer().getShell();
-        if (shell != null && !shell.isAlive())
-            shell = null;
-
-        return shell;
+        if (globalShell != null && !globalShell.isAlive())
+            globalShell = null;
+        return globalShell;
     }
 
     private static void setCachedShell(Shell shell) {
         if (isInitGlobal) {
             // Set the global shell
-            getContainer().setShell(shell);
+            globalShell = shell;
         }
     }
 
@@ -451,22 +441,6 @@ public abstract class Shell implements Closeable {
         private Config() {}
 
         /**
-         * @deprecated
-         */
-        @Deprecated
-        public static void setContainer(@NonNull Container container) {
-            weakContainer = new WeakReference<>(container);
-        }
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public static void setInitializer(@NonNull Class<? extends Initializer> cls) {
-            setInitializers(cls);
-        }
-
-        /**
          * Set {@code Initializer}s.
          * @see Initializer
          * @param classes the classes of desired initializers.
@@ -518,28 +492,6 @@ public abstract class Shell implements Closeable {
         public static void verboseLogging(boolean verbose) {
             if (verbose)
                 flags |= FLAG_VERBOSE_LOGGING;
-        }
-
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public static Container newContainer() {
-            Container c = new Container() {
-                private volatile Shell mShell;
-                @Nullable
-                @Override
-                public Shell getShell() {
-                    return mShell;
-                }
-
-                @Override
-                public void setShell(@Nullable Shell shell) {
-                    mShell = shell;
-                }
-            };
-            setContainer(c);
-            return c;
         }
 
         /**
@@ -684,24 +636,6 @@ public abstract class Shell implements Closeable {
          * @param cb the callback to receive the result of the job.
          */
         public abstract void submit(ResultCallback cb);
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public interface Container {
-
-        /**
-         * @return the {@code Shell} instance stored in the implementing class.
-         */
-        @Nullable
-        Shell getShell();
-
-        /**
-         * @param shell replaces the instance stored in the implementing class.
-         */
-        void setShell(@Nullable Shell shell);
     }
 
     /**

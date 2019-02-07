@@ -48,22 +48,6 @@ import androidx.annotation.NonNull;
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
 
     /**
-     * @deprecated
-     */
-    @Deprecated
-    public static SuRandomAccessFile open(String path) throws FileNotFoundException {
-        return open(new File(path), "rw");
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public static SuRandomAccessFile open(File file) throws FileNotFoundException {
-        return open(file, "rw");
-    }
-
-    /**
      * @see java.io.RandomAccessFile#RandomAccessFile(File, String)
      * @param file the file object.
      * @param mode the access mode.
