@@ -1,5 +1,5 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'maven-publish'
 
 buildscript {
 
@@ -46,8 +46,18 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-artifacts {
-    archives javadocJar
+task install (dependsOn: publishToMavenLocal) {
+    /* Force JitPack to build javadocJar and publish */
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact javadocJar
+            groupId 'com.github.topjohnwu'
+            artifactId 'docs'
+        }
+    }
 }
 
 subprojects {
