@@ -1,4 +1,5 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+apply plugin: 'com.github.dcendents.android-maven'
 
 buildscript {
 
@@ -7,7 +8,8 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.0'
+        classpath 'com.android.tools.build:gradle:3.3.1'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
 
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -15,8 +17,37 @@ buildscript {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+
+
+task dlPackageList {
+    /* Merge framework packages with AndroidX packages into the same list
+     * so links to Android classes can work properly in Javadoc */
+    rootProject.buildDir.mkdirs()
+    new File(rootProject.buildDir, 'package-list').withOutputStream { out ->
+        new URL('https://developer.android.com/reference/package-list')
+                .withInputStream { is -> out << is }
+        new URL('https://developer.android.com/reference/androidx/package-list')
+                .withInputStream { is -> out << is }
+    }
+}
+
+task javadoc(type: Javadoc, dependsOn: dlPackageList) {
+    failOnError false
+    title = 'libsu API'
+    exclude '**/internal/**'
+    options.links('https://docs.oracle.com/javase/8/docs/api/')
+    options.linksOffline 'https://developer.android.com/reference/', rootProject.buildDir.getPath()
+    destinationDir = new File(rootProject.buildDir, 'javadoc')
+    options.noDeprecated = true
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
 }
 
 subprojects {
@@ -32,10 +63,14 @@ subprojects {
         jcenter()
     }
 
+    configurations {
+        javadocDeps
+    }
+
     afterEvaluate {
         android {
             compileSdkVersion 28
-            buildToolsVersion "28.0.3"
+            buildToolsVersion '28.0.3'
 
             defaultConfig {
                 if (minSdkVersion == null)
@@ -50,16 +85,11 @@ subprojects {
         }
 
         if (getPlugins().hasPlugin('com.android.library')) {
-            task javadoc(type: Javadoc) {
-                failOnError false
-                title = 'libsu API'
-                exclude '**/internal/**'
-                source = android.sourceSets.main.java.sourceFiles
+
+            rootProject.javadoc {
+                source += android.sourceSets.main.java.sourceFiles
                 classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-                classpath += configurations.compile
-                options.links('https://docs.oracle.com/javase/8/docs/api/')
-                options.links('https://developer.android.com/reference/')
-                options.noDeprecated = true
+                classpath += configurations.javadocDeps
             }
 
             task sourcesJar(type: Jar) {
@@ -67,13 +97,7 @@ subprojects {
                 from android.sourceSets.main.java.sourceFiles
             }
 
-            task javadocJar(type: Jar, dependsOn: javadoc) {
-                classifier = 'javadoc'
-                from javadoc.destinationDir
-            }
-
             artifacts {
-                archives javadocJar
                 archives sourcesJar
             }
         }

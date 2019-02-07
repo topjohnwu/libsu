@@ -3,12 +3,6 @@ apply plugin: 'com.github.dcendents.android-maven'
 
 group='com.github.topjohnwu.libsu'
 
-buildscript {
-    dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
-    }
-}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     api project(':core')

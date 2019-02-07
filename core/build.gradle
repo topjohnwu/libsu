@@ -3,12 +3,6 @@ apply plugin: 'com.github.dcendents.android-maven'
 
 group='com.github.topjohnwu.libsu'
 
-buildscript {
-    dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
-    }
-}
-
 android {
     defaultConfig {
         consumerProguardFiles 'proguard-rules.pro'
@@ -18,4 +12,5 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     api 'androidx.annotation:annotation:1.0.1'
+    javadocDeps 'androidx.annotation:annotation:1.0.1'
 }
