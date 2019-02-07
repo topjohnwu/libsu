@@ -2,6 +2,7 @@ package com.topjohnwu.superuser;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.TextUtils;
 
 import com.topjohnwu.superuser.busybox.R;
 import com.topjohnwu.superuser.internal.InternalUtils;
@@ -43,8 +44,13 @@ public class BusyBoxInstaller extends Shell.Initializer {
         File bbPath = new File(de.getFilesDir().getParentFile(), "busybox");
         File bb = new File(bbPath, "busybox");
         // Get architecture
-        List<String> archs = Arrays.asList(Build.CPU_ABI);
-        boolean x86 = archs.contains("x86");
+        boolean x86;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            List<String> abis = Arrays.asList(Build.SUPPORTED_ABIS);
+            x86 = abis.contains("x86");
+        } else {
+            x86 = TextUtils.equals(Build.CPU_ABI, "x86");
+        }
         if (!bb.exists() || !ShellUtils.checkSum("MD5", bb, x86 ? X86_MD5 : ARM_MD5)) {
             bbPath.mkdirs();
             for (File f : bbPath.listFiles())
