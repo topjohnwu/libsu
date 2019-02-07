@@ -1,9 +1,6 @@
 # libsu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu) \
-[![](https://img.shields.io/badge/Javadoc-core-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/core/latest/javadoc/)
-[![](https://img.shields.io/badge/Javadoc-io-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/io/latest/javadoc/)
-[![](https://img.shields.io/badge/Javadoc-busybox-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/busybox/latest/javadoc/)
+[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu) [![](https://img.shields.io/badge/libsu-Javadoc-blue.svg)](https://jitpack.io/com/github/topjohnwu/libsu/docs/latest/javadoc/)
 
 An Android library that provides APIs to a Unix (root) shell.
 
@@ -31,7 +28,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.3.0'
+    def libsuVersion = '2.3.1'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */

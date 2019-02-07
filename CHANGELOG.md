@@ -1,3 +1,7 @@
+# 2.3.1
+- Publish aggregated Javadoc
+- Strip out all deprecated APIs
+
 # 2.3.0
 Starting from 2.3.0, you shall stop using `Shell.Container`, including `ContainerApp`.
 
