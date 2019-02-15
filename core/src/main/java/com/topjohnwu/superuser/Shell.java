@@ -376,7 +376,11 @@ public abstract class Shell implements Closeable {
     public abstract void execTask(@NonNull Task task) throws IOException;
 
     /**
-     * Construct a new {@link Job} that will use the shell.
+     * Construct a new {@link Job} that will use the shell for execution.
+     * <p>
+     * Be aware that unlike {@code Shell.su(...)/Shell.sh(...)}, <strong>NO</strong> output will
+     * be produced if the developer did not set the output destination with {@link Job#to(List)}
+     * or {@link Job#to(List, List)}.
      * @return a job that the developer can execute or submit later.
      */
     public abstract Job newJob();
