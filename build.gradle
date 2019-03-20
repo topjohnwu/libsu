@@ -1,5 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 apply plugin: 'maven-publish'
+apply plugin: 'java'
 
 buildscript {
 
@@ -8,7 +9,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.1'
+        classpath 'com.android.tools.build:gradle:3.5.0-alpha07'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
 
 
@@ -31,7 +32,7 @@ task dlPackageList {
     }
 }
 
-task javadoc(type: Javadoc, dependsOn: dlPackageList) {
+task javadoc(type: Javadoc, dependsOn: dlPackageList, overwrite: true) {
     failOnError false
     title = 'libsu API'
     exclude '**/internal/**'
@@ -42,7 +43,7 @@ task javadoc(type: Javadoc, dependsOn: dlPackageList) {
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc.destinationDir
 }
 
