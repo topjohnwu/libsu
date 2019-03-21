@@ -1,3 +1,6 @@
+#2.3.2
+- Fix a possible NPE in `SuFile`
+
 # 2.3.1
 - Publish aggregated Javadoc
 - Strip out all deprecated APIs

@@ -28,7 +28,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.3.1'
+    def libsuVersion = '2.3.2'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */
