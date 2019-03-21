@@ -235,7 +235,9 @@ public class SuFile extends File {
     }
 
     private SuFile[] trans(File[] list) {
-        SuFile ret[] = new SuFile[list.length];
+        if (list == null)
+            return null;
+        SuFile[] ret = new SuFile[list.length];
         for (int i = 0; i < list.length; ++i)
             ret[i] = new SuFile(list[i]);
         return ret;
