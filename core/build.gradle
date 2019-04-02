@@ -11,6 +11,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    api 'androidx.annotation:annotation:1.0.1'
-    javadocDeps 'androidx.annotation:annotation:1.0.1'
+    api 'androidx.annotation:annotation:1.0.2'
+    javadocDeps 'androidx.annotation:annotation:1.0.2'
 }
