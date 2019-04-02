@@ -1,8 +1,8 @@
-#2.3.3
+# 2.3.3
 - Update proguard rules to support R8 full mode
 - Update gradle scripts to build proper Javadoc with links to Android reference
 
-#2.3.2
+# 2.3.2
 - Fix a possible NPE in `SuFile`
 
 # 2.3.1
