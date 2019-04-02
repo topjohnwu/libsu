@@ -24,3 +24,6 @@
 -assumenosideeffects class com.topjohnwu.superuser.internal.InternalUtils {
   public static *** log(...);
 }
+
+# Make sure R8/Proguard never remove Shell.Initializer classes
+-keep,allowobfuscation class * extends com.topjohnwu.superuser.Shell$Initializer
