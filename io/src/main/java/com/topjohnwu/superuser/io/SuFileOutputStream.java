@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.io;
 
-import androidx.annotation.NonNull;
-
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
@@ -25,8 +23,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FilterOutputStream;
-import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * An {@link java.io.OutputStream} that read files using the global shell instance.
@@ -37,7 +34,7 @@ import java.io.IOException;
  * Note: this class is <b>always buffered internally</b>, do not add another layer of
  * {@link BufferedOutputStream} to add more overhead!
  */
-public class SuFileOutputStream extends FilterOutputStream {
+public class SuFileOutputStream extends BufferedOutputStream {
 
     /**
      * @see FileOutputStream#FileOutputStream(String)
@@ -60,31 +57,25 @@ public class SuFileOutputStream extends FilterOutputStream {
         this(file, false);
     }
 
-    /**
-     * @see FileOutputStream#FileOutputStream(File, boolean)
-     */
-    public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
-        super(null);
+    private static OutputStream getOut(File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            out = new BufferedOutputStream(
-                    IOFactory.createShellOutputStream((SuFile) file, append),
-                    4 * 1024 * 1024);
+            return IOFactory.createShellOutputStream((SuFile) file, append);
         } else {
             try {
                 // Try normal FileOutputStream
-                out = new BufferedOutputStream(new FileOutputStream(file, append));
+                return new FileOutputStream(file, append);
             } catch (FileNotFoundException e) {
                 if (!Shell.rootAccess())
                     throw e;
-                out = new BufferedOutputStream(
-                        IOFactory.createShellOutputStream(new SuFile(file), append),
-                        4 * 1024 * 1024);
+                return IOFactory.createShellOutputStream(new SuFile(file), append);
             }
         }
     }
 
-    @Override
-    public void write(@NonNull byte[] b, int off, int len) throws IOException {
-        out.write(b, off, len);
+    /**
+     * @see FileOutputStream#FileOutputStream(File, boolean)
+     */
+    public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
+        super(getOut(file, append), 4 * 1024 * 1024);
     }
 }
