@@ -28,7 +28,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.3.3'
+    def libsuVersion = '2.4.0'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */
@@ -115,7 +115,7 @@ Add `com.github.topjohnwu.libsu:io` as dependency to access the I/O wrapper clas
 
 ```java
 /* Treat files that require root access just like ordinary files */
-SuFile logs = new SuFile("/cache/magisk.log");
+File logs = SuFile.open("/cache/magisk.log");
 if (logs.exists()) {
     try (InputStream in = new SuFileInputStream(logs);
          OutputStream out = new SuFileOutputStream("/data/magisk.log.bak")) {
