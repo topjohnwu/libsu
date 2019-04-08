@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.io;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
@@ -25,8 +27,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-
-import androidx.annotation.NonNull;
 
 /**
  * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.
@@ -56,13 +56,13 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      * @throws FileNotFoundException
      */
     public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
-        if (file instanceof SuFile && ((SuFile) file).isSU()) {
-            return IOFactory.createShellFileIO(((SuFile) file).getShellFile(), mode);
+        if (file instanceof SuFile) {
+            return IOFactory.createShellFileIO((SuFile) file, mode);
         } else {
             try {
                 return IOFactory.createRandomAccessFileWrapper(file, mode);
             } catch (FileNotFoundException e) {
-                return IOFactory.createShellFileIO(IOFactory.createShellFile(file), mode);
+                return IOFactory.createShellFileIO(new SuFile(file), mode);
             }
         }
     }

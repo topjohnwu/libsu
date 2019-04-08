@@ -1,12 +1,14 @@
 package com.topjohnwu.superuser.internal;
 
+import com.topjohnwu.superuser.io.SuFile;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 
 public final class IOFactory {
     private IOFactory() {}
 
-    public static ShellFileIO createShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
+    public static ShellFileIO createShellFileIO(SuFile file, String mode) throws FileNotFoundException {
         String internalMode;
         switch (mode) {
             case "r":
@@ -28,16 +30,12 @@ public final class IOFactory {
         return new RandomAccessFileWrapper(file, mode);
     }
 
-    public static ShellInputStream createShellInputStream(ShellFile file) throws FileNotFoundException {
+    public static ShellInputStream createShellInputStream(SuFile file) throws FileNotFoundException {
         return new ShellInputStream(file);
     }
 
-    public static ShellOutputStream createShellOutputStream(ShellFile file, boolean append)
+    public static ShellOutputStream createShellOutputStream(SuFile file, boolean append)
             throws FileNotFoundException {
         return new ShellOutputStream(file, append);
-    }
-
-    public static ShellFile createShellFile(File file) {
-        return new ShellFile(file);
     }
 }

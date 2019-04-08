@@ -18,16 +18,17 @@ package com.topjohnwu.superuser.internal;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
+import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
-
-import androidx.annotation.NonNull;
 
 class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImpl {
 
@@ -37,7 +38,7 @@ class ShellFileIO extends SuRandomAccessFile implements DataInputImpl, DataOutpu
     private long fileOff;
     private long fileSize;
 
-    ShellFileIO(ShellFile file, String mode) throws FileNotFoundException {
+    ShellFileIO(SuFile file, String mode) throws FileNotFoundException {
         if (file.isCharacter())
             throw new FileNotFoundException("Does not support character files");
         FileNotFoundException fnf = new FileNotFoundException("No such file or directory");

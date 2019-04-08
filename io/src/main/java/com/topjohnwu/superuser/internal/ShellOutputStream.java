@@ -16,17 +16,19 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
+import com.topjohnwu.superuser.io.SuFile;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
-
-import androidx.annotation.NonNull;
 
 class ShellOutputStream extends OutputStream {
 
     private ShellFileIO io;
 
-    ShellOutputStream(ShellFile file, boolean append) throws FileNotFoundException {
+    ShellOutputStream(SuFile file, boolean append) throws FileNotFoundException {
         io = new ShellFileIO(file, append ? "rw" : "w");
     }
 

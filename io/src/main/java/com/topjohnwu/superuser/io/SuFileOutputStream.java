@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.io;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
@@ -25,8 +27,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
-
-import androidx.annotation.NonNull;
 
 /**
  * An {@link java.io.OutputStream} that read files using the global shell instance.
@@ -65,9 +65,9 @@ public class SuFileOutputStream extends FilterOutputStream {
      */
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
         super(null);
-        if (file instanceof SuFile && ((SuFile) file).isSU()) {
+        if (file instanceof SuFile) {
             out = new BufferedOutputStream(
-                    IOFactory.createShellOutputStream(((SuFile) file).getShellFile(), append),
+                    IOFactory.createShellOutputStream((SuFile) file, append),
                     4 * 1024 * 1024);
         } else {
             try {
@@ -77,7 +77,7 @@ public class SuFileOutputStream extends FilterOutputStream {
                 if (!Shell.rootAccess())
                     throw e;
                 out = new BufferedOutputStream(
-                        IOFactory.createShellOutputStream(IOFactory.createShellFile(file), append),
+                        IOFactory.createShellOutputStream(new SuFile(file), append),
                         4 * 1024 * 1024);
             }
         }

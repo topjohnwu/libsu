@@ -48,8 +48,8 @@ public class SuFileInputStream extends FilterInputStream {
      */
     public SuFileInputStream(File file) throws FileNotFoundException {
         super(null);
-        if (file instanceof SuFile && ((SuFile) file).isSU()) {
-            in = IOFactory.createShellInputStream(((SuFile) file).getShellFile());
+        if (file instanceof SuFile) {
+            in = IOFactory.createShellInputStream((SuFile) file);
         } else {
             try {
                 // Try normal FileInputStream
@@ -57,7 +57,7 @@ public class SuFileInputStream extends FilterInputStream {
             } catch (FileNotFoundException e) {
                 if (!Shell.rootAccess())
                     throw e;
-                in = IOFactory.createShellInputStream(IOFactory.createShellFile(file));
+                in = IOFactory.createShellInputStream(new SuFile(file));
             }
         }
     }

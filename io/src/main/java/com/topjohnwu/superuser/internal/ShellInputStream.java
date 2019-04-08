@@ -16,11 +16,13 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
+import com.topjohnwu.superuser.io.SuFile;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
-import androidx.annotation.NonNull;
 
 class ShellInputStream extends InputStream {
 
@@ -29,7 +31,7 @@ class ShellInputStream extends InputStream {
     private int count;
     private int bufOff;
 
-    ShellInputStream(ShellFile file) throws FileNotFoundException {
+    ShellInputStream(SuFile file) throws FileNotFoundException {
         io = new ShellFileIO(file, "r");
         buf = new byte[4 * 1024 * 1024];
         count = 0;
