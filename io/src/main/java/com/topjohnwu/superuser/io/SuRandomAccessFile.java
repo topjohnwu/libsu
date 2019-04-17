@@ -16,33 +16,27 @@
 
 package com.topjohnwu.superuser.io;
 
-import androidx.annotation.NonNull;
-
 import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.EOFException;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 /**
  * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.
  * <p>
  * This class always checks whether using a shell is necessary. If not, it simply opens a new
- * {@link java.io.RandomAccessFile} and behaves as a wrapper.
+ * {@link java.io.RandomAccessFile} and behaves as a wrapper. This class has the exact same
+ * methods as {@link java.io.RandomAccessFile} and can be treated as a drop-in replacement.
  * <p>
- * File random access via shell is extremely limited, each I/O operation comes with a relatively
+ * File random access via shell is extremely limited. Each I/O operation comes with a relatively
  * large overhead. For optimal performance, please consider using {@link SuFileInputStream} and
- * {@link SuFileOutputStream}, since these classes are specifically optimized for I/O using
- * shell commands.
- * <p>
- * Note: All write/writeXXX commands <b>require</b> BusyBox to work properly, as currently
- * no existing Android version ships with a command {@code dd} that supports {@code notrunc} option.
- * If you need root file output but unwilling to use {@code busybox}, please use
- * {@link SuFileOutputStream} as it uses a special workaround that does not require BusyBox.
+ * {@link SuFileOutputStream} since those classes are specifically optimized for I/O throughput.
  * @see java.io.RandomAccessFile
  */
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
@@ -57,12 +51,12 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      */
     public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            return IOFactory.createShellFileIO((SuFile) file, mode);
+            return IOFactory.createShellIO((SuFile) file, mode);
         } else {
             try {
-                return IOFactory.createRandomAccessFileWrapper(file, mode);
+                return IOFactory.createRAFWrapper(file, mode);
             } catch (FileNotFoundException e) {
-                return IOFactory.createShellFileIO(new SuFile(file), mode);
+                return IOFactory.createShellIO(new SuFile(file), mode);
             }
         }
     }
@@ -71,24 +65,10 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
         return open(new File(path), mode);
     }
 
-    @Override
-    public void readFully(@NonNull byte[] b, int off, int len) throws IOException {
-        if (read(b, off, len) != len)
-            throw new EOFException();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-    }
-
     public int read() throws IOException {
         byte[] b = new byte[1];
-        try {
-            readFully(b);
-        } catch (EOFException e) {
+        if (read(b) != 1)
             return -1;
-        }
         return b[0] & 0xFF;
     }
 
@@ -105,4 +85,8 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
     public abstract long length() throws IOException;
 
     public abstract long getFilePointer() throws IOException;
+
+    public abstract FileDescriptor getFD() throws IOException;
+
+    public abstract FileChannel getChannel();
 }

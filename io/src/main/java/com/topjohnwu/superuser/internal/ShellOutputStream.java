@@ -26,10 +26,10 @@ import java.io.OutputStream;
 
 class ShellOutputStream extends OutputStream {
 
-    private ShellFileIO io;
+    private ShellIO io;
 
     ShellOutputStream(SuFile file, boolean append) throws FileNotFoundException {
-        io = new ShellFileIO(file, append ? "rw" : "w");
+        io = ShellIO.get(file, append ? "rw" : "w");
     }
 
     @Override
@@ -46,6 +46,6 @@ class ShellOutputStream extends OutputStream {
 
     @Override
     public void write(@NonNull byte[] b, int off, int len) throws IOException {
-        io.append(b, off, len);
+        io.streamWrite(b, off, len);
     }
 }

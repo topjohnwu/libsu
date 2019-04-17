@@ -26,13 +26,13 @@ import java.io.InputStream;
 
 class ShellInputStream extends InputStream {
 
-    private ShellFileIO io;
+    private ShellIO io;
     private byte[] buf;
     private int count;
     private int bufOff;
 
     ShellInputStream(SuFile file) throws FileNotFoundException {
-        io = new ShellFileIO(file, "r");
+        io = ShellIO.get(file, "r");
         buf = new byte[4 * 1024 * 1024];
         count = 0;
         bufOff = 0;
@@ -40,7 +40,7 @@ class ShellInputStream extends InputStream {
 
     private boolean fillBuffer() throws IOException {
         bufOff = 0;
-        count = io.read(buf);
+        count = io.streamRead(buf);
         return count > 0;
     }
 

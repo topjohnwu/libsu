@@ -24,7 +24,7 @@ import java.io.FileNotFoundException;
 public final class IOFactory {
     private IOFactory() {}
 
-    public static ShellFileIO createShellFileIO(SuFile file, String mode) throws FileNotFoundException {
+    public static ShellIO createShellIO(SuFile file, String mode) throws FileNotFoundException {
         String internalMode;
         switch (mode) {
             case "r":
@@ -38,12 +38,12 @@ public final class IOFactory {
             default:
                 throw new IllegalArgumentException("Unknown mode: " + mode);
         }
-        return new ShellFileIO(file, internalMode);
+        return ShellIO.get(file, internalMode);
     }
 
-    public static RandomAccessFileWrapper createRandomAccessFileWrapper(File file, String mode)
+    public static RAFWrapper createRAFWrapper(File file, String mode)
             throws FileNotFoundException {
-        return new RandomAccessFileWrapper(file, mode);
+        return new RAFWrapper(file, mode);
     }
 
     public static ShellInputStream createShellInputStream(SuFile file) throws FileNotFoundException {

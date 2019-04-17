@@ -21,15 +21,17 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 
-class RandomAccessFileWrapper extends SuRandomAccessFile {
+class RAFWrapper extends SuRandomAccessFile {
 
     private RandomAccessFile raf;
 
-    RandomAccessFileWrapper(File file, String mode) throws FileNotFoundException {
+    RAFWrapper(File file, String mode) throws FileNotFoundException {
         raf = new RandomAccessFile(file, mode);
     }
 
@@ -216,5 +218,15 @@ class RandomAccessFileWrapper extends SuRandomAccessFile {
     @Override
     public String readUTF() throws IOException {
         return raf.readUTF();
+    }
+
+    @Override
+    public FileDescriptor getFD() throws IOException {
+        return raf.getFD();
+    }
+
+    @Override
+    public FileChannel getChannel() {
+        return raf.getChannel();
     }
 }
