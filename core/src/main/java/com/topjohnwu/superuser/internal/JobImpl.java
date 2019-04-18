@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
@@ -24,11 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-
 class JobImpl extends Shell.Job {
-
-    private static final String TAG = "JOBIMPL";
 
     private List<String> out, err;
     private List<InputHandler> handlers;
@@ -46,7 +44,6 @@ class JobImpl extends Shell.Job {
     }
 
     private Shell.Result exec0() {
-        InternalUtils.log(TAG, "exec");
         if (out instanceof NOPList)
             out = new ArrayList<>();
         ResultImpl result = new ResultImpl();
@@ -76,7 +73,6 @@ class JobImpl extends Shell.Job {
 
     @Override
     public void submit(Shell.ResultCallback cb) {
-        InternalUtils.log(TAG, "submit");
         if (out instanceof NOPList && cb == null)
             out = null;
         task.getExecutor().execute(() -> {

@@ -18,6 +18,8 @@ package com.topjohnwu.superuser.internal;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
@@ -37,8 +39,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import androidx.annotation.NonNull;
 
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
@@ -65,26 +65,21 @@ class ShellImpl extends Shell {
 
     private static class NoCloseInputStream extends FilterInputStream {
 
-        private NoCloseInputStream(InputStream in) {
+        NoCloseInputStream(InputStream in) {
             super(in);
         }
 
         @Override
         public void close() {}
 
-        private void close0() throws IOException {
+        void close0() throws IOException {
             in.close();
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            close0();
         }
     }
 
     private static class NoCloseOutputStream extends FilterOutputStream {
 
-        private NoCloseOutputStream(@NonNull OutputStream out) {
+        NoCloseOutputStream(@NonNull OutputStream out) {
             super(out);
         }
 
@@ -96,13 +91,8 @@ class ShellImpl extends Shell {
         @Override
         public void close() {}
 
-        private void close0() throws IOException {
+        void close0() throws IOException {
             out.close();
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            close0();
         }
     }
 
@@ -184,11 +174,6 @@ class ShellImpl extends Shell {
             InternalUtils.stackTrace(e);
             throw new IOException("Shell timeout");
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
     }
 
     private void release() throws IOException {
