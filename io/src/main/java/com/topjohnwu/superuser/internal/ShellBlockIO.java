@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.FileNotFoundException;
@@ -29,11 +30,21 @@ import java.io.IOException;
 class ShellBlockIO extends ShellIO {
 
     // Block size is constant
-    private final long blockSize;
+    private long blockSize;
 
     ShellBlockIO(SuFile file, String mode) throws FileNotFoundException {
         super(file, mode);
-        blockSize = file.length();
+        if (Env.blockdev()) {
+            try {
+                blockSize = Long.parseLong(ShellUtils.fastCmd(
+                        "blockdev --getsize64 '" + file.getAbsolutePath() + "'"));
+            } catch (NumberFormatException e) {
+                blockSize = Long.MAX_VALUE;
+            }
+        } else {
+            // No blockdev available, no choice but to assume no boundary
+            blockSize = Long.MAX_VALUE;
+        }
         WRITE_CONV = "";
     }
 

@@ -20,11 +20,11 @@ import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
+import com.topjohnwu.superuser.internal.Env;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -45,21 +45,19 @@ import java.util.Locale;
  * are atomic. This is a limitation of using shells, be aware of it.
  * <p>
  * For full functionality, the environment require: {@code rm}, {@code rmdir}, {@code readlink},
- * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, {@code stat}. For some methods,
- * {@code blockdev} could be utilized for additional functionality.
- * These tools are available on modern Android versions with toolbox, however for optimal results
- * installing {@code busybox}, especially the one bundled with libsu busybox module
- * would be desirable. Some operations could have oddities without busybox due to the lack of tools
- * or inconsistency of the tools, check the method descriptions for more info before using it.
+ * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, and {@code stat}.
+ * These tools are available on modern Android versions with toybox, however for consistent results
+ * using {@code busybox} would be desirable. Some operations could have oddities
+ * without busybox due to the lack of tools or different behavior of the tools,
+ * check the method descriptions for more info before using them.
  * <p>
  * There are also handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
  * instances. These factory methods will return a normal {@link File} instance if the underlying
  * shell does not have root access, or else returns a {@link SuFile} instance.
  */
 public class SuFile extends File {
-
-    private static int shellHash = -1;
-    private static boolean stat, blockdev, wc;
+    
+    private String[] CMDs;
 
     public static File open(String pathname) {
         return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
@@ -79,14 +77,8 @@ public class SuFile extends File {
 
     SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        Shell shell = Shell.getShell();
-        if (shell.hashCode() != shellHash) {
-            shellHash = shell.hashCode();
-            // Check tools
-            stat = ShellUtils.fastCmdResult(shell, "command -v stat");
-            blockdev = ShellUtils.fastCmdResult(shell, "command -v blockdev");
-            wc = ShellUtils.fastCmdResult(shell, "command -v wc");
-        }
+        CMDs = new String[2];
+        CMDs[0] = "__F_='" + file.getAbsolutePath() +  "'";
     }
 
     public SuFile(String pathname) {
@@ -105,75 +97,91 @@ public class SuFile extends File {
         this(new File(uri));
     }
 
-    private String[] genCmd(String... cmds) {
-        boolean needCfile = false;
-        for (String cmd : cmds) {
-            if (cmd.contains("$CFILE")) {
-                needCfile = true;
-                break;
-            }
-        }
-        String[] newCmd = new String[cmds.length + 1];
-        if (needCfile) {
-            newCmd[0] = String.format("FILE='%s';CFILE=\"`readlink -f \"$FILE\"`\"", getAbsolutePath());
-        } else {
-            newCmd[0] = String.format("FILE='%s'", getAbsolutePath());
-        }
-        System.arraycopy(cmds, 0, newCmd, 1, cmds.length);
-        return newCmd;
+    private String[] setCmd(String c) {
+        CMDs[1] = c;
+        return CMDs;
     }
 
-    private String cmd(String... cmds) {
-        return ShellUtils.fastCmd(genCmd(cmds));
+    private String cmd(String c) {
+        return ShellUtils.fastCmd(setCmd(c));
     }
 
-    private boolean cmdBoolean(String c) {
-        return ShellUtils.fastCmdResult(genCmd(c));
+    private boolean cmdBool(String c) {
+        return ShellUtils.fastCmdResult(setCmd(c));
     }
 
     @Override
     public boolean canExecute() {
-        return cmdBoolean("[ -x \"$FILE\" ]");
+        return cmdBool("[ -x \"$__F_\" ]");
     }
 
     @Override
     public boolean canRead() {
-        return cmdBoolean("[ -r \"$FILE\" ]");
+        return cmdBool("[ -r \"$__F_\" ]");
     }
 
     @Override
     public boolean canWrite() {
-        return cmdBoolean("[ -w \"$FILE\" ]");
+        return cmdBool("[ -w \"$__F_\" ]");
     }
 
+    /**
+     * Creates a new, empty file named by this abstract pathname if
+     * and only if a file with this name does not yet exist.
+     * <p>
+     * Requires command {@code touch}.
+     * @see File#createNewFile()
+     */
     @Override
     public boolean createNewFile() {
-        boolean origImpl = false;
-        try {
-            origImpl = super.createNewFile();
-        } catch (IOException ignored) { }
-        return origImpl || cmdBoolean("[ ! -e \"$FILE\" ] && touch \"$FILE\"");
+        return cmdBool("[ ! -e \"$__F_\" ] && touch \"$__F_\"");
     }
 
+    /**
+     * Deletes the file or directory denoted by this abstract pathname. If
+     * this pathname denotes a directory, then the directory must be empty in
+     * order to be deleted.
+     * <p>
+     * Requires command {@code rm}, or {@code rmdir} for directories.
+     * @see File#delete()
+     */
     @Override
     public boolean delete() {
-        return cmdBoolean("rm -f \"$FILE\" || rmdir -f \"$FILE\"");
+        return cmdBool("rm -f \"$__F_\" || rmdir -f \"$__F_\"");
     }
 
-    public boolean clear() {
-        return cmdBoolean("echo -n > \"$FILE\"");
-    }
-
+    /**
+     * Deletes the file or directory denoted by this abstract pathname. If
+     * this pathname denotes a directory, then the directory will be recursively
+     * removed.
+     * <p>
+     * Requires command {@code rm}.
+     * @see File#delete()
+     */
     public boolean deleteRecursive() {
-        return cmdBoolean("rm -rf \"$FILE\"");
+        return cmdBool("rm -rf \"$__F_\"");
     }
 
+    /**
+     * Clear the content of the file denoted by this abstract pathname.
+     * Creates a new file is it does not already exist.
+     * @return true if operation succeed
+     */
+    public boolean clear() {
+        return cmdBool("echo -n > \"$__F_\"");
+    }
+
+    /**
+     * Unsupported
+     */
     @Override
-    public void deleteOnExit() {}
+    public void deleteOnExit() {
+        throw new UnsupportedOperationException("Unsupported operation in shell backed File");
+    }
 
     @Override
     public boolean exists() {
-        return cmdBoolean("[ -e \"$FILE\" ]");
+        return cmdBool("[ -e \"$__F_\" ]");
     }
 
     @NonNull
@@ -182,13 +190,25 @@ public class SuFile extends File {
         return this;
     }
 
+    /**
+     * Returns the canonical pathname string of this abstract pathname.
+     * <p>
+     * Requires command {@code readlink}.
+     * @see File#getCanonicalPath()
+     */
     @NonNull
     @Override
     public String getCanonicalPath() {
-        String path = cmd("echo \"$CFILE\"");
+        String path = cmd("readlink -f \"$__F_\"");
         return path.isEmpty() ? getAbsolutePath() : path;
     }
 
+    /**
+     * Returns the canonical form of this abstract pathname.
+     * <p>
+     * Requires command {@code readlink}.
+     * @see File#getCanonicalFile()
+     */
     @NonNull
     @Override
     public SuFile getCanonicalFile() {
@@ -201,24 +221,47 @@ public class SuFile extends File {
     }
 
     private long statFS(String fmt) {
-        if (!stat)
+        if (!Env.stat())
             return Long.MAX_VALUE;
-        String[] res = cmd("stat -fc '%S " + fmt + "' \"$FILE\"").split(" ");
+        String[] res = cmd("stat -fc '%S " + fmt + "' \"$__F_\"").split(" ");
         if (res.length != 2)
             return Long.MAX_VALUE;
-        return Long.parseLong(res[0]) * Long.parseLong(res[1]);
+        try {
+            return Long.parseLong(res[0]) * Long.parseLong(res[1]);
+        } catch (NumberFormatException e) {
+            return Long.MAX_VALUE;
+        }
     }
 
+
+    /**
+     * Returns the number of unallocated bytes in the partition.
+     * <p>
+     * Requires command {@code stat}.
+     * @see File#getFreeSpace()
+     */
     @Override
     public long getFreeSpace() {
         return statFS("%f");
     }
 
+    /**
+     * Returns the size of the partition.
+     * <p>
+     * Requires command {@code stat}.
+     * @see File#getTotalSpace()
+     */
     @Override
     public long getTotalSpace() {
         return statFS("%b");
     }
 
+    /**
+     * Returns the number of bytes available to this process on the partition.
+     * <p>
+     * Requires command {@code stat}.
+     * @see File#getUsableSpace()
+     */
     @Override
     public long getUsableSpace() {
         return statFS("%a");
@@ -226,47 +269,66 @@ public class SuFile extends File {
 
     @Override
     public boolean isDirectory() {
-        return cmdBoolean("[ -d \"$FILE\" ]");
+        return cmdBool("[ -d \"$__F_\" ]");
     }
 
     @Override
     public boolean isFile() {
-        return cmdBoolean("[ -f \"$FILE\" ]");
+        return cmdBool("[ -f \"$__F_\" ]");
     }
 
+    /**
+     * @return true if the abstract pathname denotes a block device.
+     */
     public boolean isBlock() {
-        return cmdBoolean("[ -b \"$FILE\" ]");
+        return cmdBool("[ -b \"$__F_\" ]");
     }
 
+    /**
+     * @return true if the abstract pathname denotes a character device.
+     */
     public boolean isCharacter() {
-        return cmdBoolean("[ -c \"$FILE\" ]");
+        return cmdBool("[ -c \"$__F_\" ]");
     }
 
+    /**
+     * @return true if the abstract pathname denotes a symbolic link file.
+     */
+    public boolean isSymlink() {
+        return cmdBool("[ -L \"$__F_\" ]");
+    }
+
+    /**
+     * Returns the time that the file denoted by this abstract pathname was
+     * last modified.
+     * <p>
+     * Requires command {@code stat}.
+     * @see File#lastModified()
+     */
     @Override
     public long lastModified() {
         try {
-            if (!stat)
+            if (!Env.stat())
                 return 0L;
-            return Long.parseLong(cmd("stat -Lc '%Y' \"$FILE\"")) * 1000;
+            return Long.parseLong(cmd("stat -c '%Y' \"$__F_\"")) * 1000;
         } catch (NumberFormatException e) {
             return 0L;
         }
     }
 
+    /**
+     * Returns the length of the file denoted by this abstract pathname.
+     * <p>
+     * Requires either command {@code stat} or {@code wc}.
+     * @see File#length()
+     */
     @Override
     public long length() {
         try {
-            if (stat) {
-                // Support block size
-                if (blockdev) {
-                    return Long.parseLong(cmd("[ -b \"$FILE\" ] && " +
-                            "blockdev --getsize64 \"$FILE\" || " +
-                            "stat -Lc '%s' \"$FILE\""));
-                } else {
-                    return Long.parseLong(cmd("stat -Lc '%s' \"$FILE\""));
-                }
-            } else if (wc) {
-                return Long.parseLong(cmd("[ -f \"$FILE\" ] && wc -c < \"$FILE\" || echo 0"));
+            if (Env.stat()) {
+                return Long.parseLong(cmd("stat -c '%s' \"$__F_\""));
+            } else if (Env.wc()) {
+                return Long.parseLong(cmd("[ -f \"$__F_\" ] && wc -c < \"$__F_\" || echo 0"));
             } else {
                 return 0L;
             }
@@ -275,25 +337,44 @@ public class SuFile extends File {
         }
     }
 
+    /**
+     * Creates the directory named by this abstract pathname.
+     * <p>
+     * Requires command {@code mkdir}.
+     * @see File#mkdir()
+     */
     @Override
     public boolean mkdir() {
-        return cmdBoolean("mkdir \"$FILE\"");
+        return cmdBool("mkdir \"$__F_\"");
     }
 
+    /**
+     * Creates the directory named by this abstract pathname, including any
+     * necessary but nonexistent parent directories.
+     * <p>
+     * Requires command {@code mkdir}.
+     * @see File#mkdirs()
+     */
     @Override
     public boolean mkdirs() {
-        return cmdBoolean("mkdir -p \"$FILE\"");
+        return cmdBool("mkdir -p \"$__F_\"");
     }
 
+    /**
+     * Renames the file denoted by this abstract pathname.
+     * <p>
+     * Requires command {@code mv}.
+     * @see File#renameTo(File)
+     */
     @Override
     public boolean renameTo(File dest) {
-        return cmdBoolean("mv -f \"$FILE\" '" + dest.getAbsolutePath() + "'");
+        return cmdBool("mv -f \"$__F_\" '" + dest.getAbsolutePath() + "'");
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
-        if (!stat)
+        if (!Env.stat())
             return false;
-        char[] perms = cmd("stat -Lc '%a' \"$FILE\"").toCharArray();
+        char[] perms = cmd("stat -c '%a' \"$__F_\"").toCharArray();
         for (int i = 0; i < perms.length; ++i) {
             int perm = perms[i] - '0';
             if (set && (!ownerOnly || i == 0))
@@ -302,24 +383,53 @@ public class SuFile extends File {
                 perm &= ~(b);
             perms[i] = (char) (perm + '0');
         }
-        return cmdBoolean("chmod " + new String(perms) + " \"$CFILE\"");
+        return cmdBool("chmod " + new String(perms) + " \"$__F_\"");
     }
 
+    /**
+     * Sets the owner's or everybody's execute permission for this abstract
+     * pathname.
+     * <p>
+     * Requires command {@code stat} and {@code chmod}.
+     * @see File#setExecutable(boolean, boolean)
+     */
     @Override
     public boolean setExecutable(boolean executable, boolean ownerOnly) {
         return setPerms(executable, ownerOnly, 0x1);
     }
 
+
+    /**
+     * Sets the owner's or everybody's read permission for this abstract
+     * pathname.
+     * <p>
+     * Requires command {@code stat} and {@code chmod}.
+     * @see File#setReadable(boolean, boolean)
+     */
     @Override
     public boolean setReadable(boolean readable, boolean ownerOnly) {
         return setPerms(readable, ownerOnly, 0x4);
     }
 
+    /**
+     * Sets the owner's or everybody's write permission for this abstract
+     * pathname.
+     * <p>
+     * Requires command {@code stat} and {@code chmod}.
+     * @see File#setWritable(boolean, boolean)
+     */
     @Override
     public boolean setWritable(boolean writable, boolean ownerOnly) {
         return setPerms(writable, ownerOnly, 0x2);
     }
 
+    /**
+     * Marks the file or directory named by this abstract pathname so that
+     * only read operations are allowed.
+     * <p>
+     * Requires command {@code stat} and {@code chmod}.
+     * @see File#setReadOnly()
+     */
     @Override
     public boolean setReadOnly() {
         return setWritable(false, false) && setExecutable(false, false);
@@ -330,7 +440,7 @@ public class SuFile extends File {
      * <p>
      * Note: On older Android devices, the {@code touch} commands accepts a different timestamp
      * format than GNU {@code touch}. This shell implementation uses the format accepted in GNU
-     * coreutils, which is the same in toolbox and busybox, so the operation
+     * coreutils, which is the same in toybox and busybox, so the operation
      * might fail on older Android versions without busybox.
      * @param time The new last-modified time, measured in milliseconds since the epoch.
      * @return {@code true} if and only if the operation succeeded; {@code false} otherwise.
@@ -339,7 +449,7 @@ public class SuFile extends File {
     public boolean setLastModified(long time) {
         DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
         String date = df.format(new Date(time));
-        return cmdBoolean("[ -e \"$FILE\" ] && touch -t " + date + " \"$CFILE\"");
+        return cmdBool("[ -e \"$__F_\" ] && touch -t " + date + " \"$__F_\"");
     }
 
     @Override
@@ -352,7 +462,7 @@ public class SuFile extends File {
         if (!isDirectory())
             return null;
         FilenameFilter defFilter = (file, name) -> name.equals(".") || name.equals("..");
-        List<String> out = Shell.su(genCmd("ls -a \"$FILE\"")).to(new LinkedList<>(), null)
+        List<String> out = Shell.su(setCmd("ls -a \"$__F_\"")).to(new LinkedList<>(), null)
                 .exec().getOut();
         String name;
         for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
