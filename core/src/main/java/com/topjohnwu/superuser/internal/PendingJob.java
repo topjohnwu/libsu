@@ -30,26 +30,24 @@ class PendingJob extends JobImpl {
 
     @Override
     public Shell.Result exec() {
-        ShellImpl shell;
         try {
             shell = (ShellImpl) Shell.getShell();
         } catch (NoShellException e) {
-            return new ResultImpl();
+            return ResultImpl.INSTANCE;
         }
         if (isSU && !shell.isRoot())
-            return new ResultImpl();
-        task = shell.newOutputGobblingTask();
+            return ResultImpl.INSTANCE;
         return super.exec();
     }
 
     @Override
     public void submit(Shell.ResultCallback cb) {
-        Shell.getShell(shell -> {
-            if (isSU && !shell.isRoot() && cb != null) {
-                cb.onResult(new ResultImpl());
+        Shell.getShell(s -> {
+            if (isSU && !s.isRoot() && cb != null) {
+                cb.onResult(ResultImpl.INSTANCE);
                 return;
             }
-            task = ((ShellImpl) shell).newOutputGobblingTask();
+            shell = (ShellImpl) s;
             super.submit(cb);
         });
     }

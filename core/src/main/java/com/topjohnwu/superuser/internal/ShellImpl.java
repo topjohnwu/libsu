@@ -53,7 +53,7 @@ class ShellImpl extends Shell {
     private static Field processStatus;
 
     private int status;
-    private ExecutorService SERIAL_EXECUTOR;
+    ExecutorService SERIAL_EXECUTOR;
 
     private final Process process;
     private final NoCloseOutputStream STDIN;
@@ -259,17 +259,22 @@ class ShellImpl extends Shell {
 
     @Override
     public Job newJob() {
-        return new JobImpl(new OutputGobblingTask());
+        return new JobImpl(this);
     }
 
-    OutputGobblingTask newOutputGobblingTask() {
-        return new OutputGobblingTask();
+    Task newTask(List<InputHandler> handlers, ResultImpl res) {
+        return new DefaultTask(handlers, res);
     }
 
-    class OutputGobblingTask implements Task {
+    private class DefaultTask implements Task {
 
         private ResultImpl res;
         private List<InputHandler> handlers;
+
+        DefaultTask(List<InputHandler> h, ResultImpl r) {
+            handlers = h;
+            res = r;
+        }
 
         @Override
         public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
@@ -285,19 +290,6 @@ class ShellImpl extends Shell {
             } catch (ExecutionException | InterruptedException e) {
                 throw (InterruptedIOException) new InterruptedIOException().initCause(e);
             }
-        }
-
-        void exec(List<InputHandler> handlers) throws IOException {
-            this.handlers = handlers;
-            ShellImpl.this.execTask(this);
-        }
-
-        ExecutorService getExecutor() {
-            return ShellImpl.this.SERIAL_EXECUTOR;
-        }
-
-        void setResult(ResultImpl res) {
-            this.res = res;
         }
     }
 }

@@ -16,17 +16,18 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 
 import java.util.Collections;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-
 class ResultImpl extends Shell.Result {
     List<String> out;
     List<String> err;
     int code = JOB_NOT_EXECUTED;
+    static Shell.Result INSTANCE = new ResultImpl();
 
     @NonNull
     @Override

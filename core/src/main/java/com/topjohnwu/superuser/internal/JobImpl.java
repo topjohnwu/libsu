@@ -16,31 +16,27 @@
 
 package com.topjohnwu.superuser.internal;
 
-import androidx.annotation.NonNull;
-
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 class JobImpl extends Shell.Job {
 
     private List<String> out, err;
     private List<InputHandler> handlers;
+    protected ShellImpl shell;
     private boolean redirect = false;
 
-    ShellImpl.OutputGobblingTask task;
-
     JobImpl() {
-        handlers = new LinkedList<>();
+        handlers = new ArrayList<>();
     }
 
-    JobImpl(ShellImpl.OutputGobblingTask task) {
+    JobImpl(ShellImpl s) {
         this();
-        this.task = task;
+        shell = s;
     }
 
     private Shell.Result exec0() {
@@ -49,9 +45,9 @@ class JobImpl extends Shell.Job {
         ResultImpl result = new ResultImpl();
         result.out = out;
         result.err = redirect ? out : err;
-        task.setResult(result);
+        Shell.Task task = shell.newTask(handlers, result);
         try {
-            task.exec(handlers);
+            shell.execTask(task);
         } catch (IOException e) {
             InternalUtils.stackTrace(e);
             return new ResultImpl();
@@ -75,7 +71,7 @@ class JobImpl extends Shell.Job {
     public void submit(Shell.ResultCallback cb) {
         if (out instanceof NOPList && cb == null)
             out = null;
-        task.getExecutor().execute(() -> {
+        shell.SERIAL_EXECUTOR.execute(() -> {
             Shell.Result result = exec0();
             if (cb != null)
                 UiThreadHandler.run(() -> cb.onResult(result));
@@ -98,7 +94,7 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public Shell.Job add(@NonNull InputStream in) {
+    public Shell.Job add(InputStream in) {
         if (in != null)
             handlers.add(InputHandler.newInstance(in));
         return this;

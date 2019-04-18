@@ -620,7 +620,7 @@ public abstract class Shell implements Closeable {
          * @param in the InputStream to serve to STDIN.
          * @return this Job object for chaining of calls.
          */
-        public abstract Job add(@NonNull InputStream in);
+        public abstract Job add(InputStream in);
 
         /**
          * Execute the job immediately and returns the result.
