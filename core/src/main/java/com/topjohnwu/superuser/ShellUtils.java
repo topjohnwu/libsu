@@ -19,6 +19,8 @@ package com.topjohnwu.superuser;
 import android.os.Looper;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,8 +32,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-
-import androidx.annotation.NonNull;
 
 /**
  * Some handy utility methods that are used in {@code libsu}.
@@ -129,14 +129,26 @@ public final class ShellUtils {
      * @throws IOException when any read/write operations throws an error.
      */
     public static long pump(InputStream in, OutputStream out) throws IOException {
+        long total = noFlushPump(in, out);
+        out.flush();
+        return total;
+    }
+
+    /**
+     * Pump all data from an {@link InputStream} to an {@link OutputStream} without flushing.
+     * @param in source.
+     * @param out target.
+     * @return the total bytes transferred.
+     * @throws IOException when any read/write operations throws an error.
+     */
+    public static long noFlushPump(InputStream in, OutputStream out) throws IOException {
         int read;
         long total = 0;
-        byte buffer[] = new byte[64 * 1024];  /* 64K buffer */
-        while ((read = in.read(buffer)) > 0) {
-            out.write(buffer, 0, read);
+        byte[] buf = new byte[64 * 1024];  /* 64K buffer */
+        while ((read = in.read(buf)) > 0) {
+            out.write(buf, 0, read);
             total += read;
         }
-        out.flush();
         return total;
     }
 

@@ -22,9 +22,11 @@ import com.topjohnwu.superuser.Shell;
 class PendingJob extends JobImpl {
 
     private boolean isSU;
+    private boolean retry;
 
     PendingJob(boolean su) {
         isSU = su;
+        retry = false;
         to(NOPList.getInstance());
     }
 
@@ -37,7 +39,13 @@ class PendingJob extends JobImpl {
         }
         if (isSU && !shell.isRoot())
             return ResultImpl.INSTANCE;
-        return super.exec();
+        Shell.Result res = super.exec();
+        if (!retry && res == ResultImpl.SHELL_ERR) {
+            // The cached shell is terminated, try to re-run this task
+            retry = true;
+            return exec();
+        }
+        return res;
     }
 
     @Override
@@ -48,7 +56,15 @@ class PendingJob extends JobImpl {
                 return;
             }
             shell = (ShellImpl) s;
-            super.submit(cb);
+            super.submit(res -> {
+                if (!retry && res == ResultImpl.SHELL_ERR) {
+                    // The cached shell is terminated, try to re-schedule this task
+                    retry = true;
+                    submit(cb);
+                } else if (cb != null) {
+                    cb.onResult(res);
+                }
+            });
         });
     }
 }

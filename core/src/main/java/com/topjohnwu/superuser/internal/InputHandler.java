@@ -41,7 +41,7 @@ interface InputHandler {
     static InputHandler newInstance(InputStream is) {
         return in -> {
             InternalUtils.log(TAG, "<InputStream>");
-            ShellUtils.pump(is, in);
+            ShellUtils.noFlushPump(is, in);
             is.close();
             // Make sure it ends properly
             in.write('\n');

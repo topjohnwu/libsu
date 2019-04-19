@@ -31,7 +31,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,15 +41,6 @@ import java.util.concurrent.TimeoutException;
 
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
-    private static final int UNINT = -2;
-
-    /* -1: not determined
-    * 0: unknown, use fallback
-    * 1: Java 7 (Integer exitValue)
-    * 2: Java 8 (boolean hasExited)
-    * */
-    private static int processImpl = -1;
-    private static Field processStatus;
 
     private int status;
     ExecutorService SERIAL_EXECUTOR;
@@ -97,8 +87,13 @@ class ShellImpl extends Shell {
     }
 
     ShellImpl(long timeout, String... cmd) throws IOException {
+        status = UNKNOWN;
+
         InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
-        status = UNINT;
+        process = Runtime.getRuntime().exec(cmd);
+        STDIN = new NoCloseOutputStream(process.getOutputStream());
+        STDOUT = new NoCloseInputStream(process.getInputStream());
+        STDERR = new NoCloseInputStream(process.getErrorStream());
 
         String token = ShellUtils.genRandomAlphaNumString(32).toString();
         InternalUtils.log(TAG, "token: " + token);
@@ -106,34 +101,6 @@ class ShellImpl extends Shell {
         errGobbler = new StreamGobbler(token, false);
         endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;__RET=\n", token, token).getBytes("UTF-8");
         SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
-
-        process = Runtime.getRuntime().exec(cmd);
-        STDIN = new NoCloseOutputStream(process.getOutputStream());
-        STDOUT = new NoCloseInputStream(process.getInputStream());
-        STDERR = new NoCloseInputStream(process.getErrorStream());
-
-        // Try to get the field of the process status
-        if (processImpl < 0) {
-            Class<?> clazz = process.getClass();
-            try {
-                // Java 8 UNIXProcess
-                processStatus = clazz.getDeclaredField("hasExited");
-                processImpl = 2;
-            } catch (NoSuchFieldException e) {
-                // Java 7 ProcessManager$ProcessImpl
-                try {
-                    processStatus = clazz.getDeclaredField("exitValue");
-                    processImpl = 1;
-                } catch (NoSuchFieldException e1) {
-                    processImpl = 0;
-                }
-            }
-            if (processImpl > 0) {
-                processStatus.setAccessible(true);
-            }
-        }
-
-        status = UNKNOWN;
 
         // Shell checks might get stuck indefinitely
         Future<Void> future = SERIAL_EXECUTOR.submit(() -> {
@@ -176,34 +143,32 @@ class ShellImpl extends Shell {
         }
     }
 
-    private void release() throws IOException {
-        status = UNINT;
-        STDIN.close0();
-        STDERR.close0();
-        STDOUT.close0();
+    private void release() {
+        status = UNKNOWN;
+        try { STDIN.close0(); } catch (IOException ignored) {}
+        try { STDERR.close0(); } catch (IOException ignored) {}
+        try { STDOUT.close0(); } catch (IOException ignored) {}
         process.destroy();
     }
 
     @Override
     public boolean waitAndClose(long timeout, TimeUnit unit) throws InterruptedException, IOException {
-        if (status < UNKNOWN)
+        if (status < 0)
             return true;
-        InternalUtils.log(TAG, "waitAndClose");
         SERIAL_EXECUTOR.shutdown();
         if (SERIAL_EXECUTOR.awaitTermination(timeout, unit)) {
             release();
             return true;
         } else {
-            status = UNINT;
+            status = UNKNOWN;
             return false;
         }
     }
 
     @Override
-    public void close() throws IOException {
-        if (status < UNKNOWN)
+    public void close() {
+        if (status < 0)
             return;
-        InternalUtils.log(TAG, "close");
         SERIAL_EXECUTOR.shutdownNow();
         release();
     }
@@ -219,42 +184,33 @@ class ShellImpl extends Shell {
         if (status < 0)
             return false;
 
-        switch (processImpl) {
-            case 1:
-                /* Integer exitValue */
-                try {
-                    return processStatus.get(process) == null;
-                } catch (IllegalAccessException e) {
-                    /* Impossible */
-                    return false;
-                }
-            case 2:
-                /* boolean hasExited */
-                try {
-                    return !processStatus.getBoolean(process);
-                } catch (IllegalAccessException e) {
-                    /* Impossible */
-                    return false;
-                }
-            case 0:
-            default:
-                try {
-                    process.exitValue();
-                    // Process is dead, shell is not alive
-                    return false;
-                } catch (IllegalThreadStateException e) {
-                    // Process is still running
-                    return true;
-                }
+        try {
+            process.exitValue();
+            // Process is dead, shell is not alive
+            return false;
+        } catch (IllegalThreadStateException e) {
+            // Process is still running
+            return true;
         }
     }
 
     @Override
     public synchronized void execTask(@NonNull Task task) throws IOException {
+        if (status < 0)
+            throw new ShellTerminatedException();
+
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
-        if (isAlive())
-            task.run(STDIN, STDOUT, STDERR);
+        try {
+            STDIN.write('\n');
+            STDIN.flush();
+        } catch (IOException e) {
+            // Shell is dead
+            release();
+            throw new ShellTerminatedException();
+        }
+
+        task.run(STDIN, STDOUT, STDERR);
     }
 
     @Override

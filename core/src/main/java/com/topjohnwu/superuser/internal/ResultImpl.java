@@ -28,6 +28,7 @@ class ResultImpl extends Shell.Result {
     List<String> err;
     int code = JOB_NOT_EXECUTED;
     static Shell.Result INSTANCE = new ResultImpl();
+    static Shell.Result SHELL_ERR = new ResultImpl();
 
     @NonNull
     @Override

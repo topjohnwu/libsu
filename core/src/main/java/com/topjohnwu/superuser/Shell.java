@@ -18,6 +18,10 @@ package com.topjohnwu.superuser;
 
 import android.content.Context;
 
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.topjohnwu.superuser.internal.Factory;
 import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -33,10 +37,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import androidx.annotation.MainThread;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 /**
  * A class providing an API to an interactive (root) shell.
@@ -128,7 +128,7 @@ public abstract class Shell implements Closeable {
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
      */
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
-    
+
     private static int flags = 0;
     private static long timeout = 20;
     private static Shell globalShell;
@@ -175,14 +175,12 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Get a {@code Shell} instance from the global container, return {@code null} if no active
-     * shell is stored in the container or no container is assigned.
-     * @return a {@code Shell} instance, {@code null} if no active shell is stored in the container
-     * or no container is assigned.
+     * Get the cached global {@code Shell} instance
+     * @return a {@code Shell} instance, {@code null} if no active shell is cached.
      */
     @Nullable
     public static Shell getCachedShell() {
-        if (globalShell != null && !globalShell.isAlive())
+        if (globalShell != null && globalShell.getStatus() < 0)
             globalShell = null;
         return globalShell;
     }

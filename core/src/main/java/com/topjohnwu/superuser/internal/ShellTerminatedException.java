@@ -16,22 +16,11 @@
 
 package com.topjohnwu.superuser.internal;
 
-import com.topjohnwu.superuser.Shell;
-
 import java.io.IOException;
-import java.io.InputStream;
 
-public final class Factory {
+class ShellTerminatedException extends IOException {
 
-    public static Shell createShell(long timeout, String... cmd) throws IOException {
-        return new ShellImpl(timeout, cmd);
-    }
-
-    public static Shell.Job createJob(boolean su, InputStream in) {
-        return new PendingJob(su).add(in);
-    }
-
-    public static Shell.Job createJob(boolean su, String... cmds) {
-        return new PendingJob(su).add(cmds);
+    ShellTerminatedException() {
+        super("Shell terminated unexpectedly");
     }
 }
