@@ -1,3 +1,17 @@
+## 2.5.0
+### Behavior Changes
+- `SuFile` will now follow symbolic links (as it always should)
+- `SuFile.length()` will no longer report block total size on block devices (as it shouldn't in the first place)
+- `SuFileInputStream` and `SuFileOutputStream` now supports I/O on all file formats, including character files (e.g. files in `/sys` and `/proc`), and also outputs to block devices correctly
+
+### API Changes
+- Make `SuFile.isBlock()`, `SuFile.isCharacter()`, `SuFile.isSymlink()` public
+
+### Improvements
+- Tons internal optimizations to improve performance
+- Rewrite shell backed I/O from scratch
+- Added more detailed Javadoc for `SuFile`
+
 ## 2.4.0
 ### Behavior Changes
 - `SuFile` is no longer a wrapper class around `File`. Calling the constructor directly will directly open a shell backed `File` instance. This change is due to the fact that `File` wrapper class causes some issues in methods like `File.renameTo(File)`.
