@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
-import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -29,6 +29,7 @@ class StreamGobbler implements Callable<Integer> {
 
     private final String token;
     private final boolean returnCode;
+    private final StringBuilder sb;
 
     private InputStream in;
     private List<String> list;
@@ -36,6 +37,7 @@ class StreamGobbler implements Callable<Integer> {
     StreamGobbler(String token, Boolean b) {
         this.token = token;
         returnCode = b;
+        sb = new StringBuilder();
     }
 
     public Callable<Integer> set(InputStream in, List<String> list) {
@@ -44,30 +46,47 @@ class StreamGobbler implements Callable<Integer> {
         return this;
     }
 
-    private void output(String s) {
-        if (list != null) {
-            list.add(s);
-            InternalUtils.log(TAG, s);
+    private boolean output(String line) {
+        boolean eof = false;
+        int sl = line.length() - 1;
+        int tl = token.length() - 1;
+        if (sl >= tl) {
+            eof = true;
+            for (; tl >= 0; --tl, --sl) {
+                if (token.charAt(tl) != line.charAt(sl)) {
+                    eof = false;
+                    break;
+                }
+            }
+            if (eof)
+                line = sl >= 0 ? line.substring(0, sl + 1) : null;
         }
+        if (list != null && line != null) {
+            list.add(line);
+            InternalUtils.log(TAG, line);
+        }
+        return eof;
+    }
+
+    private String readLine(InputStreamReader reader) throws IOException {
+        sb.setLength(0);
+        for (int c;;) {
+            c = reader.read();
+            if (c == '\n' || c == -1)
+                break;
+            sb.append((char) c);
+        }
+        return sb.toString();
     }
 
     @Override
     public Integer call() throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            int end = line.lastIndexOf(token);
-            if (end >= 0) {
-                if (end > 0) {
-                    while (line.charAt(end - 1) == 0)
-                        --end;
-                    output(line.substring(0, end));
-                }
+        InputStreamReader reader = new InputStreamReader(in, "UTF-8");
+        for (;;) {
+            if (output(readLine(reader)))
                 break;
-            }
-            output(line);
         }
-        int code = returnCode ? Integer.parseInt(reader.readLine()) : 0;
+        int code = returnCode ? Integer.parseInt(readLine(reader)) : 0;
         reader.close();
         in = null;
         list = null;

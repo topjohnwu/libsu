@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
@@ -56,7 +58,7 @@ class ShellImpl extends Shell {
     private static class NoCloseInputStream extends FilterInputStream {
 
         NoCloseInputStream(InputStream in) {
-            super(in);
+            super((in instanceof BufferedInputStream) ? in : new BufferedInputStream(in));
         }
 
         @Override
@@ -70,7 +72,7 @@ class ShellImpl extends Shell {
     private static class NoCloseOutputStream extends FilterOutputStream {
 
         NoCloseOutputStream(@NonNull OutputStream out) {
-            super(out);
+            super((out instanceof BufferedOutputStream) ? out : new BufferedOutputStream(out));
         }
 
         @Override
