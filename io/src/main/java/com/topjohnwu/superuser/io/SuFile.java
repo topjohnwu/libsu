@@ -217,7 +217,8 @@ public class SuFile extends File {
 
     @Override
     public SuFile getParentFile() {
-        return new SuFile(getParent());
+        String parent = getParent();
+        return parent == null ? null : new SuFile(parent);
     }
 
     private long statFS(String fmt) {
