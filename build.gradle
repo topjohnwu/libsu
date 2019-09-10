@@ -9,7 +9,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.0-alpha12'
+        classpath 'com.android.tools.build:gradle:3.5.0'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
 
 
@@ -81,13 +81,13 @@ subprojects {
 
     afterEvaluate {
         android {
-            compileSdkVersion 28
-            buildToolsVersion '28.0.3'
+            compileSdkVersion 29
+            buildToolsVersion '29.0.2'
 
             defaultConfig {
                 if (minSdkVersion == null)
                     minSdkVersion 9
-                targetSdkVersion 28
+                targetSdkVersion 29
             }
 
             compileOptions {
