@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
-import java.io.IOException;
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -27,17 +27,15 @@ class StreamGobbler implements Callable<Integer> {
 
     private static final String TAG = "SHELLOUT";
 
-    private final String token;
+    private final String delim;
     private final boolean returnCode;
-    private final StringBuilder sb;
 
     private InputStream in;
     private List<String> list;
 
-    StreamGobbler(String token, Boolean b) {
-        this.token = token;
+    StreamGobbler(String delim, Boolean b) {
+        this.delim = delim;
         returnCode = b;
-        sb = new StringBuilder();
     }
 
     public Callable<Integer> set(InputStream in, List<String> list) {
@@ -49,11 +47,11 @@ class StreamGobbler implements Callable<Integer> {
     private boolean output(String line) {
         boolean eof = false;
         int sl = line.length() - 1;
-        int tl = token.length() - 1;
+        int tl = delim.length() - 1;
         if (sl >= tl) {
             eof = true;
             for (; tl >= 0; --tl, --sl) {
-                if (token.charAt(tl) != line.charAt(sl)) {
+                if (delim.charAt(tl) != line.charAt(sl)) {
                     eof = false;
                     break;
                 }
@@ -68,26 +66,17 @@ class StreamGobbler implements Callable<Integer> {
         return eof;
     }
 
-    private String readLine(InputStreamReader reader) throws IOException {
-        sb.setLength(0);
-        for (int c;;) {
-            c = reader.read();
-            if (c == '\n' || c == -1)
-                break;
-            sb.append((char) c);
-        }
-        return sb.toString();
-    }
-
     @Override
     public Integer call() throws Exception {
-        InputStreamReader reader = new InputStreamReader(in, "UTF-8");
-        for (;;) {
-            if (output(readLine(reader)))
-                break;
+        int code = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
+            for (;;) {
+                if (output(br.readLine()))
+                    break;
+            }
+            if (returnCode)
+                code = Integer.parseInt(br.readLine());
         }
-        int code = returnCode ? Integer.parseInt(readLine(reader)) : 0;
-        reader.close();
         in = null;
         list = null;
         return code;

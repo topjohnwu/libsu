@@ -23,7 +23,6 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FilterInputStream;
@@ -34,9 +33,9 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -58,7 +57,7 @@ class ShellImpl extends Shell {
     private static class NoCloseInputStream extends FilterInputStream {
 
         NoCloseInputStream(InputStream in) {
-            super((in instanceof BufferedInputStream) ? in : new BufferedInputStream(in));
+            super(in);
         }
 
         @Override
@@ -81,10 +80,12 @@ class ShellImpl extends Shell {
         }
 
         @Override
-        public void close() {}
+        public void close() throws IOException {
+            out.flush();
+        }
 
         void close0() throws IOException {
-            out.close();
+            super.close();
         }
     }
 
@@ -97,12 +98,12 @@ class ShellImpl extends Shell {
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
 
-        String token = ShellUtils.genRandomAlphaNumString(32).toString();
-        InternalUtils.log(TAG, "token: " + token);
-        outGobbler = new StreamGobbler(token, true);
-        errGobbler = new StreamGobbler(token, false);
-        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;__RET=\n", token, token).getBytes("UTF-8");
-        SERIAL_EXECUTOR = Executors.newSingleThreadExecutor();
+        String uuid = UUID.randomUUID().toString();
+        InternalUtils.log(TAG, "UUID: " + uuid);
+        outGobbler = new StreamGobbler(uuid, true);
+        errGobbler = new StreamGobbler(uuid, false);
+        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");
+        SERIAL_EXECUTOR = new SerialExecutorService();
 
         // Shell checks might get stuck indefinitely
         Future<Void> future = SERIAL_EXECUTOR.submit(() -> {
@@ -136,12 +137,16 @@ class ShellImpl extends Shell {
             future.get(timeout, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             release();
-            throw (IOException) e.getCause();
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            } else {
+                throw new IOException("Unknown ExecutionException", e);
+            }
         } catch (InterruptedException|TimeoutException e) {
             SERIAL_EXECUTOR.shutdownNow();
             release();
-            InternalUtils.stackTrace(e);
-            throw new IOException("Shell timeout");
+            throw new IOException("Shell timeout", e);
         }
     }
 
@@ -226,8 +231,8 @@ class ShellImpl extends Shell {
 
     private class DefaultTask implements Task {
 
-        private ResultImpl res;
-        private List<InputHandler> handlers;
+        private final ResultImpl res;
+        private final List<InputHandler> handlers;
 
         DefaultTask(List<InputHandler> h, ResultImpl r) {
             handlers = h;
