@@ -37,8 +37,8 @@ class SerialExecutorService extends AbstractExecutorService {
 
     public synchronized void execute(Runnable r) {
         if (isShutdown) {
-            throw new RejectedExecutionException("Task " + r.toString() +
-                    " rejected from " + toString());
+            throw new RejectedExecutionException(
+                    "Task " + r.toString() + " rejected from " + toString());
         }
         FutureTask next = new FutureTask<Void>(() -> {
             r.run();
@@ -66,10 +66,13 @@ class SerialExecutorService extends AbstractExecutorService {
     @Override
     public synchronized List<Runnable> shutdownNow() {
         isShutdown = true;
-        mActive.cancel(true);
-        List<Runnable> ret = Arrays.asList(mTasks.toArray(new Runnable[]{}));
-        mTasks.clear();
-        return ret;
+        if (mActive != null)
+            mActive.cancel(true);
+        try {
+            return Arrays.asList(mTasks.toArray(new Runnable[]{}));
+        } finally {
+            mTasks.clear();
+        }
     }
 
     @Override
@@ -85,6 +88,8 @@ class SerialExecutorService extends AbstractExecutorService {
     @Override
     public synchronized boolean awaitTermination(long timeout, TimeUnit unit)
             throws InterruptedException {
+        if (mActive == null)
+            return true;
         try {
             mActive.get(timeout, unit);
         } catch (TimeoutException e) {
