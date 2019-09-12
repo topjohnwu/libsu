@@ -48,7 +48,7 @@ import androidx.annotation.NonNull;
 public class BusyBoxInstaller extends Shell.Initializer {
 
     @Override
-    public boolean onInit(Context context, @NonNull Shell shell) {
+    public boolean onInit(@NonNull Context context, @NonNull Shell shell) {
         Context de = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
                 ? context.createDeviceProtectedStorageContext() : context;
 

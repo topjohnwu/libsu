@@ -124,9 +124,11 @@ public abstract class Shell implements Closeable {
      * Constant value {@value}.
      */
     public static final int FLAG_USE_MAGISK_BUSYBOX = 0x10;
+
     /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
      */
+    @NonNull
     public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     private static int flags = 0;
@@ -299,7 +301,8 @@ public abstract class Shell implements Closeable {
     /**
      * Equivalent to {@link #sh(String...)} with root access check.
      */
-    public static Job su(String... commands) {
+    @NonNull
+    public static Job su(@NonNull String... commands) {
         return Factory.createJob(true, commands);
     }
 
@@ -325,13 +328,15 @@ public abstract class Shell implements Closeable {
      * @param commands the commands to run within the {@link Job}.
      * @return a job that the developer can execute or submit later.
      */
-    public static Job sh(String... commands) {
+    @NonNull
+    public static Job sh(@NonNull String... commands) {
         return Factory.createJob(false, commands);
     }
 
     /**
      * Equivalent to {@link #sh(InputStream)} with root access check.
      */
+    @NonNull
     public static Job su(@NonNull InputStream in) {
         return Factory.createJob(true, in);
     }
@@ -342,6 +347,7 @@ public abstract class Shell implements Closeable {
      * @param in the data in this {@link InputStream} will be served to {@code STDIN}.
      * @return a job that the developer can execute or submit later.
      */
+    @NonNull
     public static Job sh(@NonNull InputStream in) {
         return Factory.createJob(false, in);
     }
@@ -381,6 +387,7 @@ public abstract class Shell implements Closeable {
      * or {@link Job#to(List, List)}.
      * @return a job that the developer can execute or submit later.
      */
+    @NonNull
     public abstract Job newJob();
 
     /**
@@ -414,7 +421,7 @@ public abstract class Shell implements Closeable {
      * @throws IOException if an I/O error occurs.
      * @throws InterruptedException if interrupted while waiting.
      */
-    public abstract boolean waitAndClose(long timeout, TimeUnit unit)
+    public abstract boolean waitAndClose(long timeout, @NonNull TimeUnit unit)
             throws IOException, InterruptedException;
 
     /**
@@ -521,7 +528,9 @@ public abstract class Shell implements Closeable {
          * @param stderr the STDERR of the shell.
          * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
          */
-        void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException;
+        void run(@NonNull OutputStream stdin,
+                 @NonNull InputStream stdout,
+                 @NonNull InputStream stderr) throws IOException;
     }
 
     /**
@@ -576,7 +585,7 @@ public abstract class Shell implements Closeable {
          * @param out the result of the job.
          */
         @MainThread
-        void onResult(Result out);
+        void onResult(@NonNull Result out);
     }
 
     /**
@@ -596,6 +605,7 @@ public abstract class Shell implements Closeable {
          * @param output the list to store outputs. Pass {@code null} to omit all outputs.
          * @return this Job object for chaining of calls.
          */
+        @NonNull
         public abstract Job to(@Nullable List<String> output);
 
         /**
@@ -604,6 +614,7 @@ public abstract class Shell implements Closeable {
          * @param stderr the list to store STDERR. Pass {@code null} to omit STDERR.
          * @return this Job object for chaining of calls.
          */
+        @NonNull
         public abstract Job to(@Nullable List<String> stdout, @Nullable List<String> stderr);
 
         /**
@@ -611,19 +622,22 @@ public abstract class Shell implements Closeable {
          * @param cmds the commands to run.
          * @return this Job object for chaining of calls.
          */
-        public abstract Job add(String... cmds);
+        @NonNull
+        public abstract Job add(@NonNull String... cmds);
 
         /**
          * Add a new operation serving an InputStream to STDIN.
          * @param in the InputStream to serve to STDIN.
          * @return this Job object for chaining of calls.
          */
-        public abstract Job add(InputStream in);
+        @NonNull
+        public abstract Job add(@NonNull InputStream in);
 
         /**
          * Execute the job immediately and returns the result.
          * @return the result of the job.
          */
+        @NonNull
         public abstract Result exec();
 
         /**
@@ -637,7 +651,7 @@ public abstract class Shell implements Closeable {
          * The result will be returned to the callback, running in the main thread.
          * @param cb the callback to receive the result of the job.
          */
-        public abstract void submit(ResultCallback cb);
+        public abstract void submit(@Nullable ResultCallback cb);
     }
 
     /**
@@ -662,7 +676,7 @@ public abstract class Shell implements Closeable {
          * @param shell the newly constructed shell.
          * @return {@code false} when initialization fails, otherwise {@code true}.
          */
-        public boolean onInit(Context context, @NonNull Shell shell) { return true; }
+        public boolean onInit(@NonNull Context context, @NonNull Shell shell) { return true; }
     }
 
     /**

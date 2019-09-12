@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
     static class ExampleInitializer extends Shell.Initializer {
 
         @Override
-        public boolean onInit(Context context, @NonNull Shell shell) {
+        public boolean onInit(@NonNull Context context, @NonNull Shell shell) {
             Log.d(TAG, "onInit");
             return true;
         }

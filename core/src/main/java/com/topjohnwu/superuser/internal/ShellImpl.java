@@ -159,7 +159,7 @@ class ShellImpl extends Shell {
     }
 
     @Override
-    public boolean waitAndClose(long timeout, TimeUnit unit) throws InterruptedException, IOException {
+    public boolean waitAndClose(long timeout, @NonNull TimeUnit unit) throws InterruptedException, IOException {
         if (status < 0)
             return true;
         SERIAL_EXECUTOR.shutdown();
@@ -220,6 +220,7 @@ class ShellImpl extends Shell {
         task.run(STDIN, STDOUT, STDERR);
     }
 
+    @NonNull
     @Override
     public Job newJob() {
         return new JobImpl(this);
@@ -240,7 +241,7 @@ class ShellImpl extends Shell {
         }
 
         @Override
-        public void run(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
+        public void run(@NonNull OutputStream stdin, @NonNull InputStream stdout, @NonNull InputStream stderr) throws IOException {
             Future<Integer> out = EXECUTOR.submit(outGobbler.set(stdout, res.out));
             Future<Integer> err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
             for (InputHandler handler : handlers)

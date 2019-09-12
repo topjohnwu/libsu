@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 
@@ -30,6 +32,7 @@ class PendingJob extends JobImpl {
         to(NOPList.getInstance());
     }
 
+    @NonNull
     @Override
     public Shell.Result exec() {
         try {
