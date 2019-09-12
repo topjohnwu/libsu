@@ -34,7 +34,7 @@ dependencies {
     /* Optional: For using com.topjohnwu.superuser.io classes */
     implementation "com.github.topjohnwu.libsu:io:${libsuVersion}"
 
-    /* Optional: For including a prebuild busybox */
+    /* Optional: For including prebuilt busybox binaries */
     implementation "com.github.topjohnwu.libsu:busybox:${libsuVersion}"
 }
 ```
@@ -42,12 +42,12 @@ dependencies {
 ## Quick Tutorial
 
 ### Configurations
-Set configurations within a static block in your MainActivity or Application class
+Set configurations in your MainActivity or Application class:
 
 ```java
 static {
     /* Shell.Config methods shall be called before any shell is created
-     * This is the reason why you should call it in a static block
+     * This is the why in this example we call it in a static block
      * The followings are some examples, check Javadoc for more details */
     Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
     Shell.Config.verboseLogging(BuildConfig.DEBUG);
@@ -135,13 +135,11 @@ The I/O classes relies on several commandline tools. *Most* of the tools are ava
 ```java
 /* If you want to bundle prebuilt busybox binaries with your app,
  * add com.github.topjohnwu.libsu:busybox as a dependency, and
- * register BusyBoxInstaller as an initializer to install the bundled BusyBox.
- *
- * Note that this will add 1.51 MB to your APK (compressed) */
+ * register BusyBoxInstaller as an initializer. */
 Shell.Config.addInitializers(BusyBoxInstaller.class);
 
 /* If your app only targets Magisk users, and you are not willing to
- * add the additional size for the busybox binaries, you can tell libsu
+ * increase your APK size for the busybox binaries, you can tell libsu
  * to use Magisk's internal busybox */
 Shell.Config.setFlags(Shell.FLAG_USE_MAGISK_BUSYBOX);
 ```
@@ -156,17 +154,15 @@ class ExampleInitializer extends Shell.Initializer {
         try (InputStream bashrc = context.getResources().openRawResource(R.raw.bashrc)) {
             // Load a script from raw resources
             shell.newJob()
-                .add(bashrc)                            /* Load a script from raw resources */
+                .add(bashrc)                            /* Load a script from resources */
                 .add("export ENVIRON_VAR=SOME_VALUE")   /* Run some commands */
                 .exec();
-        } catch (IOException e) {
-            return false;
         }
         return true;
     }
 }
 
-// Register the class as initializer
+// Register the class as an initializer
 Shell.Config.addInitializers(ExampleInitializer.class);
 ```
 
