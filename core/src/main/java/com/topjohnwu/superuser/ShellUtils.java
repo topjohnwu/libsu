@@ -46,25 +46,6 @@ public final class ShellUtils {
 
     private ShellUtils() {}
 
-    private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
-    private static final String UPPER_CASE = LOWER_CASE.toUpperCase();
-    private static final String NUMBERS = "0123456789";
-    private static final String ALPHANUM = LOWER_CASE + UPPER_CASE + NUMBERS;
-
-    /**
-     * Generate a random string containing only alphabet and numbers.
-     * @param length the length of the desired random string.
-     * @return the random string.
-     */
-    public static CharSequence genRandomAlphaNumString(int length) {
-        SecureRandom random = new SecureRandom();
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < length; ++i) {
-            builder.append(ALPHANUM.charAt(random.nextInt(ALPHANUM.length())));
-        }
-        return builder;
-    }
-
     /**
      * Test whether the list is {@code null} or empty or all elements are empty strings.
      * @param out the output of a shell command.
