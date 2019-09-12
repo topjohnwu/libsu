@@ -1,3 +1,15 @@
+## 2.5.1
+### Improvements / Bug fixes
+- `SuFile.getParent()` no longer cause NPE when no parent exists
+- The `libsu:busybox` module now includes prebuilt busybox binaries as native libraries.
+This properly conforms with Play Store rules to ship executables along with APKs.
+All 4 ABIs (armeabi-v7a, arm64-v8a, x86, x86_64) are included; utilize app bundles for smaller app download sizes.
+- More nullability annotations for better Kotlin integration.
+- Some minor internal implementation improvements
+
+### API Changes
+- `ShellUtils.genRandomAlphaNumString(int)` is removed
+
 ## 2.5.0
 ### Behavior Changes
 - `SuFile` will now follow symbolic links (as it always should)
