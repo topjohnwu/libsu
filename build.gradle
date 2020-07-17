@@ -9,7 +9,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.0'
+        classpath 'com.android.tools.build:gradle:4.0.1'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
 
 
@@ -21,15 +21,17 @@ buildscript {
 
 
 task dlPackageList {
-    outputs.upToDateWhen { false }
-    /* Merge framework packages with AndroidX packages into the same list
-     * so links to Android classes can work properly in Javadoc */
-    rootProject.buildDir.mkdirs()
-    new File(rootProject.buildDir, 'package-list').withOutputStream { out ->
-        new URL('https://developer.android.com/reference/package-list')
-                .withInputStream { is -> out << is }
-        new URL('https://developer.android.com/reference/androidx/package-list')
-                .withInputStream { is -> out << is }
+    doLast {
+        outputs.upToDateWhen { false }
+        /* Merge framework packages with AndroidX packages into the same list
+        * so links to Android classes can work properly in Javadoc */
+        rootProject.buildDir.mkdirs()
+        new File(rootProject.buildDir, 'package-list').withOutputStream { out ->
+            new URL('https://developer.android.com/reference/package-list')
+                    .withInputStream { is -> out << is }
+            new URL('https://developer.android.com/reference/androidx/package-list')
+                    .withInputStream { is -> out << is }
+        }
     }
 }
 
@@ -81,13 +83,13 @@ subprojects {
 
     afterEvaluate {
         android {
-            compileSdkVersion 29
-            buildToolsVersion '29.0.2'
+            compileSdkVersion 30
+            buildToolsVersion '30.0.1'
 
             defaultConfig {
                 if (minSdkVersion == null)
                     minSdkVersion 9
-                targetSdkVersion 29
+                targetSdkVersion 30
             }
 
             compileOptions {
