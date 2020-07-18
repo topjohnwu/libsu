@@ -19,7 +19,6 @@ package com.topjohnwu.superuser.internal;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -33,14 +32,14 @@ class StreamGobbler implements Callable<Integer> {
     private InputStream in;
     private List<String> list;
 
-    StreamGobbler(String delim, Boolean b) {
+    StreamGobbler(String delim, boolean b) {
         this.delim = delim;
         returnCode = b;
     }
 
     public Callable<Integer> set(InputStream in, List<String> list) {
         this.in = in;
-        this.list = list == null ? null : Collections.synchronizedList(list);
+        this.list = list;
         return this;
     }
 

@@ -20,6 +20,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -42,6 +44,8 @@ import java.util.concurrent.TimeoutException;
 
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
+    private final static Class<? extends List> synchronizedListClass =
+            Collections.synchronizedList(NOPList.getInstance()).getClass();
 
     private int status;
     ExecutorService SERIAL_EXECUTOR;
@@ -242,8 +246,20 @@ class ShellImpl extends Shell {
 
         @Override
         public void run(@NonNull OutputStream stdin, @NonNull InputStream stdout, @NonNull InputStream stderr) throws IOException {
-            Future<Integer> out = EXECUTOR.submit(outGobbler.set(stdout, res.out));
-            Future<Integer> err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
+            Future<Integer> out;
+            Future<Integer> err;
+            if (res.out != null && res.out == res.err &&
+                    !synchronizedListClass.isInstance(res.out)) {
+                // Synchronize the list internally only if both lists are the same and are not
+                // already synchronized by the user
+                List<String> list = Collections.synchronizedList(res.out);
+                out = EXECUTOR.submit(outGobbler.set(stdout, list));
+                err = EXECUTOR.submit(errGobbler.set(stderr, list));
+            } else {
+                out = EXECUTOR.submit(outGobbler.set(stdout, res.out));
+                err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
+            }
+
             for (InputHandler handler : handlers)
                 handler.handleInput(stdin);
             stdin.write(endCmd);
