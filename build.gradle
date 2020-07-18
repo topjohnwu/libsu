@@ -21,8 +21,8 @@ buildscript {
 
 
 task dlPackageList {
+    outputs.upToDateWhen { false }
     doLast {
-        outputs.upToDateWhen { false }
         /* Merge framework packages with AndroidX packages into the same list
         * so links to Android classes can work properly in Javadoc */
         rootProject.buildDir.mkdirs()
@@ -99,6 +99,11 @@ subprojects {
         }
 
         if (getPlugins().hasPlugin('com.android.library')) {
+            android {
+                buildFeatures {
+                    buildConfig = false
+                }
+            }
 
             rootProject.javadoc {
                 source += android.sourceSets.main.java.sourceFiles
