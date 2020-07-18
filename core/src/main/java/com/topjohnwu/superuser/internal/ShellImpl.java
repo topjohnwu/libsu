@@ -20,7 +20,6 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
@@ -54,8 +53,8 @@ class ShellImpl extends Shell {
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
     private final NoCloseInputStream STDERR;
-    private final StreamGobbler outGobbler;
-    private final StreamGobbler errGobbler;
+    private final StreamGobbler.OUT outGobbler;
+    private final StreamGobbler.ERR errGobbler;
     private final byte[] endCmd;
 
     private static class NoCloseInputStream extends FilterInputStream {
@@ -104,8 +103,8 @@ class ShellImpl extends Shell {
 
         String uuid = UUID.randomUUID().toString();
         InternalUtils.log(TAG, "UUID: " + uuid);
-        outGobbler = new StreamGobbler(uuid, true);
-        errGobbler = new StreamGobbler(uuid, false);
+        outGobbler = new StreamGobbler.OUT(uuid);
+        errGobbler = new StreamGobbler.ERR(uuid);
         endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");
         SERIAL_EXECUTOR = new SerialExecutorService();
 
@@ -247,7 +246,7 @@ class ShellImpl extends Shell {
         @Override
         public void run(@NonNull OutputStream stdin, @NonNull InputStream stdout, @NonNull InputStream stderr) throws IOException {
             Future<Integer> out;
-            Future<Integer> err;
+            Future<Void> err;
             if (res.out != null && res.out == res.err &&
                     !synchronizedListClass.isInstance(res.out)) {
                 // Synchronize the list internally only if both lists are the same and are not
