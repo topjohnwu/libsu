@@ -108,36 +108,14 @@ class ShellImpl extends Shell {
         endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");
         executor = new SerialExecutorService();
 
+        if (cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
+            status = ROOT_MOUNT_MASTER;
+
         // Shell checks might get stuck indefinitely
-        Future<Void> future = executor.submit(() -> {
-            // Clean up potential garbage from InputStreams
-            ShellUtils.cleanInputStream(STDOUT);
-            ShellUtils.cleanInputStream(STDERR);
-
-            BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
-
-            STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
-            STDIN.flush();
-            String s = br.readLine();
-            if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
-                throw new IOException("Created process is not a shell");
-            status = NON_ROOT_SHELL;
-
-            STDIN.write(("id\n").getBytes("UTF-8"));
-            STDIN.flush();
-            s = br.readLine();
-            if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
-                status = ROOT_SHELL;
-
-            if (status == ROOT_SHELL && cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
-                status = ROOT_MOUNT_MASTER;
-
-            br.close();
-            return null;
-        });
+        Future<Void> check = executor.submit(this::shellCheck);
 
         try {
-            future.get(timeout, TimeUnit.SECONDS);
+            check.get(timeout, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof IOException) {
@@ -150,9 +128,37 @@ class ShellImpl extends Shell {
         } catch (InterruptedException e) {
             throw new IOException("Shell initialization interrupted", e);
         } finally {
-            release();
             executor.shutdownNow();
+            release();
         }
+    }
+
+    private Void shellCheck() throws IOException {
+        // Clean up potential garbage from InputStreams
+        ShellUtils.cleanInputStream(STDOUT);
+        ShellUtils.cleanInputStream(STDERR);
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
+
+        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
+        STDIN.flush();
+        String s = br.readLine();
+        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
+            throw new IOException("Created process is not a shell");
+        int status = NON_ROOT_SHELL;
+
+        STDIN.write(("id\n").getBytes("UTF-8"));
+        STDIN.flush();
+        s = br.readLine();
+        if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
+            status = ROOT_SHELL;
+
+        if (status == ROOT_SHELL && this.status == ROOT_MOUNT_MASTER)
+            status = ROOT_MOUNT_MASTER;
+
+        br.close();
+        this.status = status;
+        return null;
     }
 
     private void release() {
@@ -164,7 +170,7 @@ class ShellImpl extends Shell {
     }
 
     @Override
-    public boolean waitAndClose(long timeout, @NonNull TimeUnit unit) throws InterruptedException, IOException {
+    public boolean waitAndClose(long timeout, @NonNull TimeUnit unit) throws InterruptedException {
         if (status < 0)
             return true;
         executor.shutdown();
