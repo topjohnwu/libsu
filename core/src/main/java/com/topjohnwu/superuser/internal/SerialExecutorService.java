@@ -18,9 +18,9 @@ package com.topjohnwu.superuser.internal;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -29,45 +29,50 @@ import java.util.concurrent.TimeoutException;
 
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 
-class SerialExecutorService extends AbstractExecutorService {
+class SerialExecutorService extends AbstractExecutorService implements Callable<Void> {
 
-    private ArrayDeque<FutureTask> mTasks = new ArrayDeque<>();
-    private FutureTask mActive;
     private boolean isShutdown = false;
+    private ArrayDeque<Runnable> mTasks = new ArrayDeque<>();
+    private FutureTask<Void> scheduleTask = null;
 
+    @Override
+    public Void call() {
+        for (;;) {
+            Runnable task;
+            synchronized (this) {
+                if ((task = mTasks.poll()) == null) {
+                    scheduleTask = null;
+                    return null;
+                }
+            }
+            task.run();
+        }
+    }
+
+    @Override
     public synchronized void execute(Runnable r) {
         if (isShutdown) {
             throw new RejectedExecutionException(
                     "Task " + r.toString() + " rejected from " + toString());
         }
-        FutureTask next = new FutureTask<Void>(() -> {
-            r.run();
-            scheduleNext();
-        }, null);
-        if (mActive == null) {
-            mActive = next;
-            EXECUTOR.execute(next);
-        } else {
-            mTasks.offer(next);
-        }
-    }
-
-    private synchronized void scheduleNext() {
-        if ((mActive = mTasks.poll()) != null) {
-            EXECUTOR.execute(mActive);
+        mTasks.offer(r);
+        if (scheduleTask == null) {
+            scheduleTask = new FutureTask<>(this);
+            EXECUTOR.execute(scheduleTask);
         }
     }
 
     @Override
     public synchronized void shutdown() {
         isShutdown = true;
+        mTasks.clear();
     }
 
     @Override
     public synchronized List<Runnable> shutdownNow() {
         isShutdown = true;
-        if (mActive != null)
-            mActive.cancel(true);
+        if (scheduleTask != null)
+            scheduleTask.cancel(true);
         try {
             return Arrays.asList(mTasks.toArray(new Runnable[]{}));
         } finally {
@@ -82,16 +87,16 @@ class SerialExecutorService extends AbstractExecutorService {
 
     @Override
     public synchronized boolean isTerminated() {
-        return isShutdown && mTasks.isEmpty();
+        return isShutdown && scheduleTask == null;
     }
 
     @Override
     public synchronized boolean awaitTermination(long timeout, TimeUnit unit)
             throws InterruptedException {
-        if (mActive == null)
+        if (scheduleTask == null)
             return true;
         try {
-            mActive.get(timeout, unit);
+            scheduleTask.get(timeout, unit);
         } catch (TimeoutException e) {
             return false;
         } catch (ExecutionException ignored) {}
