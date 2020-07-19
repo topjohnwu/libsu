@@ -22,16 +22,12 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.topjohnwu.superuser.internal.Factory;
-import com.topjohnwu.superuser.internal.InternalUtils;
-import com.topjohnwu.superuser.internal.UiThreadHandler;
+import com.topjohnwu.superuser.internal.Impl;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -134,12 +130,6 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
-    private static int flags = 0;
-    private static long timeout = 20;
-    private static Shell globalShell;
-    private static List<Class<? extends Initializer>> initClasses = new ArrayList<>();
-    private static boolean isInitGlobal;
-
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
      * If {@link #getCachedShell()} returns null, it will call {@link #newInstance()} to construct
@@ -148,14 +138,8 @@ public abstract class Shell implements Closeable {
      * @return a {@code Shell} instance
      */
     @NonNull
-    public synchronized static Shell getShell() {
-        Shell shell = getCachedShell();
-        if (shell == null) {
-            isInitGlobal = true;
-            shell = newInstance();
-            isInitGlobal = false;
-        }
-        return shell;
+    public static Shell getShell() {
+        return Impl.getShell();
     }
 
     /**
@@ -166,17 +150,7 @@ public abstract class Shell implements Closeable {
      * @param callback called when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
-        Shell shell = getCachedShell();
-        if (shell != null) {
-            // If cached shell exists, run synchronously
-            UiThreadHandler.run(() -> callback.onShell(shell));
-        } else {
-            // Else we get shell in worker thread and call the callback when we get a Shell
-            EXECUTOR.submit(() -> {
-                Shell s = getShell();
-                UiThreadHandler.run(() -> callback.onShell(s));
-            });
-        }
+        Impl.getShell(callback);
     }
 
     /**
@@ -185,16 +159,7 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        if (globalShell != null && globalShell.getStatus() < 0)
-            globalShell = null;
-        return globalShell;
-    }
-
-    private static void setCachedShell(Shell shell) {
-        if (isInitGlobal) {
-            // Set the global shell
-            globalShell = shell;
-        }
+        return Impl.cached();
     }
 
     /**
@@ -219,31 +184,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Shell newInstance() {
-        Shell shell = null;
-
-        // Root mount master
-        if (!InternalUtils.hasFlag(FLAG_NON_ROOT_SHELL) && InternalUtils.hasFlag(FLAG_MOUNT_MASTER)) {
-            try {
-                shell = newInstance("su", "--mount-master");
-                if (shell.getStatus() != ROOT_MOUNT_MASTER)
-                    shell = null;
-            } catch (NoShellException ignore) {}
-        }
-
-        // Normal root shell
-        if (shell == null && !InternalUtils.hasFlag(FLAG_NON_ROOT_SHELL)) {
-            try {
-                shell = newInstance("su");
-                if (shell.getStatus() != ROOT_SHELL)
-                    shell = null;
-            } catch (NoShellException ignore) {}
-        }
-
-        // Try normal non-root shell
-        if (shell == null)
-            shell = newInstance("sh");
-
-        return shell;
+        return Impl.newShell();
     }
 
     /**
@@ -256,32 +197,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Shell newInstance(String... commands) {
-        try {
-            Shell shell = Factory.createShell(timeout, commands);
-            if (InternalUtils.hasFlag(FLAG_USE_MAGISK_BUSYBOX))
-                shell.newJob().add("export PATH=/sbin/.magisk/busybox:$PATH").exec();
-            try {
-                Context ctx = InternalUtils.getContext();
-                setCachedShell(shell);
-                for (Class<? extends Initializer> cls : initClasses) {
-                    Constructor<? extends Initializer> ic = cls.getDeclaredConstructor();
-                    ic.setAccessible(true);
-                    Initializer init = ic.newInstance();
-                    if (!init.onInit(ctx, shell)) {
-                        setCachedShell(null);
-                        throw new NoShellException("Unable to init shell");
-                    }
-                }
-            } catch (Exception e) {
-                if (e instanceof RuntimeException)
-                    throw (RuntimeException) e;
-                InternalUtils.stackTrace(e);
-            }
-            return shell;
-        } catch (IOException e) {
-            InternalUtils.stackTrace(e);
-            throw new NoShellException("Unable to create a shell!", e);
-        }
+        return Impl.newShell(commands);
     }
 
     /**
@@ -306,7 +222,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull String... commands) {
-        return Factory.createJob(true, commands);
+        return Impl.newJob(true, commands);
     }
 
     /**
@@ -333,7 +249,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull String... commands) {
-        return Factory.createJob(false, commands);
+        return Impl.newJob(false, commands);
     }
 
     /**
@@ -341,7 +257,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull InputStream in) {
-        return Factory.createJob(true, in);
+        return Impl.newJob(true, in);
     }
 
     /**
@@ -352,7 +268,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull InputStream in) {
-        return Factory.createJob(false, in);
+        return Impl.newJob(false, in);
     }
 
     /* ***************
@@ -459,8 +375,8 @@ public abstract class Shell implements Closeable {
          */
         @SafeVarargs
         public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            initClasses.clear();
-            addInitializers(classes);
+            Impl.initClasses.clear();
+            Impl.initClasses.addAll(Arrays.asList(classes));
         }
 
         /**
@@ -470,7 +386,7 @@ public abstract class Shell implements Closeable {
          */
         @SafeVarargs
         public static void addInitializers(@NonNull Class<? extends Initializer>... classes) {
-            initClasses.addAll(Arrays.asList(classes));
+            Impl.initClasses.addAll(Arrays.asList(classes));
         }
 
         /**
@@ -482,7 +398,7 @@ public abstract class Shell implements Closeable {
          *              {@link #FLAG_REDIRECT_STDERR}
          */
         public static void setFlags(int flags) {
-            Shell.flags = flags;
+            Impl.flags = flags;
         }
 
         /**
@@ -491,7 +407,7 @@ public abstract class Shell implements Closeable {
          * @return the flags
          */
         public static int getFlags() {
-            return flags;
+            return Impl.flags;
         }
 
         /**
@@ -499,11 +415,11 @@ public abstract class Shell implements Closeable {
          * <p>
          * This is just a handy function to toggle verbose logging with a boolean value.
          * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
-         * @param verbose if true, add {@link #FLAG_VERBOSE_LOGGING} to flags.
+         * @param verbose if true, adds {@link #FLAG_VERBOSE_LOGGING} to flags.
          */
         public static void verboseLogging(boolean verbose) {
             if (verbose)
-                flags |= FLAG_VERBOSE_LOGGING;
+                Impl.flags |= FLAG_VERBOSE_LOGGING;
         }
 
         /**
@@ -515,7 +431,7 @@ public abstract class Shell implements Closeable {
          *                The default timeout is 20 seconds.
          */
         public static void setTimeout(long timeout) {
-            Shell.timeout = timeout;
+            Impl.timeout = timeout;
         }
     }
 

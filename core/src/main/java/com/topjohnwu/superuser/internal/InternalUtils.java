@@ -17,15 +17,16 @@
 package com.topjohnwu.superuser.internal;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.util.Log;
+
+import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.Shell;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class InternalUtils {
 
     private static Method currentApplication;
@@ -51,7 +52,7 @@ public final class InternalUtils {
     }
 
     public static boolean hasFlag(int flags) {
-        return hasFlag(Shell.Config.getFlags(), flags);
+        return hasFlag(Impl.flags, flags);
     }
 
     public static boolean hasFlag(int base, int flags) {

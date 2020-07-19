@@ -36,7 +36,7 @@ class PendingJob extends JobImpl {
     @Override
     public Shell.Result exec() {
         try {
-            shell = (ShellImpl) Shell.getShell();
+            shell = Impl.getShell();
         } catch (NoShellException e) {
             return ResultImpl.INSTANCE;
         }

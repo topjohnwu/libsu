@@ -23,11 +23,11 @@ package com.topjohnwu.superuser;
 
 public class NoShellException extends RuntimeException {
 
-    NoShellException(String msg) {
+    public NoShellException(String msg) {
         super(msg);
     }
 
-    NoShellException(String message, Throwable cause) {
+    public NoShellException(String message, Throwable cause) {
         super(message, cause);
     }
 }
