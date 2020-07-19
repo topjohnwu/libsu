@@ -127,9 +127,12 @@ public abstract class Shell implements Closeable {
 
     /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
+     * <p>
+     * Note: If the developer decides to replace the default ExecutorService, keep in mind that
+     * each {@code Shell} instance requires at least 3 threads to operate properly.
      */
     @NonNull
-    public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
+    public static ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     private static int flags = 0;
     private static long timeout = 20;
