@@ -58,15 +58,13 @@ val javadocJar = tasks.register("javadocJar", Jar::class) {
 }
 
 /* Force JitPack to build javadocJar and publish */
-tasks.whenTaskAdded {
-    if (name == "install")
-        dependsOn(tasks["publishToMavenLocal"])
+tasks.register("install") {
+    dependsOn(tasks["publishToMavenLocal"])
 }
-
 
 publishing {
     publications {
-        create("maven", MavenPublication::class) {
+        create<MavenPublication>("maven") {
             artifact(javadocJar.get())
             groupId = "com.github.topjohnwu"
             artifactId = "docs"
