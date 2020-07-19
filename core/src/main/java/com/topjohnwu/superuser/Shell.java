@@ -28,7 +28,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -114,18 +113,7 @@ public abstract class Shell implements Closeable {
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
 
-    /**
-     * @deprecated
-     * {@code /sbin/.magisk/busybox} will be removed in a future Magisk version, please
-     * directly bundle BusyBox in your app with {@link com.topjohnwu.superuser.BusyBoxInstaller}
-     * <p>
-     * If set, {@code /sbin/.magisk/busybox} will be prepended to {@code PATH}.
-     * This will make the shell use Magisk's internal busybox.
-     * <p>
-     * Constant value {@value}.
-     */
-    @Deprecated
-    public static final int FLAG_USE_MAGISK_BUSYBOX = 0x10;
+    /* Preserve 0x10 due to historical reasons */
 
     /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
@@ -381,20 +369,7 @@ public abstract class Shell implements Closeable {
          */
         @SafeVarargs
         public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            Impl.initClasses.clear();
-            Impl.initClasses.addAll(Arrays.asList(classes));
-        }
-
-        /**
-         * @deprecated
-         * Add additional {@code Initializer}s.
-         * @see Initializer
-         * @param classes the classes of desired initializers.
-         */
-        @Deprecated
-        @SafeVarargs
-        public static void addInitializers(@NonNull Class<? extends Initializer>... classes) {
-            Impl.initClasses.addAll(Arrays.asList(classes));
+            Impl.initClasses = classes;
         }
 
         /**
@@ -407,17 +382,6 @@ public abstract class Shell implements Closeable {
          */
         public static void setFlags(int flags) {
             Impl.flags = flags;
-        }
-
-        /**
-         * @deprecated
-         * Get the flags that controls how {@code Shell} works and how a new {@code Shell} will be
-         * constructed.
-         * @return the flags
-         */
-        @Deprecated
-        public static int getFlags() {
-            return Impl.flags;
         }
 
         /**

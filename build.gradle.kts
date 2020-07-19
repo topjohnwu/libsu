@@ -109,7 +109,7 @@ subprojects {
         if (plugins.hasPlugin("com.android.library")) {
             android.apply {
                 buildFeatures.apply {
-                    dataBinding = false
+                    buildConfig = false
                 }
             }
 

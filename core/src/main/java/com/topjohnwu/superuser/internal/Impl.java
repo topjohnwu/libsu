@@ -26,13 +26,10 @@ import com.topjohnwu.superuser.Shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
 import static com.topjohnwu.superuser.Shell.FLAG_NON_ROOT_SHELL;
-import static com.topjohnwu.superuser.Shell.FLAG_USE_MAGISK_BUSYBOX;
 import static com.topjohnwu.superuser.Shell.GetShellCallback;
 import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
 import static com.topjohnwu.superuser.internal.InternalUtils.hasFlag;
@@ -42,7 +39,7 @@ public final class Impl {
 
     public static int flags = 0;
     public static long timeout = 20;
-    public static List<Class<? extends Shell.Initializer>> initClasses = new ArrayList<>();
+    public static Class<? extends Shell.Initializer>[] initClasses = null;
 
     private static boolean isInitGlobal;
     private static ShellImpl globalShell;
@@ -108,18 +105,18 @@ public final class Impl {
     public static ShellImpl newShell(String... commands) {
         try {
             ShellImpl shell = new ShellImpl(timeout, commands);
-            if (hasFlag(FLAG_USE_MAGISK_BUSYBOX))
-                shell.newJob().add("export PATH=/sbin/.magisk/busybox:$PATH").exec();
             try {
                 Context ctx = InternalUtils.getContext();
                 setCachedShell(shell);
-                for (Class<? extends Shell.Initializer> cls : initClasses) {
-                    Constructor<? extends Shell.Initializer> ic = cls.getDeclaredConstructor();
-                    ic.setAccessible(true);
-                    Shell.Initializer init = ic.newInstance();
-                    if (!init.onInit(ctx, shell)) {
-                        setCachedShell(null);
-                        throw new NoShellException("Unable to init shell");
+                if (initClasses != null) {
+                    for (Class<? extends Shell.Initializer> cls : initClasses) {
+                        Constructor<? extends Shell.Initializer> ic = cls.getDeclaredConstructor();
+                        ic.setAccessible(true);
+                        Shell.Initializer init = ic.newInstance();
+                        if (!init.onInit(ctx, shell)) {
+                            setCachedShell(null);
+                            throw new NoShellException("Unable to init shell");
+                        }
                     }
                 }
             } catch (Exception e) {

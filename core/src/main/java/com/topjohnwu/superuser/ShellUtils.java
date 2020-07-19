@@ -21,16 +21,8 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.internal.InternalUtils;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,65 +93,6 @@ public final class ShellUtils {
      */
     public static boolean fastCmdResult(Shell shell, String... cmds) {
         return shell.newJob().add(cmds).exec().isSuccess();
-    }
-
-    /**
-     * @deprecated
-     * Pump all data from an {@link InputStream} to an {@link OutputStream}.
-     * @param in source.
-     * @param out target.
-     * @return the total bytes transferred.
-     * @throws IOException when any read/write operations throws an error.
-     */
-    @Deprecated
-    public static long pump(InputStream in, OutputStream out) throws IOException {
-        long total = noFlushPump(in, out);
-        out.flush();
-        return total;
-    }
-
-    /**
-     * @deprecated
-     * Pump all data from an {@link InputStream} to an {@link OutputStream} without flushing.
-     * @param in source.
-     * @param out target.
-     * @return the total bytes transferred.
-     * @throws IOException when any read/write operations throws an error.
-     */
-    @Deprecated
-    public static long noFlushPump(InputStream in, OutputStream out) throws IOException {
-        return InternalUtils.pump(in, out);
-    }
-
-    /**
-     * @deprecated
-     * Check the checksum of a file using a specific algorithm and compare it with a reference.
-     * @param alg the algorithm name used in {@link MessageDigest#getInstance(String)}.
-     * @param file the file to be tested.
-     * @param reference the reference checksum.
-     * @return {@code true} if the file's checksum matches reference.
-     */
-    @Deprecated
-    public static boolean checkSum(String alg, File file, String reference) {
-        // Verify checksum
-        try (FileInputStream in = new FileInputStream(file)) {
-            MessageDigest digest = MessageDigest.getInstance(alg);
-            pump(in, new DigestOutputStream(new OutputStream() {
-                @Override
-                public void write(int b) {}
-
-                @Override
-                public void write(@NonNull byte[] b, int off, int len) {}
-            }, digest));
-            byte[] chksum = digest.digest();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : chksum) {
-                sb.append(String.format("%02x", b & 0xff));
-            }
-            return TextUtils.equals(sb, reference);
-        } catch (NoSuchAlgorithmException | IOException e) {
-            return false;
-        }
     }
 
     /**
