@@ -1,6 +1,8 @@
 # libsu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu) [![](https://img.shields.io/badge/libsu-Javadoc-blue.svg)](https://topjohnwu.github.io/libsu/)
+[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
+
+[Full Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/2.5.2/javadoc/overview-summary.html)
 
 An Android library that provides APIs to a Unix (root) shell.
 
