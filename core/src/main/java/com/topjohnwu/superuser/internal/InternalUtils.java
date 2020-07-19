@@ -28,14 +28,11 @@ import java.lang.reflect.Method;
 
 public final class InternalUtils {
 
-    private static Field mBaseContext;
     private static Method currentApplication;
     private static WeakReference<Context> weakContext;
 
     static {
         try {
-            mBaseContext = ContextWrapper.class.getDeclaredField("mBase");
-            mBaseContext.setAccessible(true);
             currentApplication = Class.forName("android.app.ActivityThread")
                     .getMethod("currentApplication");
         } catch (Exception e) {
@@ -72,13 +69,5 @@ public final class InternalUtils {
             });
         }
         return weakContext.get();
-    }
-
-    public static void replaceBaseContext(ContextWrapper wrapper, Context base) {
-        try {
-            mBaseContext.set(wrapper, base);
-        } catch (IllegalAccessException e) {
-            /* Impossible */
-        }
     }
 }
