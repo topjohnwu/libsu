@@ -27,7 +27,7 @@ import java.util.List;
 
 class JobImpl extends Shell.Job {
 
-    private List<String> out, err;
+    protected List<String> out, err;
     private List<InputHandler> handlers;
     protected ShellImpl shell;
     private boolean redirect = false;
@@ -42,8 +42,6 @@ class JobImpl extends Shell.Job {
     }
 
     private Shell.Result exec0() {
-        if (out instanceof NOPList)
-            out = new ArrayList<>();
         ResultImpl result = new ResultImpl();
         result.out = out;
         result.err = redirect ? out : err;
@@ -70,15 +68,8 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public void submit() {
-        submit(null);
-    }
-
-    @Override
     public void submit(Shell.ResultCallback cb) {
-        if (out instanceof NOPList && cb == null)
-            out = null;
-        shell.SERIAL_EXECUTOR.execute(() -> {
+        shell.executor.execute(() -> {
             Shell.Result result = exec0();
             if (cb != null)
                 UiThreadHandler.run(() -> cb.onResult(result));

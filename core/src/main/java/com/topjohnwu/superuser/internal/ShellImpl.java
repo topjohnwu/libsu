@@ -43,12 +43,12 @@ import java.util.concurrent.TimeoutException;
 
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
-    private final static Class<? extends List> synchronizedListClass =
+    private static final Class<? extends List> synchronizedListClass =
             Collections.synchronizedList(NOPList.getInstance()).getClass();
 
     private int status;
-    ExecutorService SERIAL_EXECUTOR;
 
+    final ExecutorService executor;
     private final Process process;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
@@ -106,10 +106,10 @@ class ShellImpl extends Shell {
         outGobbler = new StreamGobbler.OUT(uuid);
         errGobbler = new StreamGobbler.ERR(uuid);
         endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");
-        SERIAL_EXECUTOR = new SerialExecutorService();
+        executor = new SerialExecutorService();
 
         // Shell checks might get stuck indefinitely
-        Future<Void> future = SERIAL_EXECUTOR.submit(() -> {
+        Future<Void> future = executor.submit(() -> {
             // Clean up potential garbage from InputStreams
             ShellUtils.cleanInputStream(STDOUT);
             ShellUtils.cleanInputStream(STDERR);
@@ -139,17 +139,19 @@ class ShellImpl extends Shell {
         try {
             future.get(timeout, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
-            release();
             Throwable cause = e.getCause();
             if (cause instanceof IOException) {
                 throw (IOException) cause;
             } else {
-                throw new IOException("Unknown ExecutionException", e);
+                throw new IOException("Unknown ExecutionException", cause);
             }
-        } catch (InterruptedException|TimeoutException e) {
-            SERIAL_EXECUTOR.shutdownNow();
-            release();
+        } catch (TimeoutException e) {
             throw new IOException("Shell timeout", e);
+        } catch (InterruptedException e) {
+            throw new IOException("Shell initialization interrupted", e);
+        } finally {
+            release();
+            executor.shutdownNow();
         }
     }
 
@@ -165,8 +167,8 @@ class ShellImpl extends Shell {
     public boolean waitAndClose(long timeout, @NonNull TimeUnit unit) throws InterruptedException, IOException {
         if (status < 0)
             return true;
-        SERIAL_EXECUTOR.shutdown();
-        if (SERIAL_EXECUTOR.awaitTermination(timeout, unit)) {
+        executor.shutdown();
+        if (executor.awaitTermination(timeout, unit)) {
             release();
             return true;
         } else {
@@ -179,7 +181,7 @@ class ShellImpl extends Shell {
     public void close() {
         if (status < 0)
             return;
-        SERIAL_EXECUTOR.shutdownNow();
+        executor.shutdownNow();
         release();
     }
 

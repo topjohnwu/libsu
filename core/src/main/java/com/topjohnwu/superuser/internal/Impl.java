@@ -58,13 +58,10 @@ public final class Impl {
         Shell shell = cached();
         if (shell != null) {
             // If cached shell exists, run synchronously
-            UiThreadHandler.run(() -> callback.onShell(shell));
+            callback.onShell(shell);
         } else {
             // Else we get shell in worker thread and call the callback when we get a Shell
-            EXECUTOR.execute(() -> {
-                Shell s = getShell();
-                UiThreadHandler.run(() -> callback.onShell(s));
-            });
+            EXECUTOR.execute(() -> callback.onShell(getShell()));
         }
     }
 

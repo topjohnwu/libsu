@@ -138,10 +138,10 @@ public abstract class Shell implements Closeable {
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
-     * If {@link #getCachedShell()} does not return null, the callback will be called immediately,
+     * If {@link #getCachedShell()} does not return null, the callback will be called synchronously,
      * or else it will call {@link #newInstance()} in a background thread and invoke the callback
-     * in the main thread.
-     * @param callback called when a shell is acquired.
+     * on the same thread.
+     * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
         Impl.getShell(callback);
@@ -537,11 +537,13 @@ public abstract class Shell implements Closeable {
          * Submit the job to an internal queue to run in the background.
          * The result will be omitted.
          */
-        public abstract void submit();
+        public void submit() {
+            submit(null);
+        }
 
         /**
          * Submit the job to an internal queue to run in the background.
-         * The result will be returned to the callback, running in the main thread.
+         * The result will be returned to the callback, running on the main thread.
          * @param cb the callback to receive the result of the job.
          */
         public abstract void submit(@Nullable ResultCallback cb);
@@ -579,7 +581,6 @@ public abstract class Shell implements Closeable {
         /**
          * @param shell the {@code Shell} obtained in the asynchronous operation.
          */
-        @MainThread
         void onShell(@NonNull Shell shell);
     }
 }

@@ -21,14 +21,16 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 
+import java.util.ArrayList;
+
 class PendingJob extends JobImpl {
 
     private boolean isSU;
-    private boolean retry;
+    private boolean retried;
 
     PendingJob(boolean su) {
         isSU = su;
-        retry = false;
+        retried = false;
         to(NOPList.getInstance());
     }
 
@@ -42,10 +44,12 @@ class PendingJob extends JobImpl {
         }
         if (isSU && !shell.isRoot())
             return ResultImpl.INSTANCE;
+        if (out instanceof NOPList)
+            out = new ArrayList<>();
         Shell.Result res = super.exec();
-        if (!retry && res == ResultImpl.SHELL_ERR) {
+        if (!retried && res == ResultImpl.SHELL_ERR) {
             // The cached shell is terminated, try to re-run this task
-            retry = true;
+            retried = true;
             return exec();
         }
         return res;
@@ -54,15 +58,18 @@ class PendingJob extends JobImpl {
     @Override
     public void submit(Shell.ResultCallback cb) {
         Shell.getShell(s -> {
-            if (isSU && !s.isRoot() && cb != null) {
-                cb.onResult(ResultImpl.INSTANCE);
+            if (isSU && !s.isRoot()) {
+                if (cb != null)
+                    UiThreadHandler.run(() -> cb.onResult(ResultImpl.INSTANCE));
                 return;
             }
+            if (out instanceof NOPList)
+                out = (cb == null) ? null : new ArrayList<>();
             shell = (ShellImpl) s;
             super.submit(res -> {
-                if (!retry && res == ResultImpl.SHELL_ERR) {
+                if (!retried && res == ResultImpl.SHELL_ERR) {
                     // The cached shell is terminated, try to re-schedule this task
-                    retry = true;
+                    retried = true;
                     submit(cb);
                 } else if (cb != null) {
                     cb.onResult(res);
