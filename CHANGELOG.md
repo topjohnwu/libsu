@@ -1,3 +1,21 @@
+## 2.5.2
+### Improvements
+- Be more conservative with synchronizing internally
+- Use a more efficient SerialExecutorService implementation
+- Allow users to set their own ExecutorService for libsu (`Shell.EXECUTOR`)
+- Some minor optimizations
+
+### Deprecation
+- All deprecated methods/fields/classes will be removed in the next release
+- `ShellUtils.pump(InputStream, OutputStream)`
+- `ShellUtils.noFlushPump(InputStream, OutputStream)`
+- `ShellUtils.checkSum(String, File, String)`
+- `Shell.FLAG_USE_MAGISK_BUSYBOX`
+- `Shell.Config.addInitializers(...)`
+- `Shell.Config.getFlags()`
+- `SuProcessFileInputStream`
+- `SuProcessFileOutputStream`
+
 ## 2.5.1
 ### Improvements / Bug fixes
 - `SuFile.getParent()` no longer cause NPE when no parent exists

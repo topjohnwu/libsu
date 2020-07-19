@@ -28,7 +28,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.5.1'
+    def libsuVersion = '2.5.2'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */
@@ -119,10 +119,7 @@ File logs = SuFile.open("/cache/magisk.log");
 if (logs.exists()) {
     try (InputStream in = new SuFileInputStream(logs);
          OutputStream out = new SuFileOutputStream("/data/magisk.log.bak")) {
-        /* All file data can be accessed by Java Streams */
-
-        // For example, use a helper method to copy the logs
-        ShellUtils.pump(in, out);
+        /* All file data can be accessed with Java Streams */
     } catch (IOException e) {
         e.printStackTrace();
     }
@@ -136,12 +133,7 @@ The I/O classes relies on several commandline tools. *Most* of the tools are ava
 /* If you want to bundle prebuilt busybox binaries with your app,
  * add com.github.topjohnwu.libsu:busybox as a dependency, and
  * register BusyBoxInstaller as an initializer. */
-Shell.Config.addInitializers(BusyBoxInstaller.class);
-
-/* If your app only targets Magisk users, and you are not willing to
- * increase your APK size for the busybox binaries, you can tell libsu
- * to use Magisk's internal busybox */
-Shell.Config.setFlags(Shell.FLAG_USE_MAGISK_BUSYBOX);
+Shell.Config.setInitializers(BusyBoxInstaller.class);
 ```
 
 ### Advanced
