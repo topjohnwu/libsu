@@ -37,6 +37,7 @@ import java.io.InputStream;
  * Note: this class is <b>always buffered internally</b>, do not add another layer of
  * {@link java.io.BufferedOutputStream} to add more overhead!
  */
+@Deprecated
 public class SuProcessFileOutputStream extends FilterOutputStream {
 
     private Process process;

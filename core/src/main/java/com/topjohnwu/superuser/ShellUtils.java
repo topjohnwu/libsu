@@ -21,6 +21,8 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.superuser.internal.InternalUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,7 +31,6 @@ import java.io.OutputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,12 +104,14 @@ public final class ShellUtils {
     }
 
     /**
+     * @deprecated
      * Pump all data from an {@link InputStream} to an {@link OutputStream}.
      * @param in source.
      * @param out target.
      * @return the total bytes transferred.
      * @throws IOException when any read/write operations throws an error.
      */
+    @Deprecated
     public static long pump(InputStream in, OutputStream out) throws IOException {
         long total = noFlushPump(in, out);
         out.flush();
@@ -116,30 +119,27 @@ public final class ShellUtils {
     }
 
     /**
+     * @deprecated
      * Pump all data from an {@link InputStream} to an {@link OutputStream} without flushing.
      * @param in source.
      * @param out target.
      * @return the total bytes transferred.
      * @throws IOException when any read/write operations throws an error.
      */
+    @Deprecated
     public static long noFlushPump(InputStream in, OutputStream out) throws IOException {
-        int read;
-        long total = 0;
-        byte[] buf = new byte[64 * 1024];  /* 64K buffer */
-        while ((read = in.read(buf)) > 0) {
-            out.write(buf, 0, read);
-            total += read;
-        }
-        return total;
+        return InternalUtils.pump(in, out);
     }
 
     /**
+     * @deprecated
      * Check the checksum of a file using a specific algorithm and compare it with a reference.
      * @param alg the algorithm name used in {@link MessageDigest#getInstance(String)}.
      * @param file the file to be tested.
      * @param reference the reference checksum.
      * @return {@code true} if the file's checksum matches reference.
      */
+    @Deprecated
     public static boolean checkSum(String alg, File file, String reference) {
         // Verify checksum
         try (FileInputStream in = new FileInputStream(file)) {

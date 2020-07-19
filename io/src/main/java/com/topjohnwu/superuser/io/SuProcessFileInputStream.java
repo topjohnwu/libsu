@@ -34,6 +34,7 @@ import java.io.IOException;
  * Note: this class is <b>always buffered internally</b>, do not add another layer of
  * {@link java.io.BufferedInputStream} to add more overhead!
  */
+@Deprecated
 public class SuProcessFileInputStream extends FilterInputStream {
 
     private Process process;

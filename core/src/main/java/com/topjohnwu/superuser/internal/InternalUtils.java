@@ -23,6 +23,9 @@ import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 
@@ -70,5 +73,16 @@ public final class InternalUtils {
             });
         }
         return weakContext.get();
+    }
+
+    public static long pump(InputStream in, OutputStream out) throws IOException {
+        int read;
+        long total = 0;
+        byte[] buf = new byte[64 * 1024];  /* 64K buffer */
+        while ((read = in.read(buf)) > 0) {
+            out.write(buf, 0, read);
+            total += read;
+        }
+        return total;
     }
 }

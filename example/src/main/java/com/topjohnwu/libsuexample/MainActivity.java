@@ -26,14 +26,14 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.IOException;
 import java.util.List;
-
-import androidx.annotation.NonNull;
 
 public class MainActivity extends Activity {
 
@@ -49,7 +49,7 @@ public class MainActivity extends Activity {
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
         // Use internal busybox
-        Shell.Config.addInitializers(BusyBoxInstaller.class, ExampleInitializer.class);
+        Shell.Config.setInitializers(BusyBoxInstaller.class, ExampleInitializer.class);
     }
 
     // Demonstrate Shell.Initializer

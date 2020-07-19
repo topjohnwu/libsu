@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import com.topjohnwu.superuser.ShellUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,7 +39,7 @@ interface InputHandler {
     static InputHandler newInstance(InputStream is) {
         return in -> {
             InternalUtils.log(TAG, "<InputStream>");
-            ShellUtils.noFlushPump(is, in);
+            InternalUtils.pump(is, in);
             is.close();
             // Make sure it ends properly
             in.write('\n');

@@ -113,12 +113,18 @@ public abstract class Shell implements Closeable {
      * Constant value {@value}.
      */
     public static final int FLAG_REDIRECT_STDERR = 0x08;
+
     /**
+     * @deprecated
+     * {@code /sbin/.magisk/busybox} will be removed in a future Magisk version, please
+     * directly bundle BusyBox in your app with {@link com.topjohnwu.superuser.BusyBoxInstaller}
+     * <p>
      * If set, {@code /sbin/.magisk/busybox} will be prepended to {@code PATH}.
      * This will make the shell use Magisk's internal busybox.
      * <p>
      * Constant value {@value}.
      */
+    @Deprecated
     public static final int FLAG_USE_MAGISK_BUSYBOX = 0x10;
 
     /**
@@ -369,7 +375,7 @@ public abstract class Shell implements Closeable {
         private Config() {}
 
         /**
-         * Set {@code Initializer}s.
+         * Set the desired {@link Initializer}s.
          * @see Initializer
          * @param classes the classes of desired initializers.
          */
@@ -380,10 +386,12 @@ public abstract class Shell implements Closeable {
         }
 
         /**
+         * @deprecated
          * Add additional {@code Initializer}s.
          * @see Initializer
          * @param classes the classes of desired initializers.
          */
+        @Deprecated
         @SafeVarargs
         public static void addInitializers(@NonNull Class<? extends Initializer>... classes) {
             Impl.initClasses.addAll(Arrays.asList(classes));
@@ -402,10 +410,12 @@ public abstract class Shell implements Closeable {
         }
 
         /**
+         * @deprecated
          * Get the flags that controls how {@code Shell} works and how a new {@code Shell} will be
          * constructed.
          * @return the flags
          */
+        @Deprecated
         public static int getFlags() {
             return Impl.flags;
         }
