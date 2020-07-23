@@ -64,10 +64,15 @@ public final class Impl {
             // Else we get shell in worker thread and call the callback when we get a Shell
             EXECUTOR.execute(() -> {
                 Shell s;
-                synchronized (Impl.class) {
-                    isInitGlobal = true;
-                    s = newShell();
-                    isInitGlobal = false;
+                try {
+                    synchronized (Impl.class) {
+                        isInitGlobal = true;
+                        s = newShell();
+                        isInitGlobal = false;
+                    }
+                } catch (NoShellException e) {
+                    InternalUtils.stackTrace(e);
+                    return;
                 }
                 if (executor == null)
                     callback.onShell(s);
