@@ -23,12 +23,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.internal.Impl;
+import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -138,13 +140,25 @@ public abstract class Shell implements Closeable {
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
-     * If {@link #getCachedShell()} does not return null, the callback will be called synchronously,
+     * If {@link #getCachedShell()} does not return null, the callback will be invoked synchronously,
      * or else it will call {@link #newInstance()} in a background thread and invoke the callback
-     * on the same thread.
+     * on the main thread.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
-        Impl.getShell(callback);
+        Impl.getShell(UiThreadHandler.executor, callback);
+    }
+
+    /**
+     * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
+     * If {@link #getCachedShell()} does not return null, the shell will be directly returned through
+     * the callback, or else it will call {@link #newInstance()} in a background thread.
+     * @param executor the executor used to handle the result callback event.
+     *                 Pass {@code null} to run the callback on the same thread creating the shell.
+     * @param callback invoked when a shell is acquired.
+     */
+    public static void getShell(@Nullable Executor executor, @NonNull GetShellCallback callback) {
+        Impl.getShell(executor, callback);
     }
 
     /**
@@ -153,7 +167,7 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        return Impl.cached();
+        return Impl.getCachedShell();
     }
 
     /**
@@ -352,8 +366,8 @@ public abstract class Shell implements Closeable {
     }
 
     /* **************
-    * Nested classes
-    * ***************/
+     * Nested classes
+     * ***************/
 
     /**
      * Static methods for configuring the behavior of {@link Shell}.
@@ -387,7 +401,7 @@ public abstract class Shell implements Closeable {
         /**
          * Set whether enable verbose logging.
          * <p>
-         * This is just a handy function to toggle verbose logging with a boolean value.
+         * Convenient function to toggle verbose logging with a boolean value.
          * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
          * @param verbose if true, adds {@link #FLAG_VERBOSE_LOGGING} to flags.
          */
@@ -399,7 +413,7 @@ public abstract class Shell implements Closeable {
         /**
          * Set the maximum time to wait for a new shell construction.
          * <p>
-         * After the timeout occurs and the new shell still have no response,
+         * After the timeout occurs and the new shell still has no response,
          * the shell process will be force-closed and throw {@link NoShellException}.
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
@@ -407,23 +421,6 @@ public abstract class Shell implements Closeable {
         public static void setTimeout(long timeout) {
             Impl.timeout = timeout;
         }
-    }
-
-    /**
-     * A task that can be executed by a shell with the method {@link #execTask(Task)}.
-     */
-    public interface Task {
-        /**
-         * This method will be called when a task is executed by a shell.
-         * {@link Closeable#close()} on all streams is NOP, it is safe to close them.
-         * @param stdin the STDIN of the shell.
-         * @param stdout the STDOUT of the shell.
-         * @param stderr the STDERR of the shell.
-         * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
-         */
-        void run(@NonNull OutputStream stdin,
-                 @NonNull InputStream stdout,
-                 @NonNull InputStream stderr) throws IOException;
     }
 
     /**
@@ -466,23 +463,13 @@ public abstract class Shell implements Closeable {
          * {@code getCode() == 0}.
          * @return {@code true} if the return code is 0.
          */
-        public abstract boolean isSuccess();
+        public boolean isSuccess() {
+            return getCode() == 0;
+        }
     }
 
     /**
-     * The callback to receive a result in {@link Job#submit(Shell.ResultCallback)}.
-     */
-    public interface ResultCallback {
-
-        /**
-         * @param out the result of the job.
-         */
-        @MainThread
-        void onResult(@NonNull Result out);
-    }
-
-    /**
-     * Represents a Job that could later be executed or submitted to background thread.
+     * Represents a shell Job that could later be executed or submitted to background threads.
      * <p>
      * All operations added in {@link #add(String...)} and {@link #add(InputStream)} will be
      * executed in the order of addition.
@@ -543,10 +530,21 @@ public abstract class Shell implements Closeable {
 
         /**
          * Submit the job to an internal queue to run in the background.
-         * The result will be returned to the callback, running on the main thread.
+         * The result will be returned with a callback running on the main thread.
          * @param cb the callback to receive the result of the job.
          */
-        public abstract void submit(@Nullable ResultCallback cb);
+        public void submit(@Nullable ResultCallback cb) {
+            submit(UiThreadHandler.executor, cb);
+        }
+
+        /**
+         * Submit the job to an internal queue to run in the background.
+         * The result will be returned with a callback executed by the provided executor.
+         * @param executor the executor used to handle the result callback event.
+         *                 Pass {@code null} to run the callback on the same thread executing the job.
+         * @param cb the callback to receive the result of the job.
+         */
+        public abstract void submit(@Nullable Executor executor, @Nullable ResultCallback cb);
     }
 
     /**
@@ -554,7 +552,7 @@ public abstract class Shell implements Closeable {
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
      * is constructed, extend this class, add your own implementation, and register it with
-     * {@link Config#addInitializers(Class[])} or {@link Config#setInitializers(Class[])}.
+     * {@link Config#setInitializers(Class[])}.
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
@@ -574,6 +572,27 @@ public abstract class Shell implements Closeable {
         public boolean onInit(@NonNull Context context, @NonNull Shell shell) { return true; }
     }
 
+    /* **********
+    * Interfaces
+    * ***********/
+
+    /**
+     * A task that can be executed by a shell with the method {@link #execTask(Task)}.
+     */
+    public interface Task {
+        /**
+         * This method will be called when a task is executed by a shell.
+         * {@link Closeable#close()} on all streams is NOP, it is safe to close them.
+         * @param stdin the STDIN of the shell.
+         * @param stdout the STDOUT of the shell.
+         * @param stderr the STDERR of the shell.
+         * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
+         */
+        void run(@NonNull OutputStream stdin,
+                 @NonNull InputStream stdout,
+                 @NonNull InputStream stderr) throws IOException;
+    }
+
     /**
      * The callback used in {@link #getShell(GetShellCallback)}.
      */
@@ -582,5 +601,17 @@ public abstract class Shell implements Closeable {
          * @param shell the {@code Shell} obtained in the asynchronous operation.
          */
         void onShell(@NonNull Shell shell);
+    }
+
+    /**
+     * The callback to receive a result in {@link Job#submit(Shell.ResultCallback)}.
+     */
+    public interface ResultCallback {
+
+        /**
+         * @param out the result of the job.
+         */
+        @MainThread
+        void onResult(@NonNull Result out);
     }
 }

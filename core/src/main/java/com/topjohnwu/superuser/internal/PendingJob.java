@@ -17,11 +17,13 @@
 package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 
 import java.util.ArrayList;
+import java.util.concurrent.Executor;
 
 class PendingJob extends JobImpl {
 
@@ -56,21 +58,20 @@ class PendingJob extends JobImpl {
     }
 
     @Override
-    public void submit(Shell.ResultCallback cb) {
-        Shell.getShell(s -> {
+    public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
+        Impl.getShell(null, s -> {
             if (isSU && !s.isRoot()) {
-                if (cb != null)
-                    UiThreadHandler.run(() -> cb.onResult(ResultImpl.INSTANCE));
+                ResultImpl.INSTANCE.callback(executor, cb);
                 return;
             }
             if (out instanceof NOPList)
                 out = (cb == null) ? null : new ArrayList<>();
             shell = (ShellImpl) s;
-            super.submit(res -> {
+            super.submit(executor, res -> {
                 if (!retried && res == ResultImpl.SHELL_ERR) {
                     // The cached shell is terminated, try to re-schedule this task
                     retried = true;
-                    submit(cb);
+                    submit(executor, cb);
                 } else if (cb != null) {
                     cb.onResult(res);
                 }

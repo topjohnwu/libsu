@@ -22,13 +22,14 @@ import com.topjohnwu.superuser.Shell;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 class ResultImpl extends Shell.Result {
     List<String> out;
     List<String> err;
     int code = JOB_NOT_EXECUTED;
-    static Shell.Result INSTANCE = new ResultImpl();
-    static Shell.Result SHELL_ERR = new ResultImpl();
+    static ResultImpl INSTANCE = new ResultImpl();
+    static ResultImpl SHELL_ERR = new ResultImpl();
 
     @NonNull
     @Override
@@ -47,8 +48,12 @@ class ResultImpl extends Shell.Result {
         return code;
     }
 
-    @Override
-    public boolean isSuccess() {
-        return code == 0;
+    void callback(Executor executor, Shell.ResultCallback cb) {
+        if (cb != null) {
+            if (executor == null)
+                cb.onResult(this);
+            else
+                executor.execute(() -> cb.onResult(this));
+        }
     }
 }

@@ -21,8 +21,11 @@ import android.os.Looper;
 
 import com.topjohnwu.superuser.ShellUtils;
 
+import java.util.concurrent.Executor;
+
 public class UiThreadHandler {
-    public static Handler handler = new Handler(Looper.getMainLooper());
+    public static final Handler handler = new Handler(Looper.getMainLooper());
+    public static final Executor executor = UiThreadHandler::run;
     public static void run(Runnable r) {
         if (ShellUtils.onMainThread()) {
             r.run();

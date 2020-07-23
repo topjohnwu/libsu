@@ -26,6 +26,7 @@ import com.topjohnwu.superuser.Shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.util.concurrent.Executor;
 
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
@@ -45,7 +46,7 @@ public final class Impl {
     private static ShellImpl globalShell;
 
     public static synchronized ShellImpl getShell() {
-        ShellImpl shell = cached();
+        ShellImpl shell = getCachedShell();
         if (shell == null) {
             isInitGlobal = true;
             shell = newShell();
@@ -54,18 +55,29 @@ public final class Impl {
         return shell;
     }
 
-    public static void getShell(GetShellCallback callback) {
-        Shell shell = cached();
+    public static void getShell(Executor executor, GetShellCallback callback) {
+        Shell shell = getCachedShell();
         if (shell != null) {
             // If cached shell exists, run synchronously
             callback.onShell(shell);
         } else {
             // Else we get shell in worker thread and call the callback when we get a Shell
-            EXECUTOR.execute(() -> callback.onShell(getShell()));
+            EXECUTOR.execute(() -> {
+                Shell s;
+                synchronized (Impl.class) {
+                    isInitGlobal = true;
+                    s = newShell();
+                    isInitGlobal = false;
+                }
+                if (executor == null)
+                    callback.onShell(s);
+                else
+                    executor.execute(() -> callback.onShell(s));
+            });
         }
     }
 
-    public static synchronized ShellImpl cached() {
+    public static synchronized ShellImpl getCachedShell() {
         if (globalShell != null && globalShell.getStatus() < 0)
             globalShell = null;
         return globalShell;

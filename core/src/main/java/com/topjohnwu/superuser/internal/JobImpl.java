@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 class JobImpl extends Shell.Job {
 
@@ -41,7 +43,7 @@ class JobImpl extends Shell.Job {
         shell = s;
     }
 
-    private Shell.Result exec0() {
+    private ResultImpl exec0() {
         ResultImpl result = new ResultImpl();
         result.out = out;
         result.err = redirect ? out : err;
@@ -68,12 +70,8 @@ class JobImpl extends Shell.Job {
     }
 
     @Override
-    public void submit(Shell.ResultCallback cb) {
-        shell.executor.execute(() -> {
-            Shell.Result result = exec0();
-            if (cb != null)
-                UiThreadHandler.run(() -> cb.onResult(result));
-        });
+    public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
+        shell.executor.execute(() -> exec0().callback(executor, cb));
     }
 
     @NonNull
