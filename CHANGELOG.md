@@ -13,7 +13,7 @@ For more info please read the Javadoc for `BusyBoxInstaller`.
 - The bundled BusyBox now supports full SELinux features
 
 ### Breaking Changes
-- All deprecated APIs in 2.5.2 is removed
+- All deprecated APIs in 2.5.2 are removed
 
 ## 2.5.2
 ### Improvements

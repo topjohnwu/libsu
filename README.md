@@ -31,10 +31,14 @@ dependencies {
     def libsuVersion = '2.6.0'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
-    /* Optional: For using com.topjohnwu.superuser.io classes */
+    // Optional: For using com.topjohnwu.superuser.io classes
     implementation "com.github.topjohnwu.libsu:io:${libsuVersion}"
 
-    /* Optional: To bundle prebuilt BusyBox binaries */
+    // Optional: Bundle prebuilt BusyBox binaries
+    // Source code of the built binaries: https://github.com/topjohnwu/ndk-busybox
+    // Please note that BusyBox is GPLv2. Theoretically bundling the binary
+    // without code linkage does not enforce your app to also be GPLv2, so
+    // it shall be fine to use in closed source or projects using other licenses.
     implementation "com.github.topjohnwu.libsu:busybox:${libsuVersion}"
 }
 ```
@@ -46,9 +50,9 @@ Set configurations in your MainActivity or Application class:
 
 ```java
 static {
-    /* Shell.Config methods shall be called before any shell is created
-     * This is the why in this example we call it in a static block
-     * The followings are some examples, check Javadoc for more details */
+    // Shell.Config methods shall be called before any shell is created
+    // This is the why in this example we call it in a static block
+    // The followings are some examples, check Javadoc for more details
     Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
     Shell.Config.verboseLogging(BuildConfig.DEBUG);
     Shell.Config.setTimeout(10);
@@ -78,8 +82,8 @@ Shell.su("setenforce 0").submit();
 
 // Run commands in the background and get results via a callback
 Shell.su("sleep 5", "echo hello").submit(result -> {
-    /* This callback will be called on the main (UI) thread
-     * after the operation is done (5 seconds after submit) */
+    // This callback will be called on the main (UI) thread
+    // after the operation is done (5 seconds after submit)
     result.getOut();  /* Should return a list with a single string "hello" */
 })
 
@@ -88,8 +92,8 @@ List<String> callbackList = new CallbackList<String>() {
     @MainThread
     @Override
     public void onAddElement(String s) {
-        /* This callback will be called on the main (UI) thread each time
-         * the list adds a new element (in this case: shell outputs a new line)*/
+        // This callback will be called on the main (UI) thread each time
+        // the list adds a new element (in this case: shell outputs a new line)
         uiUpdate(s);  /* Some method to update the UI */
     }
 };
@@ -99,8 +103,8 @@ Shell.su(
     "  sleep 1"
     "done",
     "echo 'countdown done!'").to(callbackList).submit(result -> {
-        /* Some stuffs cannot be acquired from callback lists
-         * e.g. return codes */
+        // Some results cannot be acquired from callback lists
+        // e.g. return codes
         uiUpdate(result.getCode());
     });
 
@@ -114,12 +118,12 @@ Shell.su("echo hello", "echo hello >&2").to(stdout, stderr).exec();
 Add `com.github.topjohnwu.libsu:io` as dependency to access the I/O wrapper classes:
 
 ```java
-/* Treat files that require root access just like ordinary files */
+// Treat files that require root access just like ordinary files
 File logs = SuFile.open("/cache/magisk.log");
 if (logs.exists()) {
     try (InputStream in = new SuFileInputStream(logs);
          OutputStream out = new SuFileOutputStream("/data/magisk.log.bak")) {
-        /* All file data can be accessed with Java Streams */
+        // All file data can be accessed with Java Streams
     } catch (IOException e) {
         e.printStackTrace();
     }
@@ -167,8 +171,8 @@ android {
 To setup BusyBox, set `BusyBoxInstaller` as the first shell initializer:
 
 ```java
-/* Add com.github.topjohnwu.libsu:busybox as a dependency, and
- * register BusyBoxInstaller as the first initializer. */
+// Add com.github.topjohnwu.libsu:busybox as a dependency, and
+// register BusyBoxInstaller as the first initializer.
 Shell.Config.setInitializers(BusyBoxInstaller.class, /* other initializers */);
 ```
 
