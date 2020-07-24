@@ -113,23 +113,25 @@ class ShellImpl extends Shell {
 
         // Shell checks might get stuck indefinitely
         Future<Void> check = executor.submit(this::shellCheck);
-
         try {
-            check.get(timeout, TimeUnit.SECONDS);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            } else {
-                throw new IOException("Unknown ExecutionException", cause);
+            try {
+                check.get(timeout, TimeUnit.SECONDS);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof IOException) {
+                    throw (IOException) cause;
+                } else {
+                    throw new IOException("Unknown ExecutionException", cause);
+                }
+            } catch (TimeoutException e) {
+                throw new IOException("Shell timeout", e);
+            } catch (InterruptedException e) {
+                throw new IOException("Shell initialization interrupted", e);
             }
-        } catch (TimeoutException e) {
-            throw new IOException("Shell timeout", e);
-        } catch (InterruptedException e) {
-            throw new IOException("Shell initialization interrupted", e);
-        } finally {
+        } catch (IOException e) {
             executor.shutdownNow();
             release();
+            throw e;
         }
     }
 
