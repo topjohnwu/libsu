@@ -2,8 +2,6 @@
 
 [![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
 
-[Full Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/2.5.2/javadoc/overview-summary.html)
-
 An Android library that provides APIs to a Unix (root) shell.
 
 Some poorly coded applications requests a new shell (call `su`, or worse `su -c <commands>`) for every single command, which is very inefficient. This library makes sharing a single, globally shared shell session in Android applications super easy: developers won't have to bother about concurrency issues, and with a rich selection of both synchronous and asynchronous APIs, it is much easier to create a powerful root app.
@@ -16,7 +14,7 @@ One complex Android application using `libsu` for all root related operations is
 
 ## [Changelog](./CHANGELOG.md)
 
-## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/2.5.2/javadoc/overview-summary.html)
+## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/2.6.0/javadoc/overview-summary.html)
 
 ## Download
 ```groovy
