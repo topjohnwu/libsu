@@ -8,18 +8,18 @@ An Android library that provides APIs to a Unix (root) shell.
 
 Some poorly coded applications requests a new shell (call `su`, or worse `su -c <commands>`) for every single command, which is very inefficient. This library makes sharing a single, globally shared shell session in Android applications super easy: developers won't have to bother about concurrency issues, and with a rich selection of both synchronous and asynchronous APIs, it is much easier to create a powerful root app.
 
-Optionally, `libsu` comes with a whole suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on all files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
+Optionally, `libsu` comes with a full suite of I/O classes, re-creating `java.io` classes but enhanced with root access. Without even thinking about command-lines, you can use `File`, `RandomAccessFile`, `FileInputStream`, and `FileOutputStream` equivalents on files that are only accessible with root permissions. The I/O stream classes are carefully optimized and have very promising performance.
 
-Also optionally, this library bundles with prebuilt `busybox` binaries. App developers can easily setup and create an internal `busybox` environment without relying on potentially flawed (or even no) external `busybox`.
+Also optionally, this library bundles with prebuilt BusyBox binaries. App developers can easily setup and create an internal BusyBox environment without relying on potentially flawed (or even no) external BusyBox.
 
 One complex Android application using `libsu` for all root related operations is [Magisk Manager](https://github.com/topjohnwu/Magisk/tree/master/app).
 
-## Changelog
+## [Changelog](./CHANGELOG.md)
 
-[Link to Changelog](./CHANGELOG.md)
+## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/2.5.2/javadoc/overview-summary.html)
 
 ## Download
-```java
+```groovy
 android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -30,13 +30,13 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '2.5.2'
+    def libsuVersion = '2.6.0'
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
     /* Optional: For using com.topjohnwu.superuser.io classes */
     implementation "com.github.topjohnwu.libsu:io:${libsuVersion}"
 
-    /* Optional: For including prebuilt busybox binaries */
+    /* Optional: To bundle prebuilt BusyBox binaries */
     implementation "com.github.topjohnwu.libsu:busybox:${libsuVersion}"
 }
 ```
@@ -128,16 +128,6 @@ if (logs.exists()) {
 }
 ```
 
-### BusyBox
-The I/O classes relies on several commandline tools. *Most* of the tools are availible in modern Android via `toybox` (Android 6+), however for compatibility and reliable/reproducible behavior (some applets included in `toybox` is not fully featured), it will be a good idea to have BusyBox included to the environment:
-
-```java
-/* If you want to bundle prebuilt busybox binaries with your app,
- * add com.github.topjohnwu.libsu:busybox as a dependency, and
- * register BusyBoxInstaller as an initializer. */
-Shell.Config.setInitializers(BusyBoxInstaller.class);
-```
-
 ### Advanced
 Initialize shells with custom `Shell.Initializer`, similar to what `.bashrc` will do:
 
@@ -157,7 +147,31 @@ class ExampleInitializer extends Shell.Initializer {
 }
 
 // Register the class as an initializer
-Shell.Config.addInitializers(ExampleInitializer.class);
+Shell.Config.setInitializers(ExampleInitializer.class);
+```
+
+### BusyBox
+The I/O classes relies on several commandline tools. *Most* of the tools are available in modern Android via `toybox` (Android 6+), however for compatibility and reliable/reproducible behavior (some applets included in `toybox` is not fully featured), it is a good idea to have BusyBox bundled with your app.
+
+The BusyBox binaries are pretty large in size (1.3 - 2.1 MB for each ABI). To reduce APK size, the best option is to use either [App Bundles](https://developer.android.com/guide/app-bundle) or [Split APKs](https://developer.android.com/studio/build/configure-apk-splits). If you are not publishing to Play Store, you can also limit the supported ABIs:
+
+```groovy
+android {
+  defaultConfig {
+    ndk {
+      // Filter your supported ABIs
+      abiFilters 'armeabi-v7a'
+    }
+  }
+}
+```
+
+To setup BusyBox, set `BusyBoxInstaller` as the first shell initializer:
+
+```java
+/* Add com.github.topjohnwu.libsu:busybox as a dependency, and
+ * register BusyBoxInstaller as the first initializer. */
+Shell.Config.setInitializers(BusyBoxInstaller.class, /* other initializers */);
 ```
 
 ## Example

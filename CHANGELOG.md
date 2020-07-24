@@ -1,3 +1,20 @@
+## 2.6.0
+### API Changes
+- New APIs to allow users to customize which thread to dispatch when returning results via callbacks
+    - `Shell.getShell(Executor, GetShellCallback)`
+    - `Shell.Job.submit(Executor, GetShellCallback)`
+
+### Improvements
+- `Shell.su/sh(...).submit(...)` will no longer switch back to the main thread internally, reducing unnecessary thread hopping
+
+### Behavior Changes
+- The bundled BusyBox now utilizes "Standalone Mode ASH", which forces all commands to use BusyBox applets.
+For more info please read the Javadoc for `BusyBoxInstaller`.
+- The bundled BusyBox now supports full SELinux features
+
+### Breaking Changes
+- All deprecated APIs in 2.5.2 is removed
+
 ## 2.5.2
 ### Improvements
 - Be more conservative with synchronizing internally
