@@ -31,14 +31,6 @@
 
     </ScrollView>
 
-    <EditText
-        android:id="@+id/cmd_input"
-        android:inputType="textNoSuggestions|textMultiLine"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/background_light"
-        android:padding="5dp" />
-
     <LinearLayout
         style="?android:buttonStyle"
         android:layout_width="match_parent"
@@ -47,20 +39,20 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/sync_cmd"
+            android:id="@+id/test_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Sync CMD" />
+            android:text="Test SVC" />
 
         <Button
-            android:id="@+id/async_cmd"
+            android:id="@+id/close_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Async CMD" />
+            android:text="Close SVC" />
 
         <Button
             android:id="@+id/close_shell"
@@ -85,7 +77,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Sync Script" />
+            android:text="Test sync" />
 
         <Button
             android:id="@+id/async_script"
@@ -93,7 +85,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Async Script" />
+            android:text="Test Async" />
 
         <Button
             android:id="@+id/clear"

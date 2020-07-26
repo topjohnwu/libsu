@@ -112,16 +112,20 @@ subprojects {
                     buildConfig = false
                 }
             }
+        }
+
+        if (plugins.hasPlugin("com.github.dcendents.android-maven")) {
+            val sources = android.sourceSets.getByName("main").java.sourceFiles
 
             (rootProject.tasks["javadoc"] as Javadoc).apply {
-                source = source.plus(android.sourceSets.getByName("main").java.sourceFiles)
-                classpath = classpath.plus(project.files(android.bootClasspath))
-                classpath = classpath.plus(configurations.getByName("javadocDeps"))
+                source += sources
+                classpath += project.files(android.bootClasspath)
+                classpath += configurations.getByName("javadocDeps")
             }
 
             val sourcesJar = tasks.register("sourcesJar", Jar::class) {
                 archiveClassifier.set("sources")
-                from(android.sourceSets.getByName("main").java.sourceFiles)
+                from(sources)
             }
 
             artifacts {

@@ -17,20 +17,25 @@
 package com.topjohnwu.libsuexample;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Process;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ScrollView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.libsuexample.databinding.ActivityMainBinding;
 import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ipc.RootService;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,18 +44,19 @@ public class MainActivity extends Activity {
 
     public static final String TAG = "EXAMPLE";
 
-    private TextView console;
-    private EditText input;
-    private ScrollView sv;
-    private List<String> consoleList;
-
     static {
         // Configuration
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
-        // Use internal busybox
         Shell.Config.setInitializers(BusyBoxInstaller.class, ExampleInitializer.class);
     }
+
+    private List<String> consoleList;
+    private ActivityMainBinding binding;
+
+    private ITestService testIPC;
+    private RootConnection conn = new RootConnection();
+    private boolean queuedTest = false;
 
     // Demonstrate Shell.Initializer
     static class ExampleInitializer extends Shell.Initializer {
@@ -62,38 +68,72 @@ public class MainActivity extends Activity {
         }
     }
 
+    // Demonstrate RootService
+    static class ExampleService extends RootService {
+
+        @Override
+        public IBinder onBind(@NonNull Intent intent) {
+            return new ITestService.Stub() {
+                @Override
+                public int getPid() {
+                    return Process.myPid();
+                }
+
+                @Override
+                public int getUid() {
+                    return Process.myUid();
+                }
+            };
+        }
+    }
+
+    class RootConnection implements ServiceConnection {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            testIPC = ITestService.Stub.asInterface(service);
+            if (queuedTest) {
+                queuedTest = false;
+                testService();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
+            testIPC = null;
+        }
+    }
+
+    private void testService() {
+        try {
+            consoleList.add("Remote PID: " + testIPC.getPid());
+            consoleList.add("Remote UID: " + testIPC.getUid());
+        } catch (RemoteException e) {
+            Log.e(TAG, "Remote error", e);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        console = findViewById(R.id.console);
-        input = findViewById(R.id.cmd_input);
-        sv = findViewById(R.id.sv);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        Button sync_cmd = findViewById(R.id.sync_cmd);
-        Button async_cmd = findViewById(R.id.async_cmd);
-        Button close_shell = findViewById(R.id.close_shell);
-        Button sync_script = findViewById(R.id.sync_script);
-        Button async_script = findViewById(R.id.async_script);
-        Button clear = findViewById(R.id.clear);
-
-        // Run the shell command in the input box synchronously
-        sync_cmd.setOnClickListener(v -> {
-            Shell.sh(input.getText().toString()).to(consoleList).exec();
-            input.setText("");
+        binding.testSvc.setOnClickListener(v -> {
+            if (testIPC == null) {
+                queuedTest = true;
+                Intent intent = new Intent(this, ExampleService.class);
+                RootService.bind(intent, conn);
+                return;
+            }
+            testService();
         });
 
-        // Run the shell command in the input box asynchronously.
-        // Also demonstrates that Async.Callback works
-        async_cmd.setOnClickListener(v -> {
-            Shell.sh(input.getText().toString())
-                    .to(consoleList)
-                    .submit(out -> Log.d(TAG, "async_cmd_result: " + out.getCode()));
-            input.setText("");
-        });
+        binding.closeSvc.setOnClickListener(v -> RootService.unbind(conn));
 
         // Closing a shell is always synchronous
-        close_shell.setOnClickListener(v -> {
+        binding.closeShell.setOnClickListener(v -> {
             try {
                 Shell shell = Shell.getCachedShell();
                 if (shell != null)
@@ -104,14 +144,14 @@ public class MainActivity extends Activity {
         });
 
         // Load a script from raw resources synchronously
-        sync_script.setOnClickListener(v ->
+        binding.syncScript.setOnClickListener(v ->
                 Shell.sh(getResources().openRawResource(R.raw.info)).to(consoleList).exec());
 
         // Load a script from raw resources asynchronously
-        async_script.setOnClickListener(v ->
+        binding.asyncScript.setOnClickListener(v ->
                 Shell.sh(getResources().openRawResource(R.raw.count)).to(consoleList).submit());
 
-        clear.setOnClickListener(v -> consoleList.clear());
+        binding.clear.setOnClickListener(v -> consoleList.clear());
 
         /* Create a CallbackList to update the UI with Shell output
          * Here I demonstrate 2 ways to implement a CallbackList
@@ -131,14 +171,14 @@ public class MainActivity extends Activity {
 
         @Override
         public void onAddElement(String s) {
-            console.append(s);
-            console.append("\n");
-            sv.postDelayed(() -> sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
+            binding.console.append(s);
+            binding.console.append("\n");
+            binding.sv.postDelayed(() -> binding.sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
         }
 
         @Override
         public synchronized void clear() {
-            runOnUiThread(() -> console.setText(""));
+            runOnUiThread(() -> binding.console.setText(""));
         }
     }
 
@@ -161,14 +201,14 @@ public class MainActivity extends Activity {
 
         @Override
         public void onAddElement(String s) {
-            console.setText(TextUtils.join("\n", this));
-            sv.postDelayed(() -> sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
+            binding.console.setText(TextUtils.join("\n", this));
+            binding.sv.postDelayed(() -> binding.sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
         }
 
         @Override
         public synchronized void clear() {
             super.clear();
-            runOnUiThread(() -> console.setText(""));
+            runOnUiThread(() -> binding.console.setText(""));
         }
     }
 }

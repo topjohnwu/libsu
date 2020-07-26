@@ -5,9 +5,13 @@ plugins {
 android {
     defaultConfig {
         applicationId = "com.topjohnwu.libsuexample"
-        minSdkVersion(16)
+        minSdkVersion(18)
         versionCode = 1
         versionName ="1.0"
+    }
+
+    buildFeatures {
+        viewBinding = true
     }
 
     buildTypes {
@@ -25,4 +29,5 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
     implementation(project(":busybox"))
+    implementation(project(":service"))
 }

@@ -1,1 +1,1 @@
-include(":core", ":example", ":busybox", ":io")
+include(":core", ":example", ":busybox", ":io", ":service")

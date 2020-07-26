@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.RestrictTo;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +31,8 @@ import java.util.concurrent.TimeoutException;
 
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 
-class SerialExecutorService extends AbstractExecutorService implements Callable<Void> {
+@RestrictTo(RestrictTo.Scope.LIBRARY)
+public class SerialExecutorService extends AbstractExecutorService implements Callable<Void> {
 
     private boolean isShutdown = false;
     private ArrayDeque<Runnable> mTasks = new ArrayDeque<>();

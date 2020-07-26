@@ -22,15 +22,7 @@ api_level_arch_detect() {
   if [ "$ABILONG" = "x86_64" ]; then ARCH=x64; IS64BIT=true; fi;
 }
 
-TOOLPATH=`command -v toolbox`
-TOYPATH=`command -v toybox`
-BUSYPATH=`command -v busybox`
-
 api_level_arch_detect
 
 echo "Device API: $API"
 echo "Device ABI: $ARCH"
-[ ! -z $TOOLPATH ] && echo "toolbox at: $TOOLPATH"
-[ ! -z $TOYPATH ] && echo "toybox  at: $TOYPATH"
-[ ! -z $BUSYPATH ] && echo "busybox at: $BUSYPATH"
-
