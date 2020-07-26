@@ -23,6 +23,7 @@ import android.os.Looper;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
+import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
@@ -32,22 +33,27 @@ import static com.topjohnwu.superuser.ipc.RootService.INTENT_VERBOSE_KEY;
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     private RootService service;
-    private IBinder client;
-    private Intent intent;
-    private Context context;
+    private IBinder mClient;
+    private Intent mIntent;
+    private Context mContext;
 
     IPCServer(Context context) {
-        this.context = context;
+        mContext = context;
         String packageName = context.getPackageName();
         Intent broadcast = IPCClient.getBroadcastIntent(packageName, this);
         context.sendBroadcast(broadcast);
         Looper.loop();
     }
 
+    static class Container<T> {
+        T obj;
+    }
+
     @Override
     public synchronized IBinder bind(Intent intent, IBinder client) {
-        this.intent = intent.cloneFilter();
+        mIntent = intent.cloneFilter();
         Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_VERBOSE_KEY, false));
+        boolean newService = false;
         try {
             if (service == null) {
                 String name = intent.getComponent().getClassName();
@@ -55,14 +61,23 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
                 Constructor<? extends RootService> constructor = clz.getDeclaredConstructor();
                 constructor.setAccessible(true);
                 service = constructor.newInstance();
-                service.attach(context);
-                service.onCreate();
-            } else {
-                service.onRebind(intent);
+                newService = true;
             }
-            this.client = client;
+            mClient = client;
             client.linkToDeath(this, 0);
-            return service.onBind(intent);
+
+            boolean finalNewService = newService;
+            Container<IBinder> binderContainer = new Container<>();
+            UiThreadHandler.runAndWait(() -> {
+                if (finalNewService) {
+                    service.attach(mContext);
+                    service.onCreate();
+                } else {
+                    service.onRebind(intent);
+                }
+                binderContainer.obj = service.onBind(intent);
+            });
+            return binderContainer.obj;
         } catch (Exception e) {
             Utils.err(e);
             return null;
@@ -71,13 +86,15 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public synchronized void unbind() {
-        boolean rebind = service.onUnbind(intent);
-        client.unlinkToDeath(this, 0);
-        client = null;
-        if (!rebind) {
-            service.onDestroy();
-            System.exit(0);
-        }
+        mClient.unlinkToDeath(this, 0);
+        mClient = null;
+        UiThreadHandler.run(() -> {
+            boolean rebind = service.onUnbind(mIntent);
+            if (!rebind) {
+                service.onDestroy();
+                System.exit(0);
+            }
+        });
     }
 
     @Override
