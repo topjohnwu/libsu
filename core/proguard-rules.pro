@@ -21,8 +21,9 @@
 #-renamesourcefileattribute SourceFile
 
 # Strip out verbose logging
--assumenosideeffects class com.topjohnwu.superuser.internal.InternalUtils {
-  public static *** log(...);
+-assumenosideeffects class com.topjohnwu.superuser.internal.Utils {
+  public static void log(...);
+  public static void ex(...);
 }
 
 # Make sure R8/Proguard never remove Shell.Initializer classes

@@ -54,7 +54,7 @@ class JobImpl extends Shell.Job {
             if (e instanceof ShellTerminatedException) {
                 return ResultImpl.SHELL_ERR;
             } else {
-                InternalUtils.stackTrace(e);
+                Utils.err(e);
                 return ResultImpl.INSTANCE;
             }
         }
@@ -78,7 +78,7 @@ class JobImpl extends Shell.Job {
     @Override
     public Shell.Job to(List<String> output) {
         out = output;
-        redirect = InternalUtils.hasFlag(Shell.FLAG_REDIRECT_STDERR);
+        redirect = Utils.hasFlags(Shell.FLAG_REDIRECT_STDERR);
         return this;
     }
 

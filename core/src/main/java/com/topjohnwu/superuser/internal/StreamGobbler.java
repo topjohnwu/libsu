@@ -58,7 +58,7 @@ abstract class StreamGobbler<T> implements Callable<T> {
         }
         if (list != null && line != null) {
             list.add(line);
-            InternalUtils.log(TAG, line);
+            Utils.log(TAG, line);
         }
         return eof;
     }

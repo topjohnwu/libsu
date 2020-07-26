@@ -31,15 +31,15 @@ interface InputHandler {
             for (String command : cmd) {
                 in.write(command.getBytes("UTF-8"));
                 in.write('\n');
-                InternalUtils.log(TAG, command);
+                Utils.log(TAG, command);
             }
         };
     }
 
     static InputHandler newInstance(InputStream is) {
         return in -> {
-            InternalUtils.log(TAG, "<InputStream>");
-            InternalUtils.pump(is, in);
+            Utils.log(TAG, "<InputStream>");
+            Utils.pump(is, in);
             is.close();
             // Make sure it ends properly
             in.write('\n');

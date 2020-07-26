@@ -23,7 +23,7 @@ import android.os.Looper;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
-import com.topjohnwu.superuser.internal.InternalUtils;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
 
@@ -64,7 +64,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             client.linkToDeath(this, 0);
             return service.onBind(intent);
         } catch (Exception e) {
-            InternalUtils.stackTrace(e);
+            Utils.err(e);
             return null;
         }
     }

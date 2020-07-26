@@ -105,7 +105,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                         "dd of='%s' ibs=%d count=1 obs=%d seek=1 %s 2>/dev/null; echo",
                         file.getAbsolutePath(), len, fileOff, WRITE_CONV);
             }
-            InternalUtils.log(TAG, cmd);
+            Utils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();
@@ -124,7 +124,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd bs=%d count=1 >> '%s' 2>/dev/null; echo", len, file.getAbsolutePath());
-            InternalUtils.log(TAG, cmd);
+            Utils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();
@@ -195,7 +195,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             String cmd = String.format(Locale.ROOT,
                     "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2",
                     file.getAbsolutePath(), bs, fileOff / bs, len / bs, len);
-            InternalUtils.log(TAG, cmd);
+            Utils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();
@@ -231,7 +231,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             String cmd = String.format(Locale.ROOT,
                     "dd of='%s' bs=%d seek=1 count=0 2>/dev/null; echo",
                     file.getAbsolutePath(), newLength);
-            InternalUtils.log(TAG, cmd);
+            Utils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
             in.write('\n');
             in.flush();

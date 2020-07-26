@@ -95,14 +95,14 @@ class ShellImpl extends Shell {
     ShellImpl(long timeout, String... cmd) throws IOException {
         status = UNKNOWN;
 
-        InternalUtils.log(TAG, "exec " + TextUtils.join(" ", cmd));
+        Utils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         process = Runtime.getRuntime().exec(cmd);
         STDIN = new NoCloseOutputStream(process.getOutputStream());
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
 
         String uuid = UUID.randomUUID().toString();
-        InternalUtils.log(TAG, "UUID: " + uuid);
+        Utils.log(TAG, "UUID: " + uuid);
         outGobbler = new StreamGobbler.OUT(uuid);
         errGobbler = new StreamGobbler.ERR(uuid);
         endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");

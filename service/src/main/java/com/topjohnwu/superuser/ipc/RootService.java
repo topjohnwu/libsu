@@ -26,18 +26,15 @@ import android.os.IBinder;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.InternalUtils;
 import com.topjohnwu.superuser.internal.SerialExecutorService;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-
-import static com.topjohnwu.superuser.Shell.FLAG_VERBOSE_LOGGING;
-import static com.topjohnwu.superuser.internal.InternalUtils.hasFlag;
 
 /**
  * A remote root service using native Android Binder IPC.
@@ -78,7 +75,7 @@ public abstract class RootService extends ContextWrapper {
                 return;
 
             Intent intentCopy = new Intent(intent);
-            intentCopy.putExtra(INTENT_VERBOSE_KEY, hasFlag(FLAG_VERBOSE_LOGGING));
+            intentCopy.putExtra(INTENT_VERBOSE_KEY, Utils.vLog());
 
             for (IPCClient client : active) {
                 if (client.isSameService(intentCopy)) {
@@ -92,7 +89,7 @@ public abstract class RootService extends ContextWrapper {
                 client.newConnection(conn, executor);
                 active.add(client);
             } catch (Exception e) {
-                InternalUtils.stackTrace(e);
+                Utils.err(e);
             }
         });
     }

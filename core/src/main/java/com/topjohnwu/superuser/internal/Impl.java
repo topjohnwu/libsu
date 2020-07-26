@@ -33,7 +33,7 @@ import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
 import static com.topjohnwu.superuser.Shell.FLAG_NON_ROOT_SHELL;
 import static com.topjohnwu.superuser.Shell.GetShellCallback;
 import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
-import static com.topjohnwu.superuser.internal.InternalUtils.hasFlag;
+import static com.topjohnwu.superuser.internal.Utils.hasFlags;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Impl {
@@ -71,7 +71,7 @@ public final class Impl {
                         isInitGlobal = false;
                     }
                 } catch (NoShellException e) {
-                    InternalUtils.stackTrace(e);
+                    Utils.ex(e);
                     return;
                 }
                 if (executor == null)
@@ -92,7 +92,7 @@ public final class Impl {
         ShellImpl shell = null;
 
         // Root mount master
-        if (!hasFlag(FLAG_NON_ROOT_SHELL) && hasFlag(FLAG_MOUNT_MASTER)) {
+        if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
             try {
                 shell = newShell("su", "--mount-master");
                 if (shell.getStatus() != Shell.ROOT_MOUNT_MASTER)
@@ -101,7 +101,7 @@ public final class Impl {
         }
 
         // Normal root shell
-        if (shell == null && !hasFlag(FLAG_NON_ROOT_SHELL)) {
+        if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
                 shell = newShell("su");
                 if (shell.getStatus() != ROOT_SHELL)
@@ -120,7 +120,7 @@ public final class Impl {
         try {
             ShellImpl shell = new ShellImpl(timeout, commands);
             try {
-                Context ctx = InternalUtils.getContext();
+                Context ctx = Utils.getApplication();
                 setCachedShell(shell);
                 if (initClasses != null) {
                     for (Class<? extends Shell.Initializer> cls : initClasses) {
@@ -136,11 +136,11 @@ public final class Impl {
             } catch (Exception e) {
                 if (e instanceof RuntimeException)
                     throw (RuntimeException) e;
-                InternalUtils.stackTrace(e);
+                Utils.err(e);
             }
             return shell;
         } catch (IOException e) {
-            InternalUtils.stackTrace(e);
+            Utils.ex(e);
             throw new NoShellException("Unable to create a shell!", e);
         }
     }

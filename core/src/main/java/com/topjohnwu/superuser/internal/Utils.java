@@ -26,53 +26,54 @@ import com.topjohnwu.superuser.Shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public final class InternalUtils {
+public final class Utils {
 
-    private static Method currentApplication;
-    private static WeakReference<Context> weakContext;
+    private static Context application;
+    private static final String TAG = "LIBSU";
 
-    static {
-        try {
-            currentApplication = Class.forName("android.app.ActivityThread")
-                    .getMethod("currentApplication");
-        } catch (Exception e) {
-            /* Impossible */
-        }
+    public static void log(Object log) {
+        log(TAG, log);
     }
 
     public static void log(String tag, Object log) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
+        if (vLog())
             Log.d(tag, log.toString());
     }
 
-    public static void stackTrace(Throwable t) {
-        if (hasFlag(Shell.FLAG_VERBOSE_LOGGING))
-            Log.d("LIBSU", "Internal Error", t);
+    public static void ex(Throwable t) {
+        if (vLog())
+            Log.d(TAG, "", t);
     }
 
-    public static boolean hasFlag(int flags) {
-        return hasFlag(Impl.flags, flags);
+    // Unexpected errors, log regardless of
+    public static void err(Throwable t) {
+        Log.d(TAG, "", t);
     }
 
-    public static boolean hasFlag(int base, int flags) {
-        return (base & flags) == flags;
+    public static boolean vLog() {
+        return hasFlags(Shell.FLAG_VERBOSE_LOGGING);
     }
 
-    public static Context getContext() {
-        if (weakContext == null || weakContext.get() == null) {
-            UiThreadHandler.runAndWait(() -> {
-                try {
-                    weakContext = new WeakReference<>((Context) currentApplication.invoke(null));
-                } catch (Exception e) {
-                    weakContext = new WeakReference<>(null);
-                }
-            });
+    public static boolean hasFlags(int flags) {
+        return (Impl.flags & flags) == flags;
+    }
+
+    public static synchronized Context getApplication() {
+        try {
+            if (application == null) {
+                Method currentApplication = Class.forName("android.app.ActivityThread")
+                        .getMethod("currentApplication");
+                application = (Context) currentApplication.invoke(null);
+            }
+            return application;
+        } catch (Exception e) {
+            // Shall never happen
+            Utils.err(e);
+            return null;
         }
-        return weakContext.get();
     }
 
     public static long pump(InputStream in, OutputStream out) throws IOException {

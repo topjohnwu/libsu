@@ -30,7 +30,7 @@ import android.os.RemoteException;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
-import com.topjohnwu.superuser.internal.InternalUtils;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,7 +55,7 @@ class IPCClient implements IBinder.DeathRecipient {
 
     IPCClient(Intent intent) throws InterruptedException, RemoteException, IOException {
         name = intent.getComponent();
-        startRootServer(InternalUtils.getContext(), intent);
+        startRootServer(Utils.getApplication(), intent);
     }
 
     private void startRootServer(Context context, Intent intent)
@@ -66,7 +66,7 @@ class IPCClient implements IBinder.DeathRecipient {
 
         try (InputStream in = context.getResources().openRawResource(R.raw.main);
              OutputStream out = new FileOutputStream(mainJar)) {
-            InternalUtils.pump(in, out);
+            Utils.pump(in, out);
         }
 
         // Register BinderReceiver to receive binder from root process
