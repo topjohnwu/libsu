@@ -27,6 +27,7 @@ import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 
 import static com.topjohnwu.superuser.ipc.RootService.INTENT_VERBOSE_KEY;
 
@@ -37,10 +38,22 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private Intent mIntent;
     private Context mContext;
 
+    // Set this flag to silence AMS's complaints
+    private static int FLAG_RECEIVER_FROM_SHELL() {
+        try {
+            Field f = Intent.class.getDeclaredField("FLAG_RECEIVER_FROM_SHELL");
+            return (int) f.get(null);
+        } catch (Exception e) {
+            // Only exist on Android 8.0+
+            return 0;
+        }
+    }
+
     IPCServer(Context context) {
         mContext = context;
         String packageName = context.getPackageName();
         Intent broadcast = IPCClient.getBroadcastIntent(packageName, this);
+        broadcast.addFlags(FLAG_RECEIVER_FROM_SHELL());
         context.sendBroadcast(broadcast);
         Looper.loop();
     }
