@@ -71,6 +71,15 @@ public class MainActivity extends Activity {
     // Demonstrate RootService
     static class ExampleService extends RootService {
 
+        static {
+            // Only load in root process
+            if (Process.myUid() == 0)
+                System.loadLibrary("native-lib");
+        }
+
+        native int nativeGetUid();
+        native String nativeReadFile(String file);
+
         @Override
         public IBinder onBind(@NonNull Intent intent) {
             return new ITestService.Stub() {
@@ -81,7 +90,12 @@ public class MainActivity extends Activity {
 
                 @Override
                 public int getUid() {
-                    return Process.myUid();
+                    return nativeGetUid();
+                }
+
+                @Override
+                public String readPartitions() {
+                    return nativeReadFile("/proc/partitions");
                 }
             };
         }
@@ -109,6 +123,7 @@ public class MainActivity extends Activity {
         try {
             consoleList.add("Remote PID: " + testIPC.getPid());
             consoleList.add("Remote UID: " + testIPC.getUid());
+            consoleList.add("/proc/partitions:\n" + testIPC.readPartitions());
         } catch (RemoteException e) {
             Log.e(TAG, "Remote error", e);
         }

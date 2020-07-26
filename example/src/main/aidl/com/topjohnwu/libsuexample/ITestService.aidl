@@ -6,4 +6,5 @@ package com.topjohnwu.libsuexample;
 interface ITestService {
     int getPid();
     int getUid();
+    String readPartitions();
 }
