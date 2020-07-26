@@ -53,7 +53,6 @@ import java.util.concurrent.ExecutorService;
  * @see <a href="Android Interface Definition Language (AIDL)">https://developer.android.com/guide/components/aidl</a>
  */
 public abstract class RootService extends ContextWrapper {
-    static final String INTENT_VERBOSE_KEY = "verbose_logging";
 
     static List<IPCClient> active = new ArrayList<>();
     static ExecutorService serialExecutor = new SerialExecutorService();
@@ -74,18 +73,15 @@ public abstract class RootService extends ContextWrapper {
             if (!Shell.rootAccess())
                 return;
 
-            Intent intentCopy = new Intent(intent);
-            intentCopy.putExtra(INTENT_VERBOSE_KEY, Utils.vLog());
-
             for (IPCClient client : active) {
-                if (client.isSameService(intentCopy)) {
+                if (client.isSameService(intent)) {
                     client.newConnection(conn, executor);
                     return;
                 }
             }
 
             try {
-                IPCClient client = new IPCClient(intentCopy);
+                IPCClient client = new IPCClient(intent);
                 client.newConnection(conn, executor);
                 active.add(client);
             } catch (Exception e) {

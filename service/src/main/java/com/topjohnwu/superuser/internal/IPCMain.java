@@ -41,7 +41,7 @@ import java.lang.reflect.Method;
 public class IPCMain {
 
     /**
-     * These private APIs are very unlikely to change, should be relatively
+     * These private APIs are very unlikely to change, should be
      * stable across different Android versions and OEMs.
      */
     @SuppressLint("PrivateApi")

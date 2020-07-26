@@ -25,6 +25,7 @@ import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.IBinder;
 import android.os.RemoteException;
 
@@ -44,6 +45,9 @@ import java.util.concurrent.Executor;
 import static com.topjohnwu.superuser.ipc.RootService.serialExecutor;
 
 class IPCClient implements IBinder.DeathRecipient {
+    static final String INTENT_LOGGING_KEY = "logging";
+    static final String INTENT_DEBUG_KEY = "debug";
+
     private static final String BROADCAST_ACTION = "com.topjohnwu.superuser.BROADCAST_IPC";
     private static final String INTENT_EXTRA_KEY = "binder_bundle";
     private static final String BUNDLE_BINDER_KEY = "binder";
@@ -72,11 +76,31 @@ class IPCClient implements IBinder.DeathRecipient {
         // Register BinderReceiver to receive binder from root process
         context.registerReceiver(new BinderReceiver(), new IntentFilter(BROADCAST_ACTION));
 
+        // Copy intent and add client info into intent extra
+        intent = new Intent(intent);
+        if (Utils.vLog()) {
+            intent.putExtra(INTENT_LOGGING_KEY, true);
+        }
+        String debugParams = "";
+        if (Debug.isDebuggerConnected()) {
+            // Also debug the remote root server
+            // Reference of the params to start jdwp:
+            // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
+            intent.putExtra(INTENT_DEBUG_KEY, true);
+            if (Build.VERSION.SDK_INT < 28) {
+                debugParams = "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y -Xcompiler-option --debuggable";
+            } else if (Build.VERSION.SDK_INT == 28) {
+                debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y -Xcompiler-option --debuggable";
+            } else {
+                debugParams = "-XjdwpProvider:adbconnection";
+            }
+        }
+
         // Execute main.jar through root shell
         String app_process = new File("/proc/self/exe").getCanonicalPath();
         String cmd = String.format(
-                "(CLASSPATH=%1$s %2$s /system/bin --nice-name=%4$s:root %3$s %4$s %5$s)&",
-                mainJar, app_process, "com.topjohnwu.superuser.internal.IPCMain",
+                "(CLASSPATH=%1$s %2$s %3$s /system/bin --nice-name=%5$s:root %4$s %5$s %6$s)&",
+                mainJar, app_process, debugParams, "com.topjohnwu.superuser.internal.IPCMain",
                 context.getPackageName(), IPCServer.class.getName());
         synchronized (this) {
             Shell.su(cmd).exec();

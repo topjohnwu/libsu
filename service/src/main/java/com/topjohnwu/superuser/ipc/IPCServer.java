@@ -16,8 +16,10 @@
 
 package com.topjohnwu.superuser.ipc;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Debug;
 import android.os.IBinder;
 import android.os.Looper;
 
@@ -28,8 +30,10 @@ import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-import static com.topjohnwu.superuser.ipc.RootService.INTENT_VERBOSE_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
 
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
@@ -39,6 +43,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private Context mContext;
 
     // Set this flag to silence AMS's complaints
+    @SuppressWarnings("JavaReflectionMemberAccess")
     private static int FLAG_RECEIVER_FROM_SHELL() {
         try {
             Field f = Intent.class.getDeclaredField("FLAG_RECEIVER_FROM_SHELL");
@@ -46,6 +51,21 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         } catch (Exception e) {
             // Only exist on Android 8.0+
             return 0;
+        }
+    }
+
+    /**
+     * These private APIs are very unlikely to change, should be
+     * stable across different Android versions and OEMs.
+     */
+    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
+    private static void setAppName(String name) {
+        try {
+            Class<?> ddm = Class.forName("android.ddm.DdmHandleAppName");
+            Method m = ddm.getDeclaredMethod("setAppName", String.class, int.class);
+            m.invoke(null, name, 0);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -58,14 +78,20 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         Looper.loop();
     }
 
-    static class Container<T> {
-        T obj;
-    }
-
     @Override
     public synchronized IBinder bind(Intent intent, IBinder client) {
+        Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
+        if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
+            // ActivityThread.attach(true, 0) will set this to system_process
+            setAppName(mContext.getPackageName() + ":root");
+            // For some reason Debug.waitForDebugger() won't work, manual spin lock...
+            while (!Debug.isDebuggerConnected()) {
+                try { Thread.sleep(200); }
+                catch (InterruptedException ignored) {}
+            }
+        }
+
         mIntent = intent.cloneFilter();
-        Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_VERBOSE_KEY, false));
         boolean newService = false;
         try {
             if (service == null) {
@@ -80,7 +106,8 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             client.linkToDeath(this, 0);
 
             boolean finalNewService = newService;
-            Container<IBinder> binderContainer = new Container<>();
+            class Container { IBinder obj; }
+            Container binderContainer = new Container();
             UiThreadHandler.runAndWait(() -> {
                 if (finalNewService) {
                     service.attach(mContext);
