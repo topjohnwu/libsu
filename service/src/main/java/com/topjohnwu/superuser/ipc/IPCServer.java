@@ -38,11 +38,11 @@ import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
 
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
-    private RootService service;
+    private final ComponentName mName;
+    private final RootService service;
+
     private IBinder mClient;
     private Intent mIntent;
-    private Context mContext;
-    private ComponentName mName;
 
     // Set this flag to silence AMS's complaints
     @SuppressWarnings("JavaReflectionMemberAccess")
@@ -71,12 +71,20 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         }
     }
 
-    IPCServer(Context context, ComponentName name) {
-        mContext = context;
+    IPCServer(Context context, ComponentName name) throws Exception {
         mName = name;
+
+        Class<RootService> clz = (Class<RootService>) Class.forName(name.getClassName());
+        Constructor<RootService> constructor = clz.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        service = constructor.newInstance();
+        service.attach(context);
+        service.onCreate();
+
         Intent broadcast = IPCClient.getBroadcastIntent(name, this);
         broadcast.addFlags(FLAG_RECEIVER_FROM_SHELL());
         context.sendBroadcast(broadcast);
+
         Looper.loop();
     }
 
@@ -89,7 +97,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
         if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
-            setAppName(mContext.getPackageName() + ":root");
+            setAppName(service.getPackageName() + ":root");
             // For some reason Debug.waitForDebugger() won't work, manual spin lock...
             while (!Debug.isDebuggerConnected()) {
                 try { Thread.sleep(200); }
@@ -97,32 +105,18 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             }
         }
 
-        mIntent = intent.cloneFilter();
-        boolean newService = false;
         try {
-            if (service == null) {
-                String name = mName.getClassName();
-                Class<? extends RootService> clz = (Class<? extends RootService>) Class.forName(name);
-                Constructor<? extends RootService> constructor = clz.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                service = constructor.newInstance();
-                newService = true;
-            }
             mClient = client;
             client.linkToDeath(this, 0);
 
-            boolean finalNewService = newService;
             class Container { IBinder obj; }
             Container binderContainer = new Container();
             UiThreadHandler.runAndWait(() -> {
-                if (finalNewService) {
-                    service.attach(mContext);
-                    service.onCreate();
-                } else {
+                if (mIntent == null)
                     service.onRebind(intent);
-                }
                 binderContainer.obj = service.onBind(intent);
             });
+            mIntent = intent.cloneFilter();
             return binderContainer.obj;
         } catch (Exception e) {
             Utils.err(e);
@@ -135,8 +129,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         mClient.unlinkToDeath(this, 0);
         mClient = null;
         UiThreadHandler.run(() -> {
-            boolean rebind = service.onUnbind(mIntent);
-            if (!rebind) {
+            if (!service.onUnbind(mIntent)) {
                 service.onDestroy();
                 System.exit(0);
             }
