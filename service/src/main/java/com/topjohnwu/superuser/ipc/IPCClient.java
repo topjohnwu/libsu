@@ -33,6 +33,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
 import com.topjohnwu.superuser.internal.Utils;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -44,7 +45,7 @@ import java.util.concurrent.Executor;
 
 import static com.topjohnwu.superuser.ipc.RootService.serialExecutor;
 
-class IPCClient implements IBinder.DeathRecipient {
+class IPCClient implements IBinder.DeathRecipient, Closeable {
     static final String INTENT_LOGGING_KEY = "logging";
     static final String INTENT_DEBUG_KEY = "debug";
 
@@ -148,10 +149,8 @@ class IPCClient implements IBinder.DeathRecipient {
         return false;
     }
 
-    void stopService() {
-        try {
-            server.stop();
-        } catch (RemoteException ignored) {}
+    @Override
+    public void close() {
         server.asBinder().unlinkToDeath(this, 0);
         server = null;
         binder = null;
@@ -162,21 +161,16 @@ class IPCClient implements IBinder.DeathRecipient {
         connections.clear();
     }
 
+    void stopService() {
+        try {
+            server.stop();
+        } catch (RemoteException ignored) {}
+        close();
+    }
+
     @Override
     public void binderDied() {
-        server.asBinder().unlinkToDeath(this, 0);
-        server = null;
-        binder = null;
-        for (Map.Entry<ServiceConnection, Executor> entry : connections.entrySet()) {
-            ServiceConnection conn = entry.getKey();
-            entry.getValue().execute(() -> {
-                if (Build.VERSION.SDK_INT >= 26) {
-                    conn.onBindingDied(name);
-                }
-                conn.onServiceDisconnected(name);
-            });
-        }
-        connections.clear();
+        close();
         serialExecutor.execute(() -> RootService.active.remove(this));
     }
 

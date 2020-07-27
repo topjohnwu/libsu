@@ -43,9 +43,6 @@ import java.util.concurrent.ExecutorService;
  * This class is almost a complete recreation of a bound service running in a root process.
  * Instead of using the original {@code Context.bindService(...)} methods to start and bind
  * to a service, use the provided static methods {@code RootService.bind(...)}.
- * Please note, unlike normal services, RootServices do not have an API similar to
- * {@link Context#startService(Intent)} because RootServices are strictly bound-only.
- * <p>
  * Because the service will not run in the same process as your application, you have to use AIDL
  * to define the IPC interface for communication. Please read the official documentations for more
  * details.
@@ -57,9 +54,20 @@ import java.util.concurrent.ExecutorService;
  * method {@link #onUnbind(Intent)} and return {@code true}. Similar to normal bound services,
  * subsequent bindings will call the {@link #onRebind(Intent)} method.
  * <p>
- * Because root services are bound only, the APIs to forcefully stop the service are slightly
- * different from normal services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()}
- * for more info.
+ * <strong>Differences between normal services:</strong><br>
+ * Unlike normal services, RootServices do not have an API similar to
+ * {@link Context#startService(Intent)} because root services are strictly bound only.
+ * Due to this reason, the APIs to forcefully stop the service are slightly different from normal
+ * services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()} for more info.
+ * Also, unlike normal services, whenever you receive
+ * {@link ServiceConnection#onServiceDisconnected(ComponentName)}, which means either
+ * <ul>
+ *     <li>Remote root process terminated unexpectedly</li>
+ *     <li>Client called {@link #unbind(ServiceConnection)}</li>
+ *     <li>Client called {@link #stop(Intent)}</li>
+ *     <li>Root service called {@link #stopSelf()}</li>
+ * </ul>
+ * had happened, the library will NOT automatically attempt to restart and rebind to the service.
  * @see Service
  * @see <a href="Bound services">https://developer.android.com/guide/components/bound-services</a>
  * @see <a href="Android Interface Definition Language (AIDL)">https://developer.android.com/guide/components/aidl</a>
