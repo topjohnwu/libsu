@@ -16,7 +16,9 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.RestrictTo;
@@ -61,6 +63,7 @@ public final class Utils {
         return (Impl.flags & flags) == flags;
     }
 
+    @SuppressLint("PrivateApi")
     public static synchronized Context getApplication() {
         try {
             if (application == null) {
@@ -74,6 +77,10 @@ public final class Utils {
             Utils.err(e);
             return null;
         }
+    }
+
+    public static Context getDeContext(Context context) {
+        return Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
     }
 
     public static long pump(InputStream in, OutputStream out) throws IOException {

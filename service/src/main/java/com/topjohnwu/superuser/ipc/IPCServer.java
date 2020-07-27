@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.ipc;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Debug;
@@ -41,6 +42,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private IBinder mClient;
     private Intent mIntent;
     private Context mContext;
+    private ComponentName mName;
 
     // Set this flag to silence AMS's complaints
     @SuppressWarnings("JavaReflectionMemberAccess")
@@ -69,10 +71,10 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         }
     }
 
-    IPCServer(Context context) {
+    IPCServer(Context context, ComponentName name) {
         mContext = context;
-        String packageName = context.getPackageName();
-        Intent broadcast = IPCClient.getBroadcastIntent(packageName, this);
+        mName = name;
+        Intent broadcast = IPCClient.getBroadcastIntent(name, this);
         broadcast.addFlags(FLAG_RECEIVER_FROM_SHELL());
         context.sendBroadcast(broadcast);
         Looper.loop();
@@ -80,6 +82,10 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public synchronized IBinder bind(Intent intent, IBinder client) {
+        // ComponentName doesn't match, abort
+        if (!mName.equals(intent.getComponent()))
+            System.exit(1);
+
         Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
         if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
@@ -95,7 +101,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         boolean newService = false;
         try {
             if (service == null) {
-                String name = intent.getComponent().getClassName();
+                String name = mName.getClassName();
                 Class<? extends RootService> clz = (Class<? extends RootService>) Class.forName(name);
                 Constructor<? extends RootService> constructor = clz.getDeclaredConstructor();
                 constructor.setAccessible(true);

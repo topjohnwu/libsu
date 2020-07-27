@@ -62,19 +62,16 @@ class IPCClient implements IBinder.DeathRecipient {
         startRootServer(Utils.getApplication(), intent);
     }
 
+    private static String getBroadcastAction(ComponentName name) {
+        return BROADCAST_ACTION + "/" + name.flattenToString();
+    }
+
     private void startRootServer(Context context, Intent intent)
             throws IOException, InterruptedException, RemoteException {
-        // Dump main.jar as trampoline
-        Context de = Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
-        File mainJar = new File(de.getCacheDir(), "main.jar");
-
-        try (InputStream in = context.getResources().openRawResource(R.raw.main);
-             OutputStream out = new FileOutputStream(mainJar)) {
-            Utils.pump(in, out);
-        }
-
+        ComponentName component = intent.getComponent();
         // Register BinderReceiver to receive binder from root process
-        context.registerReceiver(new BinderReceiver(), new IntentFilter(BROADCAST_ACTION));
+        IntentFilter filter = new IntentFilter(getBroadcastAction(component));
+        context.registerReceiver(new BinderReceiver(), filter);
 
         // Copy intent and add client info into intent extra
         intent = new Intent(intent);
@@ -96,12 +93,23 @@ class IPCClient implements IBinder.DeathRecipient {
             }
         }
 
+        // Dump main.jar as trampoline
+        Context de = Utils.getDeContext(context);
+        File mainJar = new File(de.getCacheDir(), "main.jar");
+        try (InputStream in = context.getResources().openRawResource(R.raw.main);
+             OutputStream out = new FileOutputStream(mainJar)) {
+            Utils.pump(in, out);
+        }
+
         // Execute main.jar through root shell
         String app_process = new File("/proc/self/exe").getCanonicalPath();
         String cmd = String.format(
-                "(CLASSPATH=%1$s %2$s %3$s /system/bin --nice-name=%5$s:root %4$s %5$s %6$s)&",
-                mainJar, app_process, debugParams, "com.topjohnwu.superuser.internal.IPCMain",
-                context.getPackageName(), IPCServer.class.getName());
+                "(CLASSPATH=%s %s %s /system/bin --nice-name=%s:root %s %s %s)&",
+                mainJar, app_process, debugParams, context.getPackageName(),
+                "com.topjohnwu.superuser.internal.IPCMain", /* main class */
+                component.flattenToString(), IPCServer.class.getName() /* command args */);
+        // Make sure cmd is properly formatted in shell
+        cmd = cmd.replace("$", "\\$");
         synchronized (this) {
             Shell.su(cmd).exec();
             // Wait for broadcast receiver
@@ -158,12 +166,12 @@ class IPCClient implements IBinder.DeathRecipient {
         serialExecutor.execute(() -> RootService.active.remove(this));
     }
 
-    static Intent getBroadcastIntent(String packageName, IRootIPC.Stub ipc) {
+    static Intent getBroadcastIntent(ComponentName name, IRootIPC.Stub ipc) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, ipc);
         return new Intent()
-                .setPackage(packageName)
-                .setAction(BROADCAST_ACTION)
+                .setPackage(name.getPackageName())
+                .setAction(getBroadcastAction(name))
                 .putExtra(INTENT_EXTRA_KEY, bundle);
     }
 

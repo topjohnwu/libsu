@@ -17,9 +17,12 @@
 package com.topjohnwu.superuser.internal;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.content.Context;
 import android.os.Looper;
 import android.util.Log;
+
+import androidx.annotation.RestrictTo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -35,9 +38,10 @@ import java.lang.reflect.Method;
  * just like it was launched in a non-root environment.
  * <p>
  * Expected command-line args:
- * args[0]: client package name
+ * args[0]: client service component name
  * args[1]: class name of IPCServer (reason: name could be obfuscated in client APK)
  */
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 public class IPCMain {
 
     /**
@@ -68,19 +72,19 @@ public class IPCMain {
         System.err.close();
 
         try {
-            String packageName = args[0];
+            ComponentName name = ComponentName.unflattenFromString(args[0]);
             String ipcServerClassName = args[1];
 
             Context systemContext = getSystemContext();
-            Context context = systemContext.createPackageContext(packageName,
+            Context context = systemContext.createPackageContext(name.getPackageName(),
                     Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
 
             // Use classloader from the package context to run everything
             ClassLoader cl = context.getClassLoader();
             Class<?> clz = cl.loadClass(ipcServerClassName);
-            Constructor<?> con = clz.getDeclaredConstructor(Context.class);
+            Constructor<?> con = clz.getDeclaredConstructor(Context.class, ComponentName.class);
             con.setAccessible(true);
-            con.newInstance(context);
+            con.newInstance(context, name);
 
             // Shall never return
             System.exit(0);

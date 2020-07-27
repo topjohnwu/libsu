@@ -17,9 +17,10 @@
 package com.topjohnwu.superuser;
 
 import android.content.Context;
-import android.os.Build;
 
 import androidx.annotation.NonNull;
+
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 
@@ -42,8 +43,7 @@ public class BusyBoxInstaller extends Shell.Initializer {
 
     @Override
     public boolean onInit(@NonNull Context context, @NonNull Shell shell) {
-        Context de = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
-                ? context.createDeviceProtectedStorageContext() : context;
+        Context de = Utils.getDeContext(context);
 
         File lib = new File(de.getApplicationInfo().nativeLibraryDir, "libbusybox.so");
         File bbPath = new File(de.getFilesDir().getParentFile(), "busybox");
