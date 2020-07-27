@@ -47,12 +47,12 @@
             android:text="Test SVC" />
 
         <Button
-            android:id="@+id/close_svc"
+            android:id="@+id/stop_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Close SVC" />
+            android:text="Stop SVC" />
 
         <Button
             android:id="@+id/close_shell"

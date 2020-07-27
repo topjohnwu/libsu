@@ -44,10 +44,6 @@ import java.lang.reflect.Method;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class IPCMain {
 
-    /**
-     * These private APIs are very unlikely to change, should be
-     * stable across different Android versions and OEMs.
-     */
     @SuppressLint("PrivateApi")
     public static Context getSystemContext() {
         try {

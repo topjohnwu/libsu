@@ -38,6 +38,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ipc.RootService;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -68,7 +69,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Demonstrate RootService
+    // Demonstrate RootService (daemon mode)
     static class ExampleService extends RootService {
 
         static {
@@ -79,6 +80,11 @@ public class MainActivity extends Activity {
 
         native int nativeGetUid();
         native String nativeReadFile(String file);
+
+        @Override
+        public void onRebind(@NonNull Intent intent) {
+            Log.d(TAG, "onRebind, daemon process reused");
+        }
 
         @Override
         public IBinder onBind(@NonNull Intent intent) {
@@ -94,10 +100,17 @@ public class MainActivity extends Activity {
                 }
 
                 @Override
-                public String readPartitions() {
-                    return nativeReadFile("/proc/partitions");
+                public String readCmdline() {
+                    return nativeReadFile("/proc/cmdline");
                 }
             };
+        }
+
+        @Override
+        public boolean onUnbind(@NonNull Intent intent) {
+            // Enable daemon mode
+            Log.d(TAG, "onUnbind, client process unbound");
+            return true;
         }
     }
 
@@ -123,7 +136,13 @@ public class MainActivity extends Activity {
         try {
             consoleList.add("Remote PID: " + testIPC.getPid());
             consoleList.add("Remote UID: " + testIPC.getUid());
-            consoleList.add("/proc/partitions:\n" + testIPC.readPartitions());
+            String[] cmds = testIPC.readCmdline().split(" ");
+            if (cmds.length > 5) {
+                cmds = Arrays.copyOf(cmds, 6);
+                cmds[5] = "...";
+            }
+            consoleList.add("/proc/cmdline:");
+            consoleList.addAll(Arrays.asList(cmds));
         } catch (RemoteException e) {
             Log.e(TAG, "Remote error", e);
         }
@@ -145,7 +164,10 @@ public class MainActivity extends Activity {
             testService();
         });
 
-        binding.closeSvc.setOnClickListener(v -> RootService.unbind(conn));
+        binding.stopSvc.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ExampleService.class);
+            RootService.stop(intent);
+        });
 
         // Closing a shell is always synchronous
         binding.closeShell.setOnClickListener(v -> {

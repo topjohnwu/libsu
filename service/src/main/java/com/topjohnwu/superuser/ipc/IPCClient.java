@@ -148,6 +148,20 @@ class IPCClient implements IBinder.DeathRecipient {
         return false;
     }
 
+    void stopService() {
+        try {
+            server.stop();
+        } catch (RemoteException ignored) {}
+        server.asBinder().unlinkToDeath(this, 0);
+        server = null;
+        binder = null;
+        for (Map.Entry<ServiceConnection, Executor> entry : connections.entrySet()) {
+            ServiceConnection conn = entry.getKey();
+            entry.getValue().execute(() -> conn.onServiceDisconnected(name));
+        }
+        connections.clear();
+    }
+
     @Override
     public void binderDied() {
         server.asBinder().unlinkToDeath(this, 0);

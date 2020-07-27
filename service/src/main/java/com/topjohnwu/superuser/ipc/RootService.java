@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.ipc;
 
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -48,6 +49,17 @@ import java.util.concurrent.ExecutorService;
  * Because the service will not run in the same process as your application, you have to use AIDL
  * to define the IPC interface for communication. Please read the official documentations for more
  * details.
+ * <p>
+ * <strong>Daemon mode:</strong><br>
+ * In normal circumstances, the root service process will be destroyed when no components are bound
+ * to it (including when the non-root app process is terminated). However, if you'd like to have
+ * the root service run independently of the app's lifecycle (aka "Daemon Mode"), override the
+ * method {@link #onUnbind(Intent)} and return {@code true}. Similar to normal bound services,
+ * subsequent bindings will call the {@link #onRebind(Intent)} method.
+ * <p>
+ * Because root services are bound only, the APIs to forcefully stop the service are slightly
+ * different from normal services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()}
+ * for more info.
  * @see Service
  * @see <a href="Bound services">https://developer.android.com/guide/components/bound-services</a>
  * @see <a href="Android Interface Definition Language (AIDL)">https://developer.android.com/guide/components/aidl</a>
@@ -118,11 +130,36 @@ public abstract class RootService extends ContextWrapper {
         });
     }
 
+    /**
+     * Force stop a root service process.
+     * <p>
+     * Since root services are bound only, unlike {@link Context#stopService(Intent)}, this
+     * method is used to immediately stop a root service regardless of its state.
+     * All {@link ServiceConnection}s bound to this service will receive
+     * {@link ServiceConnection#onServiceDisconnected(ComponentName)}.
+     * @param intent identifies the service to stop.
+     */
+    public static void stop(@NonNull Intent intent) {
+        serialExecutor.execute(() -> {
+            Iterator<IPCClient> it = active.iterator();
+            while (it.hasNext()) {
+                IPCClient client = it.next();
+                if (client.isSameService(intent)) {
+                    client.stopService();
+                    it.remove();
+                }
+            }
+        });
+    }
+
+    private IPCServer mServer;
+
     public RootService() {
         super(null);
     }
 
-    void attach(Context base) {
+    void attach(Context base, IPCServer server) {
+        mServer = server;
         attachBaseContext(base);
     }
 
@@ -158,4 +195,13 @@ public abstract class RootService extends ContextWrapper {
      * @see Service#onDestroy()
      */
     public void onDestroy() {}
+
+    /**
+     * Force stop this root service process.
+     * <p>
+     * This is the same as calling {@link #stop(Intent)} for this particular service.
+     */
+    public final void stopSelf() {
+        mServer.stop();
+    }
 }

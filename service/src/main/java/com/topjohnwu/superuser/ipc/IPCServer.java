@@ -16,13 +16,13 @@
 
 package com.topjohnwu.superuser.ipc;
 
-import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Debug;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.RemoteException;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
@@ -30,8 +30,6 @@ import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
@@ -44,48 +42,45 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private IBinder mClient;
     private Intent mIntent;
 
-    // Set this flag to silence AMS's complaints
-    @SuppressWarnings("JavaReflectionMemberAccess")
-    private static int FLAG_RECEIVER_FROM_SHELL() {
-        try {
-            Field f = Intent.class.getDeclaredField("FLAG_RECEIVER_FROM_SHELL");
-            return (int) f.get(null);
-        } catch (Exception e) {
-            // Only exist on Android 8.0+
-            return 0;
-        }
-    }
-
-    /**
-     * These private APIs are very unlikely to change, should be
-     * stable across different Android versions and OEMs.
-     */
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    private static void setAppName(String name) {
-        try {
-            Class<?> ddm = Class.forName("android.ddm.DdmHandleAppName");
-            Method m = ddm.getDeclaredMethod("setAppName", String.class, int.class);
-            m.invoke(null, name, 0);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    // Convert to a valid service name
+    private static String getServiceName(ComponentName name) {
+        return name.flattenToString().replace("$", ".").replaceAll("[^a-zA-Z0-9\\/._\\-]", "_");
     }
 
     IPCServer(Context context, ComponentName name) throws Exception {
-        mName = name;
+        IBinder binder = HiddenAPIs.getService(getServiceName(name));
+        if (binder != null) {
+            // There was already a root service running
+            IRootIPC ipc = IRootIPC.Stub.asInterface(binder);
+            try {
+                // Trigger re-broadcast
+                ipc.broadcast();
 
+                // Our work is done!
+                System.exit(0);
+            } catch (RemoteException e) {
+                // Daemon dead, continue
+            }
+        }
+
+        mName = name;
         Class<RootService> clz = (Class<RootService>) Class.forName(name.getClassName());
         Constructor<RootService> constructor = clz.getDeclaredConstructor();
         constructor.setAccessible(true);
         service = constructor.newInstance();
-        service.attach(context);
+        service.attach(context, this);
         service.onCreate();
+        broadcast();
 
-        Intent broadcast = IPCClient.getBroadcastIntent(name, this);
-        broadcast.addFlags(FLAG_RECEIVER_FROM_SHELL());
-        context.sendBroadcast(broadcast);
-
+        // Start main thread looper
         Looper.loop();
+    }
+
+    @Override
+    public void broadcast() {
+        Intent broadcast = IPCClient.getBroadcastIntent(mName, this);
+        broadcast.addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL());
+        service.sendBroadcast(broadcast);
     }
 
     @Override
@@ -97,7 +92,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
         if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
-            setAppName(service.getPackageName() + ":root");
+            HiddenAPIs.setAppName(service.getPackageName() + ":root");
             // For some reason Debug.waitForDebugger() won't work, manual spin lock...
             while (!Debug.isDebuggerConnected()) {
                 try { Thread.sleep(200); }
@@ -112,11 +107,12 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             class Container { IBinder obj; }
             Container binderContainer = new Container();
             UiThreadHandler.runAndWait(() -> {
-                if (mIntent == null)
+                if (mIntent != null)
                     service.onRebind(intent);
+                else
+                    mIntent = intent.cloneFilter();
                 binderContainer.obj = service.onBind(intent);
             });
-            mIntent = intent.cloneFilter();
             return binderContainer.obj;
         } catch (Exception e) {
             Utils.err(e);
@@ -132,7 +128,20 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             if (!service.onUnbind(mIntent)) {
                 service.onDestroy();
                 System.exit(0);
+            } else {
+                // Register ourselves as system service
+                HiddenAPIs.addService(getServiceName(mName), this);
             }
+        });
+    }
+
+    @Override
+    public void stop() {
+        mClient.unlinkToDeath(this, 0);
+        mClient = null;
+        UiThreadHandler.run(() -> {
+            service.onDestroy();
+            System.exit(0);
         });
     }
 
