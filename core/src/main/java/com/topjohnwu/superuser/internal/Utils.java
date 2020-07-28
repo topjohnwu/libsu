@@ -50,9 +50,12 @@ public final class Utils {
             Log.d(TAG, "", t);
     }
 
-    // Unexpected errors, log regardless of
     public static void err(Throwable t) {
-        Log.d(TAG, "", t);
+        err(TAG, t);
+    }
+
+    public static void err(String tag, Throwable t) {
+        Log.d(tag, "", t);
     }
 
     public static boolean vLog() {

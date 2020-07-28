@@ -107,7 +107,7 @@ public abstract class RootService extends ContextWrapper {
                 client.newConnection(conn, executor);
                 bound.add(client);
             } catch (Exception e) {
-                Utils.err(e);
+                Utils.err(TAG, e);
             }
         });
     }
@@ -168,7 +168,7 @@ public abstract class RootService extends ContextWrapper {
             try {
                 IPCClient.stopRootServer(intent.getComponent());
             } catch (IOException e) {
-                Utils.err(e);
+                Utils.err(TAG, e);
             }
         });
     }

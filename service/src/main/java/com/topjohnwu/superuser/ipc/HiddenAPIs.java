@@ -27,6 +27,8 @@ import com.topjohnwu.superuser.internal.Utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static com.topjohnwu.superuser.ipc.RootService.TAG;
+
 /**
  * All hidden Android framework APIs used here are very stable.
  * <p>
@@ -71,7 +73,7 @@ class HiddenAPIs {
         try {
             return (IBinder) IPCMain.getService.invoke(null, name);
         } catch (Exception e) {
-            Utils.err(e);
+            Utils.err(TAG, e);
             return null;
         }
     }
@@ -80,7 +82,7 @@ class HiddenAPIs {
         try {
             IPCMain.addService.invoke(null, name, service);
         } catch (Exception e) {
-            Utils.err(e);
+            Utils.err(TAG, e);
         }
     }
 }

@@ -5,7 +5,7 @@ package com.topjohnwu.superuser.internal;
 
 interface IRootIPC {
     void broadcast();
-    IBinder bind(in Intent intent, IBinder client);
+    IBinder bind(in Intent intent);
     void unbind();
     void stop();
 }

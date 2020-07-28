@@ -19,6 +19,7 @@ package com.topjohnwu.superuser.ipc;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
 import android.os.IBinder;
@@ -43,8 +44,10 @@ import static android.os.FileObserver.MODIFY;
 import static android.os.FileObserver.MOVED_FROM;
 import static android.os.FileObserver.MOVED_TO;
 import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
+import static com.topjohnwu.superuser.ipc.IPCClient.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
-import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_EXTRA_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.LOGGING_ENV;
 import static com.topjohnwu.superuser.ipc.RootService.TAG;
 
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
@@ -74,6 +77,8 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
                 // Daemon dead, continue
             }
         }
+
+        Shell.Config.verboseLogging(System.getenv(LOGGING_ENV) != null);
 
         mName = name;
         Class<RootService> clz = (Class<RootService>) Class.forName(name.getClassName());
@@ -137,14 +142,10 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     }
 
     @Override
-    public synchronized IBinder bind(Intent intent, IBinder client) {
+    public synchronized IBinder bind(Intent intent) {
         // ComponentName doesn't match, abort
         if (!mName.equals(intent.getComponent()))
             System.exit(1);
-
-        Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
-
-        Utils.log(TAG, mName + " bind");
 
         if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
@@ -157,21 +158,25 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         }
 
         try {
-            mClient = client;
-            client.linkToDeath(this, 0);
+            Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
+            mClient = bundle.getBinder(BUNDLE_BINDER_KEY);
+            mClient.linkToDeath(this, 0);
 
             class Container { IBinder obj; }
-            Container binderContainer = new Container();
+            Container c = new Container();
             UiThreadHandler.runAndWait(() -> {
-                if (mIntent != null)
+                if (mIntent != null) {
+                    Utils.log(TAG, mName + " rebind");
                     service.onRebind(intent);
-                else
+                } else {
+                    Utils.log(TAG, mName + " bind");
                     mIntent = intent.cloneFilter();
-                binderContainer.obj = service.onBind(intent);
+                }
+                c.obj = service.onBind(intent);
             });
-            return binderContainer.obj;
+            return c.obj;
         } catch (Exception e) {
-            Utils.err(e);
+            Utils.err(TAG, e);
             return null;
         }
     }
@@ -207,7 +212,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public void binderDied() {
-        Utils.log(TAG, mName + " binderDied");
+        Utils.log(TAG, "client binderDied");
         unbind();
     }
 }

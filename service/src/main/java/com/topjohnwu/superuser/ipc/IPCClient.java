@@ -49,12 +49,13 @@ import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_STOP_SERVER;
 import static com.topjohnwu.superuser.ipc.RootService.serialExecutor;
 
 class IPCClient implements IBinder.DeathRecipient, Closeable {
-    static final String INTENT_LOGGING_KEY = "logging";
     static final String INTENT_DEBUG_KEY = "debug";
+    static final String INTENT_EXTRA_KEY = "binder_bundle";
+    static final String BUNDLE_BINDER_KEY = "binder";
+    static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
 
     private static final String BROADCAST_ACTION = "com.topjohnwu.superuser.BROADCAST_IPC";
-    private static final String INTENT_EXTRA_KEY = "binder_bundle";
-    private static final String BUNDLE_BINDER_KEY = "binder";
+    private static final String IPCSERVER_CLASSNAME = "com.topjohnwu.superuser.internal.IPCMain";
 
     private final ComponentName name;
     private final Map<ServiceConnection, Executor> connections = new HashMap<>();
@@ -84,8 +85,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,
                 "(CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s)&",
-                mainJar, Process.myPid(),
-                "com.topjohnwu.superuser.internal.IPCMain", /* main class */
+                mainJar, Process.myPid(), IPCSERVER_CLASSNAME,
                 name.flattenToString(), CMDLINE_STOP_SERVER /* command args */);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
@@ -102,11 +102,8 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         IntentFilter filter = new IntentFilter(getBroadcastAction(name));
         context.registerReceiver(new BinderReceiver(), filter);
 
-        // Copy intent and add client info into intent extra
-        intent = new Intent(intent);
-        if (Utils.vLog()) {
-            intent.putExtra(INTENT_LOGGING_KEY, true);
-        }
+        // Strip extra and add our own data
+        intent = intent.cloneFilter();
         String debugParams = "";
         if (Debug.isDebuggerConnected()) {
             // Also debug the remote root server
@@ -121,25 +118,31 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
                 debugParams = "-XjdwpProvider:adbconnection";
             }
         }
+        Bundle bundle = new Bundle();
+        bundle.putBinder(BUNDLE_BINDER_KEY, new Binder());
+        intent.putExtra(INTENT_EXTRA_KEY, bundle);
 
         // Dump main.jar as trampoline
         File mainJar = dumpMainJar(context);
 
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,
-                "(CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s)&",
+                "CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
                 mainJar, Process.myPid(), debugParams, context.getPackageName(),
-                "com.topjohnwu.superuser.internal.IPCMain", /* main class */
+                IPCSERVER_CLASSNAME, /* main class */
                 name.flattenToString(), IPCServer.class.getName() /* command args */);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
+        if (Utils.vLog())
+            cmd = LOGGING_ENV + "=1 " + cmd;
+
         synchronized (this) {
-            Shell.su(cmd).exec();
+            Shell.su("(" + cmd + ")&").exec();
             // Wait for broadcast receiver
             wait();
         }
         server.asBinder().linkToDeath(this, 0);
-        binder = server.bind(intent, new Binder());
+        binder = server.bind(intent);
     }
 
     boolean isSameService(Intent intent) {
