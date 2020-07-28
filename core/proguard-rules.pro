@@ -20,11 +20,22 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Strip out verbose logging
+# Strip out debugging stuffs
 -assumenosideeffects class com.topjohnwu.superuser.internal.Utils {
-  public static void log(...);
-  public static void ex(...);
+	public static void log(...);
+	public static void ex(...);
+}
+-assumenosideeffects class com.topjohnwu.superuser.Shell.Config {
+	public static void verboseLogging(...);
+}
+-assumevalues class com.topjohnwu.superuser.internal.Utils {
+	public static boolean vLog() return false;
+}
+-assumevalues class android.os.Debug {
+	public static boolean isDebuggerConnected() return false;
 }
 
-# Make sure R8/Proguard never remove Shell.Initializer classes
--keep,allowobfuscation class * extends com.topjohnwu.superuser.Shell$Initializer
+# Make sure R8/Proguard don't break things
+-keep,allowobfuscation class * extends com.topjohnwu.superuser.Shell$Initializer { *; }
+-keep,allowobfuscation class com.topjohnwu.superuser.ipc.IPCServer { *; }
+-keep,allowobfuscation class * extends com.topjohnwu.superuser.ipc.RootService { *; }
