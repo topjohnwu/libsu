@@ -75,8 +75,9 @@ import java.util.concurrent.ExecutorService;
  */
 public abstract class RootService extends ContextWrapper {
 
-    static List<IPCClient> bound = new ArrayList<>();
-    static ExecutorService serialExecutor = new SerialExecutorService();
+    static final String TAG = "IPC";
+    static final List<IPCClient> bound = new ArrayList<>();
+    static final ExecutorService serialExecutor = new SerialExecutorService();
 
     /**
      * Connect to a root service, creating if needed.

@@ -20,26 +20,40 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Debug;
+import android.os.FileObserver;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.RemoteException;
+
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IRootIPC;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 
+import static android.os.FileObserver.CREATE;
+import static android.os.FileObserver.DELETE;
+import static android.os.FileObserver.DELETE_SELF;
+import static android.os.FileObserver.MODIFY;
+import static android.os.FileObserver.MOVED_FROM;
+import static android.os.FileObserver.MOVED_TO;
 import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
+import static com.topjohnwu.superuser.ipc.RootService.TAG;
 
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     private final ComponentName mName;
     private final RootService service;
+
+    @SuppressWarnings("FieldCanBeLocal")
+    private final AppObserver observer;  /* A strong reference is required */
 
     private IBinder mClient;
     private Intent mIntent;
@@ -68,10 +82,41 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         service = constructor.newInstance();
         service.attach(context, this);
         service.onCreate();
+        observer = createObserver();
+        observer.startWatching();
+
         broadcast();
 
         // Start main thread looper
         Looper.loop();
+    }
+
+    // Monitor ANY modify event to the APK
+    AppObserver createObserver() {
+        File apk = new File(service.getPackageCodePath());
+        if (apk.getParent().equals("/data/app")) {
+            // No subfolder, directly monitor the APK itself
+            return new AppObserver(apk.getPath(), DELETE_SELF|MODIFY);
+        } else {
+            // APK in subfolder, monitor the folder
+            return new AppObserver(apk.getParent(), CREATE|DELETE|DELETE_SELF|MOVED_TO|MOVED_FROM);
+        }
+    }
+
+    class AppObserver extends FileObserver {
+
+        AppObserver(String path, int flags) {
+            super(path, flags);
+            Utils.log(TAG, "Start monitoring: " + path);
+        }
+
+        @Override
+        public void onEvent(int event, @Nullable String path) {
+            UiThreadHandler.run(() -> {
+                Utils.log(TAG, "AppObserver event: " + event);
+                stop();
+            });
+        }
     }
 
     @Override
@@ -98,6 +143,9 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             System.exit(1);
 
         Shell.Config.verboseLogging(intent.getBooleanExtra(INTENT_LOGGING_KEY, false));
+
+        Utils.log(TAG, mName + " bind");
+
         if (intent.getBooleanExtra(INTENT_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
             HiddenAPIs.setAppName(service.getPackageName() + ":root");
@@ -130,6 +178,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public synchronized void unbind() {
+        Utils.log(TAG, mName + " unbind");
         mClient.unlinkToDeath(this, 0);
         mClient = null;
         UiThreadHandler.run(() -> {
@@ -144,7 +193,8 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
+        Utils.log(TAG, mName + " stop");
         if (mClient != null) {
             mClient.unlinkToDeath(this, 0);
             mClient = null;
@@ -157,6 +207,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public void binderDied() {
+        Utils.log(TAG, mName + " binderDied");
         unbind();
     }
 }
