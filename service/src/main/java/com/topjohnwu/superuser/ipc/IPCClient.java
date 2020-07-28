@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteException;
 
 import com.topjohnwu.superuser.Shell;
@@ -40,9 +41,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_STOP_SERVER;
 import static com.topjohnwu.superuser.ipc.RootService.serialExecutor;
 
 class IPCClient implements IBinder.DeathRecipient, Closeable {
@@ -53,14 +56,35 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
     private static final String INTENT_EXTRA_KEY = "binder_bundle";
     private static final String BUNDLE_BINDER_KEY = "binder";
 
-    private ComponentName name;
+    private final ComponentName name;
+    private final Map<ServiceConnection, Executor> connections = new HashMap<>();
+
     private IRootIPC server = null;
     private IBinder binder = null;
-    private Map<ServiceConnection, Executor> connections = new HashMap<>();
 
     IPCClient(Intent intent) throws InterruptedException, RemoteException, IOException {
         name = intent.getComponent();
         startRootServer(Utils.getApplication(), intent);
+    }
+
+    static void stopRootServer(ComponentName name) throws IOException {
+        // Dump main.jar as trampoline
+        Context de = Utils.getDeContext(Utils.getApplication());
+        File mainJar = new File(de.getCacheDir(), "main.jar");
+        try (InputStream in = de.getResources().openRawResource(R.raw.main);
+             OutputStream out = new FileOutputStream(mainJar)) {
+            Utils.pump(in, out);
+        }
+
+        // Execute main.jar through root shell
+        String cmd = String.format(Locale.US,
+                "(CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s)&",
+                mainJar, Process.myPid(),
+                "com.topjohnwu.superuser.internal.IPCMain", /* main class */
+                name.flattenToString(), CMDLINE_STOP_SERVER /* command args */);
+        // Make sure cmd is properly formatted in shell
+        cmd = cmd.replace("$", "\\$");
+        Shell.su(cmd).exec();
     }
 
     private static String getBroadcastAction(ComponentName name) {
@@ -69,9 +93,8 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
 
     private void startRootServer(Context context, Intent intent)
             throws IOException, InterruptedException, RemoteException {
-        ComponentName component = intent.getComponent();
         // Register BinderReceiver to receive binder from root process
-        IntentFilter filter = new IntentFilter(getBroadcastAction(component));
+        IntentFilter filter = new IntentFilter(getBroadcastAction(name));
         context.registerReceiver(new BinderReceiver(), filter);
 
         // Copy intent and add client info into intent extra
@@ -103,12 +126,11 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         }
 
         // Execute main.jar through root shell
-        String app_process = new File("/proc/self/exe").getCanonicalPath();
-        String cmd = String.format(
-                "(CLASSPATH=%s %s %s /system/bin --nice-name=%s:root %s %s %s)&",
-                mainJar, app_process, debugParams, context.getPackageName(),
+        String cmd = String.format(Locale.US,
+                "(CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s)&",
+                mainJar, Process.myPid(), debugParams, context.getPackageName(),
                 "com.topjohnwu.superuser.internal.IPCMain", /* main class */
-                component.flattenToString(), IPCServer.class.getName() /* command args */);
+                name.flattenToString(), IPCServer.class.getName() /* command args */);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
         synchronized (this) {
@@ -170,8 +192,8 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
 
     @Override
     public void binderDied() {
+        serialExecutor.execute(() -> RootService.bound.remove(this));
         close();
-        serialExecutor.execute(() -> RootService.active.remove(this));
     }
 
     static Intent getBroadcastIntent(ComponentName name, IRootIPC.Stub ipc) {

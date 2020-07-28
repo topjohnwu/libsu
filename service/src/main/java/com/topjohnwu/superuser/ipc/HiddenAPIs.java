@@ -37,24 +37,6 @@ class HiddenAPIs {
 
     @SuppressLint("StaticFieldLeak")
     private static Context systemContext;
-    private static Method getService;
-    private static Method addService;
-
-    static {
-        initServiceManager();
-    }
-
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    private static void initServiceManager() {
-        try {
-            Class<?> sm = Class.forName("android.os.ServiceManager");
-            getService = sm.getDeclaredMethod("getService", String.class);
-            addService = sm.getDeclaredMethod("addService", String.class, IBinder.class);
-        } catch (Exception e) {
-            // Shall not happen!
-            throw new RuntimeException(e);
-        }
-    }
 
     static synchronized Context getSystemContext() {
         if (systemContext == null)
@@ -87,7 +69,7 @@ class HiddenAPIs {
 
     static IBinder getService(String name) {
         try {
-            return (IBinder) getService.invoke(null, name);
+            return (IBinder) IPCMain.getService.invoke(null, name);
         } catch (Exception e) {
             Utils.err(e);
             return null;
@@ -96,7 +78,7 @@ class HiddenAPIs {
 
     static void addService(String name, IBinder service) {
         try {
-            addService.invoke(null, name, service);
+            IPCMain.addService.invoke(null, name, service);
         } catch (Exception e) {
             Utils.err(e);
         }

@@ -19,13 +19,17 @@ package com.topjohnwu.superuser.internal;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
+import android.os.IBinder;
 import android.os.Looper;
+import android.os.Parcel;
 import android.util.Log;
 
 import androidx.annotation.RestrictTo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+
+import static android.os.IBinder.LAST_CALL_TRANSACTION;
 
 /**
  * Trampoline to start a root service.
@@ -39,10 +43,26 @@ import java.lang.reflect.Method;
  * <p>
  * Expected command-line args:
  * args[0]: client service component name
- * args[1]: class name of IPCServer (reason: name could be obfuscated in client APK)
+ * args[1]: {@link #CMDLINE_STOP_SERVER} or class name of IPCServer
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class IPCMain {
+
+    public static final String CMDLINE_STOP_SERVER = "stopServer";
+    public static final Method getService;
+    public static final Method addService;
+
+    static {
+        try {
+            @SuppressLint("PrivateApi")
+            Class<?> sm = Class.forName("android.os.ServiceManager");
+            getService = sm.getDeclaredMethod("getService", String.class);
+            addService = sm.getDeclaredMethod("addService", String.class, IBinder.class);
+        } catch (Exception e) {
+            // Shall not happen!
+            throw new RuntimeException(e);
+        }
+    }
 
     @SuppressLint("PrivateApi")
     public static Context getSystemContext() {
@@ -62,25 +82,48 @@ public class IPCMain {
         }
     }
 
+    // Convert to a valid service name
+    public static String getServiceName(ComponentName name) {
+        return name.flattenToString().replace("$", ".").replaceAll("[^a-zA-Z0-9\\/._\\-]", "_");
+    }
+
+    private static void stopRemoteService(ComponentName name) throws Exception {
+        IBinder binder = (IBinder) getService.invoke(null, getServiceName(name));
+        if (binder != null) {
+            Parcel p = Parcel.obtain();
+            try {
+                // IPCServer should be able to handle this correctly
+                binder.transact(LAST_CALL_TRANSACTION - 1, p, null, 0);
+            } finally {
+                p.recycle();
+            }
+        }
+        System.exit(0);
+    }
+
     public static void main(String[] args) {
         // Close STDOUT/STDERR since it belongs to the parent shell
         System.out.close();
         System.err.close();
+        if (args.length < 2)
+            System.exit(0);
 
         try {
-            ComponentName name = ComponentName.unflattenFromString(args[0]);
-            String ipcServerClassName = args[1];
+            ComponentName component = ComponentName.unflattenFromString(args[0]);
+
+            if (args[1].equals(CMDLINE_STOP_SERVER))
+                stopRemoteService(component);
 
             Context systemContext = getSystemContext();
-            Context context = systemContext.createPackageContext(name.getPackageName(),
+            Context context = systemContext.createPackageContext(component.getPackageName(),
                     Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
 
             // Use classloader from the package context to run everything
             ClassLoader cl = context.getClassLoader();
-            Class<?> clz = cl.loadClass(ipcServerClassName);
+            Class<?> clz = cl.loadClass(args[1]);
             Constructor<?> con = clz.getDeclaredConstructor(Context.class, ComponentName.class);
             con.setAccessible(true);
-            con.newInstance(context, name);
+            con.newInstance(context, component);
 
             // Shall never return
             System.exit(0);

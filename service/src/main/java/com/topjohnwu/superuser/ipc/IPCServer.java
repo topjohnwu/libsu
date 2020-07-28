@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.os.Debug;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Parcel;
 import android.os.RemoteException;
 
 import com.topjohnwu.superuser.Shell;
@@ -31,6 +32,7 @@ import com.topjohnwu.superuser.internal.Utils;
 
 import java.lang.reflect.Constructor;
 
+import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_LOGGING_KEY;
 
@@ -42,11 +44,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private IBinder mClient;
     private Intent mIntent;
 
-    // Convert to a valid service name
-    private static String getServiceName(ComponentName name) {
-        return name.flattenToString().replace("$", ".").replaceAll("[^a-zA-Z0-9\\/._\\-]", "_");
-    }
-
+    @SuppressWarnings("unchecked")
     IPCServer(Context context, ComponentName name) throws Exception {
         IBinder binder = HiddenAPIs.getService(getServiceName(name));
         if (binder != null) {
@@ -74,6 +72,16 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
         // Start main thread looper
         Looper.loop();
+    }
+
+    @Override
+    public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
+        // Small trick for stopping the service without going through AIDL
+        if (code == LAST_CALL_TRANSACTION - 1) {
+            stop();
+            return true;
+        }
+        return super.onTransact(code, data, reply, flags);
     }
 
     @Override
@@ -137,8 +145,10 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @Override
     public void stop() {
-        mClient.unlinkToDeath(this, 0);
-        mClient = null;
+        if (mClient != null) {
+            mClient.unlinkToDeath(this, 0);
+            mClient = null;
+        }
         UiThreadHandler.run(() -> {
             service.onDestroy();
             System.exit(0);
