@@ -67,14 +67,19 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         startRootServer(Utils.getApplication(), intent);
     }
 
-    static void stopRootServer(ComponentName name) throws IOException {
-        // Dump main.jar as trampoline
-        Context de = Utils.getDeContext(Utils.getApplication());
+    static File dumpMainJar(Context context) throws IOException {
+        Context de = Utils.getDeContext(context);
         File mainJar = new File(de.getCacheDir(), "main.jar");
-        try (InputStream in = de.getResources().openRawResource(R.raw.main);
+        try (InputStream in = context.getResources().getAssets().open("main.jar");
              OutputStream out = new FileOutputStream(mainJar)) {
             Utils.pump(in, out);
         }
+        return mainJar;
+    }
+
+    static void stopRootServer(ComponentName name) throws IOException {
+        // Dump main.jar as trampoline
+        File mainJar = dumpMainJar(Utils.getApplication());
 
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,
@@ -118,12 +123,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         }
 
         // Dump main.jar as trampoline
-        Context de = Utils.getDeContext(context);
-        File mainJar = new File(de.getCacheDir(), "main.jar");
-        try (InputStream in = context.getResources().openRawResource(R.raw.main);
-             OutputStream out = new FileOutputStream(mainJar)) {
-            Utils.pump(in, out);
-        }
+        File mainJar = dumpMainJar(context);
 
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,
