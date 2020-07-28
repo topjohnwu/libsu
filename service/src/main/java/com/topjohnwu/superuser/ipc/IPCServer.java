@@ -97,7 +97,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     }
 
     // Monitor ANY modify event to the APK
-    AppObserver createObserver() {
+    private AppObserver createObserver() {
         File apk = new File(service.getPackageCodePath());
         if (apk.getParent().equals("/data/app")) {
             // No subfolder, directly monitor the APK itself

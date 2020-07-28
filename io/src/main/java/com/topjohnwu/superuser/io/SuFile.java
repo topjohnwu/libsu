@@ -49,7 +49,7 @@ import java.util.Locale;
  * These tools are available on modern Android versions with toybox, however for consistent results
  * using {@code busybox} would be desirable. Some operations could have oddities
  * without busybox due to the lack of tools or different behavior of the tools,
- * check the method descriptions for more info before using them.
+ * check the method descriptions for more bashrc before using them.
  * <p>
  * There are also handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
  * instances. These factory methods will return a normal {@link File} instance if the underlying

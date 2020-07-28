@@ -22,7 +22,15 @@ api_level_arch_detect() {
   if [ "$ABILONG" = "x86_64" ]; then ARCH=x64; IS64BIT=true; fi;
 }
 
-api_level_arch_detect
+test_sync() {
+  api_level_arch_detect
+  echo "Device API: $API"
+  echo "Device ABI: $ARCH"
+}
 
-echo "Device API: $API"
-echo "Device ABI: $ARCH"
+test_async() {
+  for i in 0 1 2 3 4 5 6 7 8 9; do
+    echo ${i}
+    sleep 1
+  done
+}

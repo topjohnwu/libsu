@@ -46,9 +46,9 @@ public class MainActivity extends Activity {
     public static final String TAG = "EXAMPLE";
 
     static {
-        // Configuration
         Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
         Shell.Config.verboseLogging(BuildConfig.DEBUG);
+        // BusyBoxInstaller should come first!
         Shell.Config.setInitializers(BusyBoxInstaller.class, ExampleInitializer.class);
     }
 
@@ -57,32 +57,39 @@ public class MainActivity extends Activity {
 
     private ITestService testIPC;
     private RootConnection conn = new RootConnection();
-    private boolean queuedTest = false;
+    private boolean svcTestQueued = false;
 
     // Demonstrate Shell.Initializer
     static class ExampleInitializer extends Shell.Initializer {
 
         @Override
         public boolean onInit(@NonNull Context context, @NonNull Shell shell) {
-            Log.d(TAG, "onInit");
+            // Load our init script
+            shell.newJob().add(context.getResources().openRawResource(R.raw.bashrc)).exec();
             return true;
         }
     }
 
     // Demonstrate RootService (daemon mode)
+    // All code in this class (including the ITestService stub) will run in the root process.
     static class ExampleService extends RootService {
 
         static {
-            // Only load in root process
+            // Only load the library when this class is loaded in a root process.
+            // The classloader will load this class (and call this static block) in the non-root
+            // process because we accessed it when constructing the Intent to send.
+            // Add this check so we don't unnecessarily load native code that'll never be used.
             if (Process.myUid() == 0)
                 System.loadLibrary("native-lib");
         }
 
+        // Demonstrate we can actually run native code via JNI with RootServices
         native int nativeGetUid();
         native String nativeReadFile(String file);
 
         @Override
         public void onRebind(@NonNull Intent intent) {
+            // This callback will be called when we are reusing a previously started root process
             Log.d(TAG, "onRebind, daemon process reused");
         }
 
@@ -101,6 +108,8 @@ public class MainActivity extends Activity {
 
                 @Override
                 public String readCmdline() {
+                    // Normally we cannot read /proc/cmdline without root
+                    // Any result means we are running as root
                     return nativeReadFile("/proc/cmdline");
                 }
             };
@@ -108,8 +117,8 @@ public class MainActivity extends Activity {
 
         @Override
         public boolean onUnbind(@NonNull Intent intent) {
-            // Enable daemon mode
             Log.d(TAG, "onUnbind, client process unbound");
+            // We return true here to tell libsu that we want this service to run as a daemon
             return true;
         }
     }
@@ -119,8 +128,8 @@ public class MainActivity extends Activity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             testIPC = ITestService.Stub.asInterface(service);
-            if (queuedTest) {
-                queuedTest = false;
+            if (svcTestQueued) {
+                svcTestQueued = false;
                 testService();
             }
         }
@@ -156,7 +165,7 @@ public class MainActivity extends Activity {
 
         binding.testSvc.setOnClickListener(v -> {
             if (testIPC == null) {
-                queuedTest = true;
+                svcTestQueued = true;
                 Intent intent = new Intent(this, ExampleService.class);
                 RootService.bind(intent, conn);
                 return;
@@ -166,36 +175,38 @@ public class MainActivity extends Activity {
 
         binding.stopSvc.setOnClickListener(v -> {
             Intent intent = new Intent(this, ExampleService.class);
+            // Use stop here instead of unbind because ExampleService is running as a daemon.
+            // To verify whether the daemon actually works, kill the app and try to test the
+            // service again. You should get the same PID as last time (as it was re-using the
+            // previous daemon process), and in ExampleService onRebind should be called.
+            // Note: re-running the app in Android Studio is not the same as kill + relaunch,
+            // the root service will kill itself when it detects the client APK has updated.
             RootService.stop(intent);
         });
 
-        // Closing a shell is always synchronous
         binding.closeShell.setOnClickListener(v -> {
             try {
                 Shell shell = Shell.getCachedShell();
                 if (shell != null)
                     shell.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Error when closing shell", e);
             }
         });
 
-        // Load a script from raw resources synchronously
-        binding.syncScript.setOnClickListener(v ->
-                Shell.sh(getResources().openRawResource(R.raw.info)).to(consoleList).exec());
+        // test_sync is defined in bashrc, loaded in ExampleInitializer
+        binding.testSync.setOnClickListener(v ->
+                Shell.sh("test_sync").to(consoleList).exec());
 
-        // Load a script from raw resources asynchronously
-        binding.asyncScript.setOnClickListener(v ->
-                Shell.sh(getResources().openRawResource(R.raw.count)).to(consoleList).submit());
+        // test_async is defined in bashrc, loaded in ExampleInitializer
+        binding.testAsync.setOnClickListener(v ->
+                Shell.sh("test_async").to(consoleList).submit());
 
         binding.clear.setOnClickListener(v -> consoleList.clear());
 
-        /* Create a CallbackList to update the UI with Shell output
-         * Here I demonstrate 2 ways to implement a CallbackList
-         *
-         * Both ContainerCallbackList or AppendCallbackList will have
-         * the same behavior.
-         */
+        // Create a CallbackList to update the UI with Shell output
+        // Here I demonstrate 2 ways to use a CallbackList
+        // Both ContainerCallbackList or AppendCallbackList have the same behavior.
         consoleList = new AppendCallbackList();
         // consoleList = new ContainerCallbackList(new ArrayList<>());
     }
@@ -223,17 +234,17 @@ public class MainActivity extends Activity {
      * This class stores all outputs to the provided List<String> every time
      * a new output is created.
      *
-     * To make it behave exactly the same as AppendCallbackList, I joined
-     * all output together with newline and set the whole TextView with the result.
+     * To make it behave exactly the same as AppendCallbackList, all output was joined
+     * together with each new line added and the whole TextView is updated with the result.
      * It doesn't make sense to do this in this scenario since we do not actually
      * need to store the output. However, it is here to demonstrate that CallbackList
      * can also be used to store outputs and behaves just like normal List<String> if
-     * provided a container for storage.
+     * provided a backing list for storage.
      */
     private class ContainerCallbackList extends CallbackList<String> {
 
-        private ContainerCallbackList(List<String> l) {
-            super(l);
+        private ContainerCallbackList(List<String> base) {
+            super(base);
         }
 
         @Override

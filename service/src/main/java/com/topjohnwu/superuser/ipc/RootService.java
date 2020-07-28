@@ -59,7 +59,7 @@ import java.util.concurrent.ExecutorService;
  * Unlike normal services, RootService does not have an API similar to
  * {@link Context#startService(Intent)} because root services are strictly bound only.
  * Due to this reason, the APIs to forcefully stop the service are slightly different from normal
- * services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()} for more info.
+ * services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()} for more bashrc.
  * Also, unlike normal services, whenever you receive
  * {@link ServiceConnection#onServiceDisconnected(ComponentName)}, which means either
  * <ul>

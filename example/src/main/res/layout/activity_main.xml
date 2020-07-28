@@ -72,7 +72,7 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/sync_script"
+            android:id="@+id/test_sync"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -80,7 +80,7 @@
             android:text="Test sync" />
 
         <Button
-            android:id="@+id/async_script"
+            android:id="@+id/test_async"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
