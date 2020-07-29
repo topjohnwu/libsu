@@ -29,11 +29,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Utils {
 
     private static Context application;
+    private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
 
     public static void log(Object log) {
@@ -84,6 +87,14 @@ public final class Utils {
 
     public static Context getDeContext(Context context) {
         return Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
+    }
+
+    public static boolean isSynchronized(Collection<?> collection) {
+        if (synchronizedCollectionClass == null) {
+            synchronizedCollectionClass =
+                    Collections.synchronizedCollection(NOPList.getInstance()).getClass();
+        }
+        return synchronizedCollectionClass.isInstance(collection);
     }
 
     public static long pump(InputStream in, OutputStream out) throws IOException {

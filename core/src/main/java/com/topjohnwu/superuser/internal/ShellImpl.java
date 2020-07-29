@@ -43,8 +43,6 @@ import java.util.concurrent.TimeoutException;
 
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
-    private static final Class<? extends List> synchronizedListClass =
-            Collections.synchronizedList(NOPList.getInstance()).getClass();
 
     private int status;
 
@@ -258,7 +256,7 @@ class ShellImpl extends Shell {
             Future<Integer> out;
             Future<Void> err;
             if (res.out != null && res.out == res.err &&
-                    !synchronizedListClass.isInstance(res.out)) {
+                    !Utils.isSynchronized(res.out)) {
                 // Synchronize the list internally only if both lists are the same and are not
                 // already synchronized by the user
                 List<String> list = Collections.synchronizedList(res.out);
