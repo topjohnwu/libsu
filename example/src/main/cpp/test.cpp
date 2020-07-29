@@ -21,13 +21,13 @@
 #include <sys/stat.h>
 
 extern "C" JNIEXPORT JNICALL
-jint Java_com_topjohnwu_libsuexample_MainActivity_00024ExampleService_nativeGetUid(
+jint Java_com_topjohnwu_libsuexample_AIDLService_nativeGetUid(
 		JNIEnv *env, jobject instance) {
 	return getuid();
 }
 
 extern "C" JNIEXPORT JNICALL
-jstring Java_com_topjohnwu_libsuexample_MainActivity_00024ExampleService_nativeReadFile(
+jstring Java_com_topjohnwu_libsuexample_AIDLService_nativeReadFile(
 		JNIEnv *env, jobject instance, jstring name) {
 	const char *path = env->GetStringUTFChars(name, nullptr);
 	int fd = open(path, O_RDONLY);

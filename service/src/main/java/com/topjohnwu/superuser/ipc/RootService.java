@@ -23,6 +23,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.os.Messenger;
 
 import androidx.annotation.NonNull;
 
@@ -44,9 +45,9 @@ import java.util.concurrent.ExecutorService;
  * This class is almost a complete recreation of a bound service running in a root process.
  * Instead of using the original {@code Context.bindService(...)} methods to start and bind
  * to a service, use the provided static methods {@code RootService.bind(...)}.
- * Because the service will not run in the same process as your application, you have to use AIDL
- * to define the IPC interface for communication. Please read the official documentations for more
- * details.
+ * Because the service will not run in the same process as your application, you have to use either
+ * {@link Messenger} or AIDL to define the IPC interface for communication. Please read the
+ * official documentations for more details.
  * <p>
  * <strong>Daemon mode:</strong><br>
  * In normal circumstances, the root service process will be destroyed when no components are bound
@@ -55,21 +56,18 @@ import java.util.concurrent.ExecutorService;
  * method {@link #onUnbind(Intent)} and return {@code true}. Similar to normal bound services,
  * subsequent bindings will call the {@link #onRebind(Intent)} method.
  * <p>
- * <strong>Differences between normal services:</strong><br>
  * Unlike normal services, RootService does not have an API similar to
  * {@link Context#startService(Intent)} because root services are strictly bound only.
- * Due to this reason, the APIs to forcefully stop the service are slightly different from normal
- * services. Please refer to {@link #stop(Intent)} and {@link #stopSelf()} for more bashrc.
- * Also, unlike normal services, whenever you receive
- * {@link ServiceConnection#onServiceDisconnected(ComponentName)}, which means either
+ * A root service process will be terminated in the following conditions:
  * <ul>
- *     <li>Remote root process terminated unexpectedly</li>
- *     <li>Client called {@link #unbind(ServiceConnection)}</li>
+ *     <li>(For non daemon services) All clients had unbound or terminated</li>
  *     <li>Client called {@link #stop(Intent)}</li>
  *     <li>Root service called {@link #stopSelf()}</li>
+ *     <li>The source application is updated/deleted</li>
  * </ul>
- * had happened, the library will NOT automatically attempt to restart and rebind to the service.
- * @see Service
+ * When the remote root process is killed (could be unexpectedly), or the client explicitly called
+ * {@link #unbind(ServiceConnection)}, {@link ServiceConnection#onServiceDisconnected(ComponentName)}
+ * will be called, and the library will NOT attempt to automatically restart and bind to the service.
  * @see <a href="Bound services">https://developer.android.com/guide/components/bound-services</a>
  * @see <a href="Android Interface Definition Language (AIDL)">https://developer.android.com/guide/components/aidl</a>
  */

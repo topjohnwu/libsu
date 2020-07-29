@@ -39,20 +39,20 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/test_svc"
+            android:id="@+id/test_sync"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test SVC" />
+            android:text="Test sync" />
 
         <Button
-            android:id="@+id/stop_svc"
+            android:id="@+id/test_async"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Stop SVC" />
+            android:text="Test Async" />
 
         <Button
             android:id="@+id/close_shell"
@@ -72,20 +72,20 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/test_sync"
+            android:id="@+id/test_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test sync" />
+            android:text="Bind SVC" />
 
         <Button
-            android:id="@+id/test_async"
+            android:id="@+id/unbind_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test Async" />
+            android:text="Unbind SVC" />
 
         <Button
             android:id="@+id/clear"
@@ -94,6 +94,31 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Clear" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        style="?android:buttonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/darker_gray"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/test_daemon"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Test Daemon" />
+
+        <Button
+            android:id="@+id/stop_daemon"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Stop Daemon" />
 
     </LinearLayout>
 
