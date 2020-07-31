@@ -37,12 +37,6 @@ import com.topjohnwu.superuser.internal.Utils;
 import java.io.File;
 import java.lang.reflect.Constructor;
 
-import static android.os.FileObserver.CREATE;
-import static android.os.FileObserver.DELETE;
-import static android.os.FileObserver.DELETE_SELF;
-import static android.os.FileObserver.MODIFY;
-import static android.os.FileObserver.MOVED_FROM;
-import static android.os.FileObserver.MOVED_TO;
 import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
 import static com.topjohnwu.superuser.ipc.IPCClient.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
@@ -56,7 +50,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
     private final RootService service;
 
     @SuppressWarnings("FieldCanBeLocal")
-    private final AppObserver observer;  /* A strong reference is required */
+    private final FileObserver observer;  /* A strong reference is required */
 
     private IBinder mClient;
     private Intent mIntent;
@@ -88,7 +82,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         service = constructor.newInstance();
         service.attach(context, this);
         service.onCreate();
-        observer = createObserver();
+        observer = new AppObserver(new File(context.getPackageCodePath()));
         observer.startWatching();
 
         broadcast();
@@ -97,31 +91,20 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
         Looper.loop();
     }
 
-    // Monitor ANY modify event to the APK
-    private AppObserver createObserver() {
-        File apk = new File(service.getPackageCodePath());
-        if (apk.getParent().equals("/data/app")) {
-            // No subfolder, directly monitor the APK itself
-            return new AppObserver(apk.getPath(), DELETE_SELF|MODIFY);
-        } else {
-            // APK in subfolder, monitor the folder
-            return new AppObserver(apk.getParent(), CREATE|DELETE|DELETE_SELF|MOVED_TO|MOVED_FROM);
-        }
-    }
-
     class AppObserver extends FileObserver {
 
-        AppObserver(String path, int flags) {
-            super(path, flags);
-            Utils.log(TAG, "Start monitoring: " + path);
+        private String name;
+
+        AppObserver(File path) {
+            super(path.getParent(), CREATE|DELETE|DELETE_SELF|MOVED_TO|MOVED_FROM);
+            Utils.log(TAG, "Start monitoring: " + path.getParent());
+            name = path.getName();
         }
 
         @Override
         public void onEvent(int event, @Nullable String path) {
-            UiThreadHandler.run(() -> {
-                Utils.log(TAG, "AppObserver event: " + event);
-                stop();
-            });
+            if (event == DELETE_SELF || name.equals(path))
+                UiThreadHandler.run(IPCServer.this::stop);
         }
     }
 
