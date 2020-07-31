@@ -65,7 +65,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
 
     IPCClient(Intent intent) throws InterruptedException, RemoteException, IOException {
         name = intent.getComponent();
-        startRootServer(Utils.getApplication(), intent);
+        startRootServer(Utils.getContext(), intent);
     }
 
     static File dumpMainJar(Context context) throws IOException {
@@ -80,7 +80,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
 
     static void stopRootServer(ComponentName name) throws IOException {
         // Dump main.jar as trampoline
-        File mainJar = dumpMainJar(Utils.getApplication());
+        File mainJar = dumpMainJar(Utils.getContext());
 
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,

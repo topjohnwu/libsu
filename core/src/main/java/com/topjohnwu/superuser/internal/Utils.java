@@ -35,7 +35,8 @@ import java.util.Collections;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Utils {
 
-    private static Context application;
+    @SuppressLint("StaticFieldLeak")
+    public static Context context;
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
 
@@ -70,14 +71,14 @@ public final class Utils {
     }
 
     @SuppressLint("PrivateApi")
-    public static synchronized Context getApplication() {
+    public static synchronized Context getContext() {
         try {
-            if (application == null) {
+            if (context == null) {
                 Method currentApplication = Class.forName("android.app.ActivityThread")
                         .getMethod("currentApplication");
-                application = (Context) currentApplication.invoke(null);
+                context = (Context) currentApplication.invoke(null);
             }
-            return application;
+            return context;
         } catch (Exception e) {
             // Shall never happen
             Utils.err(e);

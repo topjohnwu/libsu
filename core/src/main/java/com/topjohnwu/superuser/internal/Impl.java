@@ -120,7 +120,7 @@ public final class Impl {
         try {
             ShellImpl shell = new ShellImpl(timeout, commands);
             try {
-                Context ctx = Utils.getApplication();
+                Context ctx = Utils.getContext();
                 setCachedShell(shell);
                 if (initClasses != null) {
                     for (Class<? extends Shell.Initializer> cls : initClasses) {

@@ -63,6 +63,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
     @SuppressWarnings("unchecked")
     IPCServer(Context context, ComponentName name) throws Exception {
+        Utils.context = context;
         IBinder binder = HiddenAPIs.getService(getServiceName(name));
         if (binder != null) {
             // There was already a root service running
