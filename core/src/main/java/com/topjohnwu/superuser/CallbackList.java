@@ -16,54 +16,64 @@
 
 package com.topjohnwu.superuser;
 
-import androidx.annotation.MainThread;
-
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.util.AbstractList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * An {@link AbstractList} that calls {@code onAddElement} when a new element is added to the list.
  * <p>
- * To simplify the API of {@link Shell}, both STDOUT and STDERR will output to
- * {@link List}. This class is useful if you want to trigger a callback
- * every time {@link Shell} outputs a new line: simply implement {@link #onAddElement(Object)}, and
- * provide an instance to the shell.
+ * To simplify the API of {@link Shell}, both STDOUT and STDERR will output to {@link List}s.
+ * This class is useful if you want to trigger a callback every time {@link Shell}
+ * outputs a new line.
  * <p>
  * The {@code CallbackList} itself does not have a data store. If you need one, you can provide a
- * base {@link List}, and this class will delegate all of its calls to the base with synchronization;
- * it works just like a wrapper from {@link Collections#synchronizedList(List)}.
- * <p>
- * The method {@link #onAddElement(Object)} will always run on the main thread (UI thread).
+ * base {@link List}, and this class will delegate its calls to it.
  */
 
 public abstract class CallbackList<E> extends AbstractList<E> {
 
-    protected List<E> mBase = null;
+    protected List<E> mBase;
+    protected Executor mExecutor;
 
     /**
-     * Sole constructor.
+     * {@link #onAddElement(Object)} runs on the main thread; no backing list.
      */
-    protected CallbackList() { }
+    protected CallbackList() {
+        this(UiThreadHandler.executor, null);
+    }
 
     /**
-     * Creates a {@code CallbackList} that behaves just like {@code base} with synchronization.
-     * @param base provides the data store and an actual implementation of the {@link List}
+     * {@link #onAddElement(Object)} runs on the main thread; sets a backing list.
      */
     protected CallbackList(List<E> base) {
-        mBase = Collections.synchronizedList(base);
+        this(UiThreadHandler.executor, base);
+    }
+
+    /**
+     * {@link #onAddElement(Object)} runs with the executor; no backing list.
+     */
+    protected CallbackList(Executor executor) {
+        this(executor, null);
+    }
+
+    /**
+     * {@link #onAddElement(Object)} runs with the executor; sets a backing list.
+     */
+    protected CallbackList(Executor executor, List<E> base) {
+        mExecutor = executor;
+        mBase = base;
     }
 
     /**
      * The callback when a new element is added.
      * <p>
-     * This method will always run on the main thread and synchronized.
      * This method will be called after {@code add} is called.
+     * Which thread it runs on depends on which constructor is used to construct the instance.
      * @param e the new element added to the list.
      */
-    @MainThread
     public abstract void onAddElement(E e);
 
     /**
@@ -89,7 +99,7 @@ public abstract class CallbackList<E> extends AbstractList<E> {
     public void add(int i, E s) {
         if (mBase != null)
             mBase.add(i, s);
-        UiThreadHandler.runWithLock(this, () -> onAddElement(s));
+        mExecutor.execute(() -> onAddElement(s));
     }
 
     /**

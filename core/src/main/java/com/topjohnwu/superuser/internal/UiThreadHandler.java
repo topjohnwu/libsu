@@ -33,13 +33,7 @@ public class UiThreadHandler {
             handler.post(r);
         }
     }
-    public static void runWithLock(Object lock, Runnable r) {
-        if (ShellUtils.onMainThread()) {
-            synchronized (lock) { r.run(); }
-        } else {
-            handler.post(() -> { synchronized (lock) { r.run(); } });
-        }
-    }
+
     public static void runAndWait(Runnable r) {
         if (ShellUtils.onMainThread()) {
             r.run();

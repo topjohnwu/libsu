@@ -212,7 +212,7 @@ public class MainActivity extends Activity implements Handler.Callback {
         binding.testAsync.setOnClickListener(v ->
                 Shell.sh("test_async").to(consoleList).submit());
 
-        binding.clear.setOnClickListener(v -> consoleList.clear());
+        binding.clear.setOnClickListener(v -> binding.console.setText(""));
     }
 
     /**
@@ -220,17 +220,11 @@ public class MainActivity extends Activity implements Handler.Callback {
      * callback API every time a new output is created by the root shell.
      */
     class AppendCallbackList extends CallbackList<String> {
-
         @Override
         public void onAddElement(String s) {
             binding.console.append(s);
             binding.console.append("\n");
             binding.sv.postDelayed(() -> binding.sv.fullScroll(ScrollView.FOCUS_DOWN), 10);
-        }
-
-        @Override
-        public synchronized void clear() {
-            runOnUiThread(() -> binding.console.setText(""));
         }
     }
 }
