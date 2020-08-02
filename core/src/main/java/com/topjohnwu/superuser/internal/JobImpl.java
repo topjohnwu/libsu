@@ -32,7 +32,7 @@ class JobImpl extends Shell.Job {
     protected List<String> out, err;
     private List<InputHandler> handlers;
     protected ShellImpl shell;
-    private boolean redirect = false;
+    private boolean stderrSet = false;
 
     JobImpl() {
         handlers = new ArrayList<>();
@@ -45,6 +45,7 @@ class JobImpl extends Shell.Job {
 
     private ResultImpl exec0() {
         ResultImpl result = new ResultImpl();
+        boolean redirect = !stderrSet && shell.redirect;
         result.out = out;
         result.err = redirect ? out : err;
         Shell.Task task = shell.newTask(handlers, result);
@@ -78,7 +79,8 @@ class JobImpl extends Shell.Job {
     @Override
     public Shell.Job to(List<String> output) {
         out = output;
-        redirect = shell.redirect;
+        err = null;
+        stderrSet = false;
         return this;
     }
 
@@ -87,7 +89,7 @@ class JobImpl extends Shell.Job {
     public Shell.Job to(List<String> stdout, List<String> stderr) {
         out = stdout;
         err = stderr;
-        redirect = false;
+        stderrSet = true;
         return this;
     }
 
