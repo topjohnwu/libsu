@@ -63,11 +63,7 @@ public final class Utils {
     }
 
     public static boolean vLog() {
-        return hasFlags(Shell.FLAG_VERBOSE_LOGGING);
-    }
-
-    public static boolean hasFlags(int flags) {
-        return (Impl.flags & flags) == flags;
+        return Shell.enableVerboseLogging;
     }
 
     @SuppressLint("PrivateApi")

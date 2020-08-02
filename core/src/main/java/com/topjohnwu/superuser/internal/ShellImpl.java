@@ -47,6 +47,7 @@ class ShellImpl extends Shell {
     private int status;
 
     final ExecutorService executor;
+    final boolean redirect;
     private final Process process;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
@@ -90,8 +91,9 @@ class ShellImpl extends Shell {
         }
     }
 
-    ShellImpl(long timeout, String... cmd) throws IOException {
+    ShellImpl(long timeout, boolean redirect, String... cmd) throws IOException {
         status = UNKNOWN;
+        this.redirect = redirect;
 
         Utils.log(TAG, "exec " + TextUtils.join(" ", cmd));
         process = Runtime.getRuntime().exec(cmd);

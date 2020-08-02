@@ -78,7 +78,7 @@ class JobImpl extends Shell.Job {
     @Override
     public Shell.Job to(List<String> output) {
         out = output;
-        redirect = Utils.hasFlags(Shell.FLAG_REDIRECT_STDERR);
+        redirect = shell.redirect;
         return this;
     }
 

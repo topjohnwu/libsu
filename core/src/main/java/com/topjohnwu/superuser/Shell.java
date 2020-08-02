@@ -22,7 +22,8 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.topjohnwu.superuser.internal.Impl;
+import com.topjohnwu.superuser.internal.BuilderImpl;
+import com.topjohnwu.superuser.internal.MGR;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.io.Closeable;
@@ -81,7 +82,7 @@ public abstract class Shell implements Closeable {
      */
     public static final int ROOT_MOUNT_MASTER = 2;
     /**
-     * If set, create a non-root shell by default.
+     * If set, create a non-root shell.
      * <p>
      * Constant value {@value}.
      */
@@ -92,12 +93,9 @@ public abstract class Shell implements Closeable {
      * Constant value {@value}.
      */
     public static final int FLAG_MOUNT_MASTER = 0x02;
-    /**
-     * If set, verbose log everything.
-     * <p>
-     * Constant value {@value}.
-     */
-    public static final int FLAG_VERBOSE_LOGGING = 0x04;
+
+    /* Preserve 0x04 due to historical reasons */
+
     /**
      * If set, STDERR outputs will be stored in STDOUT outputs.
      * <p>
@@ -126,6 +124,22 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
+
+    /**
+     * Set to {@code true} to enable verbose logging throughout the library.
+     */
+    public static boolean enableVerboseLogging = false;
+
+    /**
+     * Override the default {@link Builder}.
+     * <p>
+     * This builder will be used to build {@code Shell}s in {@link #getShell()},
+     * {@link #getShell(GetShellCallback)}, and {@link #getShell(Executor, GetShellCallback)}.
+     */
+    public static void setDefaultBuilder(Builder builder) {
+        MGR.setBuilder(builder);
+    }
+
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
      * If {@link #getCachedShell()} returns null, it will call {@link #newInstance()} to construct
@@ -135,7 +149,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Shell getShell() {
-        return Impl.getShell();
+        return MGR.getShell();
     }
 
     /**
@@ -146,7 +160,7 @@ public abstract class Shell implements Closeable {
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
-        Impl.getShell(UiThreadHandler.executor, callback);
+        MGR.getShell(UiThreadHandler.executor, callback);
     }
 
     /**
@@ -158,7 +172,7 @@ public abstract class Shell implements Closeable {
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@Nullable Executor executor, @NonNull GetShellCallback callback) {
-        Impl.getShell(executor, callback);
+        MGR.getShell(executor, callback);
     }
 
     /**
@@ -167,45 +181,7 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        return Impl.getCachedShell();
-    }
-
-    /**
-     * Construct a new {@code Shell} instance with the default methods.
-     * <p>
-     * There are 3 methods to construct a Unix shell; if any method fails, it will fallback to the
-     * next method:
-     * <ol>
-     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set and {@link #FLAG_MOUNT_MASTER}
-     *     is set, construct a Unix shell by calling {@code su --mount-master}.
-     *     It may fail if the root implementation does not support mount master.</li>
-     *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
-     *     {@code su}. It may fail if the device is not rooted, or root permission is not granted.</li>
-     *     <li>Construct a Unix shell by calling {@code sh}. This would never fail in normal
-     *     conditions, but should it fails, it will throw {@link NoShellException}</li>
-     * </ol>
-     * The developer should check the status of the returned {@code Shell} with {@link #getStatus()}
-     * since it may return the result of any of the 3 possible methods.
-     * @return a new {@code Shell} instance.
-     * @throws NoShellException impossible to construct a {@link Shell} instance, or initialization
-     * failed when using the configured {@link Initializer}.
-     */
-    @NonNull
-    public static Shell newInstance() {
-        return Impl.newShell();
-    }
-
-    /**
-     * Construct a new {@code Shell} instance with provided commands.
-     * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
-     *                 a new {@link Process}.
-     * @return a new {@code Shell} instance.
-     * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
-     * initialization failed when using the configured {@link Initializer}.
-     */
-    @NonNull
-    public static Shell newInstance(String... commands) {
-        return Impl.newShell(commands);
+        return MGR.getCachedShell();
     }
 
     /**
@@ -230,7 +206,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull String... commands) {
-        return Impl.newJob(true, commands);
+        return MGR.newJob(true, commands);
     }
 
     /**
@@ -257,7 +233,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull String... commands) {
-        return Impl.newJob(false, commands);
+        return MGR.newJob(false, commands);
     }
 
     /**
@@ -265,7 +241,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull InputStream in) {
-        return Impl.newJob(true, in);
+        return MGR.newJob(true, in);
     }
 
     /**
@@ -276,7 +252,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull InputStream in) {
-        return Impl.newJob(false, in);
+        return MGR.newJob(false, in);
     }
 
     /* ***************
@@ -372,43 +348,32 @@ public abstract class Shell implements Closeable {
     /**
      * Static methods for configuring the behavior of {@link Shell}.
      */
-    public static final class Config {
+    public abstract static class Builder {
 
-        private Config() {}
+        /**
+         * Create a new {@link Builder}.
+         * @return a new Builder object.
+         */
+        public static Builder create() {
+            return new BuilderImpl();
+        }
 
         /**
          * Set the desired {@link Initializer}s.
          * @see Initializer
          * @param classes the classes of desired initializers.
          */
-        @SafeVarargs
-        public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            Impl.initClasses = classes;
-        }
+        public abstract Builder setInitializers(@NonNull Class<?>... classes);
 
         /**
          * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
          * constructed.
          * @param flags the desired flags.
-         *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
-         *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
+         *              Value is either 0 or bitwise-or'd value of
+         *              {@link #FLAG_NON_ROOT_SHELL}, {@link #FLAG_MOUNT_MASTER}, or
          *              {@link #FLAG_REDIRECT_STDERR}
          */
-        public static void setFlags(int flags) {
-            Impl.flags = flags;
-        }
-
-        /**
-         * Set whether enable verbose logging.
-         * <p>
-         * Convenient function to toggle verbose logging with a boolean value.
-         * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
-         * @param verbose if true, adds {@link #FLAG_VERBOSE_LOGGING} to flags.
-         */
-        public static void verboseLogging(boolean verbose) {
-            if (verbose)
-                Impl.flags |= FLAG_VERBOSE_LOGGING;
-        }
+        public abstract Builder setFlags(int flags);
 
         /**
          * Set the maximum time to wait for a new shell construction.
@@ -418,9 +383,44 @@ public abstract class Shell implements Closeable {
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
          */
-        public static void setTimeout(long timeout) {
-            Impl.timeout = timeout;
-        }
+        public abstract Builder setTimeout(long timeout);
+
+        /**
+         * Combine all of the options that have been set and build a new {@code Shell} instance
+         * with the default methods.
+         * <p>
+         * There are 3 methods to construct a Unix shell; if any method fails, it will fallback to
+         * the next method:
+         * <ol>
+         *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set and {@link #FLAG_MOUNT_MASTER}
+         *     is set, construct a Unix shell by calling {@code su --mount-master}.
+         *     It may fail if the root implementation does not support mount master.</li>
+         *     <li>If {@link #FLAG_NON_ROOT_SHELL} is not set, construct a Unix shell by calling
+         *     {@code su}. It may fail if the device is not rooted, or root permission is
+         *     not granted.</li>
+         *     <li>Construct a Unix shell by calling {@code sh}. This would never fail in normal
+         *     conditions, but should it fails, it will throw {@link NoShellException}</li>
+         * </ol>
+         * The developer should check the status of the returned {@code Shell} with
+         * {@link #getStatus()} since it may return the result of any of the 3 possible methods.
+         * @return the built {@code Shell} instance.
+         * @throws NoShellException impossible to construct a {@link Shell} instance, or
+         * initialization failed when using the configured {@link Initializer}.
+         */
+        @NonNull
+        public abstract Shell build();
+
+        /**
+         * Combine all of the options that have been set and build a new {@code Shell} instance
+         * with the provided commands.
+         * @param commands commands that will be passed to {@link Runtime#exec(String[])} to create
+         *                 a new {@link Process}.
+         * @return the built {@code Shell} instance.
+         * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
+         * initialization failed when using the configured {@link Initializer}.
+         */
+        @NonNull
+        public abstract Shell build(String... commands);
     }
 
     /**
@@ -613,5 +613,84 @@ public abstract class Shell implements Closeable {
          */
         @MainThread
         void onResult(@NonNull Result out);
+    }
+
+    /* ***************
+     * Deprecated APIs
+     * ***************/
+
+    /**
+     * Static methods for configuring the behavior of {@link Shell}.
+     * @deprecated please use {@link Builder} to config and build Shell.
+     */
+    @Deprecated
+    public static final class Config {
+
+        private Config() {}
+
+        /**
+         * Set the desired {@link Initializer}s.
+         * @see Initializer
+         * @param classes the classes of desired initializers.
+         */
+        @SafeVarargs
+        public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
+            MGR.getBuilder().setInitializers(classes);
+        }
+
+        /**
+         * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
+         * constructed.
+         * @param flags the desired flags.
+         *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
+         *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
+         *              {@link #FLAG_REDIRECT_STDERR}
+         */
+        public static void setFlags(int flags) {
+            MGR.getBuilder().setFlags(flags);
+        }
+
+        /**
+         * Set whether enable verbose logging.
+         * <p>
+         * Convenient function to toggle verbose logging with a boolean value.
+         * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
+         * @param verbose if true, adds {@link #FLAG_VERBOSE_LOGGING} to flags.
+         */
+        public static void verboseLogging(boolean verbose) {
+            Shell.enableVerboseLogging = verbose;
+        }
+
+        /**
+         * Set the maximum time to wait for a new shell construction.
+         * <p>
+         * After the timeout occurs and the new shell still has no response,
+         * the shell process will be force-closed and throw {@link NoShellException}.
+         * @param timeout the maximum time to wait in seconds.
+         *                The default timeout is 20 seconds.
+         */
+        public static void setTimeout(long timeout) {
+            MGR.getBuilder().setTimeout(timeout);
+        }
+    }
+
+    /**
+     * @see Builder#build()
+     * @deprecated please use {@link Builder} to config and build Shell.
+     */
+    @Deprecated
+    @NonNull
+    public static Shell newInstance() {
+        return MGR.getBuilder().build();
+    }
+
+    /**
+     * @see Builder#build(String...)
+     * @deprecated please use {@link Builder} to config and build Shell.
+     */
+    @Deprecated
+    @NonNull
+    public static Shell newInstance(String... commands) {
+        return MGR.getBuilder().build(commands);
     }
 }

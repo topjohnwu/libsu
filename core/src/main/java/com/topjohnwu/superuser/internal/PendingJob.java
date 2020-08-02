@@ -40,7 +40,7 @@ class PendingJob extends JobImpl {
     @Override
     public Shell.Result exec() {
         try {
-            shell = Impl.getShell();
+            shell = MGR.getShell();
         } catch (NoShellException e) {
             return ResultImpl.INSTANCE;
         }
@@ -59,7 +59,7 @@ class PendingJob extends JobImpl {
 
     @Override
     public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
-        Impl.getShell(null, s -> {
+        MGR.getShell(null, s -> {
             if (isSU && !s.isRoot()) {
                 ResultImpl.INSTANCE.callback(executor, cb);
                 return;

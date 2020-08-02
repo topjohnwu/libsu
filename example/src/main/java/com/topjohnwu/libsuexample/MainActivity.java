@@ -49,10 +49,11 @@ public class MainActivity extends Activity implements Handler.Callback {
     public static final String TAG = "EXAMPLE";
 
     static {
-        Shell.Config.setFlags(Shell.FLAG_REDIRECT_STDERR);
-        Shell.Config.verboseLogging(BuildConfig.DEBUG);
-        // BusyBoxInstaller should come first!
-        Shell.Config.setInitializers(BusyBoxInstaller.class, ExampleInitializer.class);
+        Shell.enableVerboseLogging = BuildConfig.DEBUG;
+        Shell.setDefaultBuilder(Shell.Builder.create()
+                .setFlags(Shell.FLAG_REDIRECT_STDERR)
+                // BusyBoxInstaller should come first!
+                .setInitializers(BusyBoxInstaller.class, ExampleInitializer.class));
     }
 
     private ITestService testIPC;
