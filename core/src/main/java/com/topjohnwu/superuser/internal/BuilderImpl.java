@@ -34,30 +34,8 @@ import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class BuilderImpl extends Shell.Builder {
 
-    private int flags = 0;
-    long timeout = 20;
-    private Class<? extends Shell.Initializer>[] initClasses = null;
-
-    @Override
-    public final Shell.Builder setInitializers(@NonNull Class<?>... classes) {
-        initClasses = (Class<? extends Shell.Initializer>[]) classes;
-        return this;
-    }
-
     boolean hasFlags(int flags) {
         return (this.flags & flags) == flags;
-    }
-
-    @Override
-    public Shell.Builder setFlags(int flags) {
-        this.flags = flags;
-        return this;
-    }
-
-    @Override
-    public Shell.Builder setTimeout(long timeout) {
-        this.timeout = timeout;
-        return this;
     }
 
     @NonNull

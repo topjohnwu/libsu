@@ -54,7 +54,6 @@ import java.util.concurrent.TimeUnit;
  * Developers can check the example that came along with the library, it demonstrates many features
  * the library has to offer.
  */
-
 public abstract class Shell implements Closeable {
 
     /**
@@ -86,15 +85,15 @@ public abstract class Shell implements Closeable {
      * <p>
      * Constant value {@value}.
      */
-    public static final int FLAG_NON_ROOT_SHELL = 0x01;
+    public static final int FLAG_NON_ROOT_SHELL = (1 << 0);
     /**
      * If set, create a root shell with {@code --mount-master} option.
      * <p>
      * Constant value {@value}.
      */
-    public static final int FLAG_MOUNT_MASTER = 0x02;
+    public static final int FLAG_MOUNT_MASTER = (1 << 1);
 
-    /* Preserve 0x04 due to historical reasons */
+    /* Preserve (1 << 2) due to historical reasons */
 
     /**
      * If set, STDERR outputs will be stored in STDOUT outputs.
@@ -111,9 +110,9 @@ public abstract class Shell implements Closeable {
      * <p>
      * Constant value {@value}.
      */
-    public static final int FLAG_REDIRECT_STDERR = 0x08;
+    public static final int FLAG_REDIRECT_STDERR = (1 << 3);
 
-    /* Preserve 0x10 due to historical reasons */
+    /* Preserve (1 << 4) due to historical reasons */
 
     /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
@@ -333,7 +332,7 @@ public abstract class Shell implements Closeable {
      * @throws IOException if an I/O error occurs.
      */
     public void waitAndClose() throws IOException {
-        while (true) {
+        for (;;) {
             try {
                 if (waitAndClose(Long.MAX_VALUE, TimeUnit.NANOSECONDS))
                     break;
@@ -350,10 +349,15 @@ public abstract class Shell implements Closeable {
      */
     public abstract static class Builder {
 
+        protected int flags = 0;
+        protected long timeout = 20;
+        protected Class<? extends Shell.Initializer>[] initClasses = null;
+
         /**
          * Create a new {@link Builder}.
          * @return a new Builder object.
          */
+        @NonNull
         public static Builder create() {
             return new BuilderImpl();
         }
@@ -363,7 +367,12 @@ public abstract class Shell implements Closeable {
          * @see Initializer
          * @param classes the classes of desired initializers.
          */
-        public abstract Builder setInitializers(@NonNull Class<?>... classes);
+        @SafeVarargs
+        @NonNull
+        public final Builder setInitializers(@NonNull Class<? extends Initializer>... classes) {
+            initClasses = classes;
+            return this;
+        }
 
         /**
          * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
@@ -373,7 +382,11 @@ public abstract class Shell implements Closeable {
          *              {@link #FLAG_NON_ROOT_SHELL}, {@link #FLAG_MOUNT_MASTER}, or
          *              {@link #FLAG_REDIRECT_STDERR}
          */
-        public abstract Builder setFlags(int flags);
+        @NonNull
+        public final Builder setFlags(int flags) {
+            this.flags = flags;
+            return this;
+        }
 
         /**
          * Set the maximum time to wait for a new shell construction.
@@ -383,7 +396,11 @@ public abstract class Shell implements Closeable {
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
          */
-        public abstract Builder setTimeout(long timeout);
+        @NonNull
+        public final Builder setTimeout(long timeout) {
+            this.timeout = timeout;
+            return this;
+        }
 
         /**
          * Combine all of the options that have been set and build a new {@code Shell} instance
@@ -552,7 +569,7 @@ public abstract class Shell implements Closeable {
      * <p>
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
      * is constructed, extend this class, add your own implementation, and register it with
-     * {@link Config#setInitializers(Class[])}.
+     * {@link Builder#setInitializers(Class[])}.
      * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
      * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
      * constructed and tested as a valid shell.
@@ -607,7 +624,6 @@ public abstract class Shell implements Closeable {
      * The callback to receive a result in {@link Job#submit(Shell.ResultCallback)}.
      */
     public interface ResultCallback {
-
         /**
          * @param out the result of the job.
          */
@@ -642,8 +658,9 @@ public abstract class Shell implements Closeable {
          * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
          * constructed.
          * @param flags the desired flags.
-         *              Value is either 0 or bitwise-or'd value of {@link #FLAG_NON_ROOT_SHELL},
-         *              {@link #FLAG_VERBOSE_LOGGING}, {@link #FLAG_MOUNT_MASTER}, or
+         *              Value is either 0 or bitwise-or'd value of
+         *              {@link #FLAG_NON_ROOT_SHELL},
+         *              {@link #FLAG_MOUNT_MASTER}, or
          *              {@link #FLAG_REDIRECT_STDERR}
          */
         public static void setFlags(int flags) {
@@ -655,7 +672,6 @@ public abstract class Shell implements Closeable {
          * <p>
          * Convenient function to toggle verbose logging with a boolean value.
          * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
-         * @param verbose if true, adds {@link #FLAG_VERBOSE_LOGGING} to flags.
          */
         public static void verboseLogging(boolean verbose) {
             Shell.enableVerboseLogging = verbose;
