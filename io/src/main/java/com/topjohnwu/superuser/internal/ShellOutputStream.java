@@ -34,9 +34,9 @@ class ShellOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        byte[] buf = new byte[1];
-        buf[0] = (byte) (b & 0xFF);
-        write(buf);
+        byte[] BYTE = new byte[1];
+        BYTE[0] = (byte) (b & 0xFF);
+        write(BYTE);
     }
 
     @Override
@@ -45,7 +45,7 @@ class ShellOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(@NonNull byte[] b, int off, int len) throws IOException {
+    public synchronized void write(@NonNull byte[] b, int off, int len) throws IOException {
         io.streamWrite(b, off, len);
     }
 }
