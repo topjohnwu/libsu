@@ -1,6 +1,6 @@
-## 3.0.0
+## 3.0.1
 New major release, introducing root service support!<br>
-3.0.0 is fully source compatible with 2.6.0, but please migrate the deprecated methods as soon as possible as these shim will be removed soon.
+3.0.1 is fully source compatible with 2.6.0, but please migrate the deprecated methods as soon as possible as these shim will be removed soon.
 
 ### New Features
 - New module `:service` is added: introduce `RootService` for remote root IPC
