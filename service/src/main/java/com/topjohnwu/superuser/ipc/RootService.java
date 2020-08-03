@@ -73,8 +73,8 @@ import java.util.concurrent.ExecutorService;
  * When the remote root process is killed (could be unexpectedly), or the client explicitly called
  * {@link #unbind(ServiceConnection)}, {@link ServiceConnection#onServiceDisconnected(ComponentName)}
  * will be called, and the library will NOT attempt to automatically restart and bind to the service.
- * @see <a href="Bound services">https://developer.android.com/guide/components/bound-services</a>
- * @see <a href="Android Interface Definition Language (AIDL)">https://developer.android.com/guide/components/aidl</a>
+ * @see <a href="https://developer.android.com/guide/components/bound-services">Bound services</a>
+ * @see <a href="https://developer.android.com/guide/components/aidl">Android Interface Definition Language (AIDL)</a>
  */
 public abstract class RootService extends ContextWrapper {
 
