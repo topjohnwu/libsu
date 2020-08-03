@@ -133,7 +133,8 @@ if (logs.exists()) {
 }
 ```
 
-### Root Services (`minSdkVersion = 18`)
+### Root Services
+##### (minSdkVersion = 18)
 If interacting with a root shell and the I/O classes still do not serve your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
 
 ```java
