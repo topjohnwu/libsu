@@ -49,6 +49,11 @@ import java.util.concurrent.ExecutorService;
  * {@link Messenger} or AIDL to define the IPC interface for communication. Please read the
  * official documentations for more details.
  * <p>
+ * Even though a {@code RootService} is a {@link Context} of the app package, since we are running
+ * in a root environment and the ContextImpl is not constructed in the "normal" way, the
+ * functionality of this context is much more limited compared to normal non-root cases. Be aware
+ * of this and do not assume all context methods will work, many will result in Exceptions.
+ * <p>
  * <strong>Daemon mode:</strong><br>
  * In normal circumstances, the root service process will be destroyed when no components are bound
  * to it (including when the non-root app process is terminated). However, if you'd like to have

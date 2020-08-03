@@ -49,10 +49,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * These methods not only uses the global shell instance but are also more convenient to use.
  * The global shell instance is constructed on-demand and cached.
- * To get the instance directly, call {@link #getShell()} or {@link #getShell(GetShellCallback)}.
- * <p>
- * Developers can check the example that came along with the library, it demonstrates many features
- * the library has to offer.
+ * To get the global shell instance, use the static {@code getShell(...)} methods.
  */
 public abstract class Shell implements Closeable {
 
@@ -141,9 +138,9 @@ public abstract class Shell implements Closeable {
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
-     * If {@link #getCachedShell()} returns null, it will call {@link #newInstance()} to construct
-     * a new {@code Shell}.
-     * @see #newInstance()
+     * <p>
+     * If {@link #getCachedShell()} returns null, it will use the default {@link Builder} to
+     * construct a new {@code Shell}.
      * @return a {@code Shell} instance
      */
     @NonNull
@@ -153,9 +150,10 @@ public abstract class Shell implements Closeable {
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
-     * If {@link #getCachedShell()} does not return null, the callback will be invoked synchronously,
-     * or else it will call {@link #newInstance()} in a background thread and invoke the callback
-     * on the main thread.
+     * <p>
+     * If {@link #getCachedShell()} does not return null, the shell will be directly returned through
+     * the callback, or else it will use the default {@link Builder} to construct a new {@code Shell}
+     * in a background thread and return the result to the callback on the main thread.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
@@ -164,8 +162,10 @@ public abstract class Shell implements Closeable {
 
     /**
      * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
+     * <p>
      * If {@link #getCachedShell()} does not return null, the shell will be directly returned through
-     * the callback, or else it will call {@link #newInstance()} in a background thread.
+     * the callback, or else it will use the default {@link Builder} to construct a new {@code Shell}
+     * in a background thread.
      * @param executor the executor used to handle the result callback event.
      *                 Pass {@code null} to run the callback on the same thread creating the shell.
      * @param callback invoked when a shell is acquired.
@@ -211,22 +211,15 @@ public abstract class Shell implements Closeable {
     /**
      * Create a {@link Job} with commands.
      * <p>
-     * By default a new {@link List} will be created internally
-     * to store the output after executing {@link Job#exec()} or {@link Job#submit(Shell.ResultCallback)}.
-     * You can get the internally created {@link List} via {@link Result#getOut()} after
-     * the job is done. Output of STDERR will be stored in the same list along
-     * with STDOUT if the flag {@link #FLAG_REDIRECT_STDERR} is set; {@link Result#getErr()}
-     * will always return an empty list.
+     * This method is functionally equivalent to
+     * {@code Shell.getShell().newJob().add(commands).to(new ArrayList<>())}, but internally
+     * it is specifically optimized for this case and does not run this exact code.
+     * The developer can manually override output destination with either
+     * {@link Job#to(List)} or {@link Job#to(List, List)}.
      * <p>
-     * Note: the behavior mentioned above <strong>DOES NOT</strong> apply if the developer manually
-     * override output destination with either {@link Job#to(List)} or {@link Job#to(List, List)}.
-     * <p>
-     * {@code Shell} will not be requested until the developer invokes either {@link Job#exec()},
-     * {@link Job#submit()}, or {@link Job#submit(Shell.ResultCallback)}. It is possible to construct
-     * complex {@link Job} before the program will request any root access.
-     * <p>
-     * If the developer plan to simply construct a job and add operations with
-     * {@code Job.add(InputStream/String...))} afterwards, call this method with no arguments.
+     * {@code Shell} will not be requested until the developer invokes either
+     * {@link Job#exec()} or {@code Job.submit(...)}. This makes it possible to
+     * construct {@link Job}s before the program will request any root access.
      * @param commands the commands to run within the {@link Job}.
      * @return a job that the developer can execute or submit later.
      */
@@ -245,7 +238,10 @@ public abstract class Shell implements Closeable {
 
     /**
      * Create a {@link Job} with an {@link InputStream}.
-     * Check {@link #sh(String...)} for details.
+     * <p>
+     * This method is functionally equivalent to
+     * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}
+     * Check {@link #sh(String...)} for more details.
      * @param in the data in this {@link InputStream} will be served to {@code STDIN}.
      * @return a job that the developer can execute or submit later.
      */
@@ -345,7 +341,13 @@ public abstract class Shell implements Closeable {
      * ***************/
 
     /**
-     * Static methods for configuring the behavior of {@link Shell}.
+     * Builder class for {@link Shell} objects.
+     * <p>
+     * Set the default builder for the globally shared shell instance with
+     * {@link #setDefaultBuilder(Builder)}, or directly use a builder object to create new
+     * {@link Shell} objects.
+     * <p>
+     * Please do not subclass this class, use {@link #create()} to get a new Builder object.
      */
     public abstract static class Builder {
 
@@ -366,6 +368,7 @@ public abstract class Shell implements Closeable {
          * Set the desired {@link Initializer}s.
          * @see Initializer
          * @param classes the classes of desired initializers.
+         * @return this Builder object for chaining of calls.
          */
         @SafeVarargs
         @NonNull
@@ -381,6 +384,7 @@ public abstract class Shell implements Closeable {
          *              Value is either 0 or bitwise-or'd value of
          *              {@link #FLAG_NON_ROOT_SHELL}, {@link #FLAG_MOUNT_MASTER}, or
          *              {@link #FLAG_REDIRECT_STDERR}
+         * @return this Builder object for chaining of calls.
          */
         @NonNull
         public final Builder setFlags(int flags) {
@@ -395,6 +399,7 @@ public abstract class Shell implements Closeable {
          * the shell process will be force-closed and throw {@link NoShellException}.
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
+         * @return this Builder object for chaining of calls.
          */
         @NonNull
         public final Builder setTimeout(long timeout) {
