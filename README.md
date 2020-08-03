@@ -140,9 +140,9 @@ If interacting with a root shell and the I/O classes still do not serve your nee
 ```java
 public class RootConnection implements ServiceConnection { ... }
 public class ExampleService extends RootService {
-	@Override
+    @Override
     public IBinder onBind(Intent intent) {
-    	// return IBinder from Messenger or AIDL stub implementation
+        // return IBinder from Messenger or AIDL stub implementation
     }
 }
 RootConnection conn = new RootConnection();
@@ -151,6 +151,9 @@ RootService.bind(intent, conn);
 ```
 
 `libsu` does NOT attempt to do messy workarounds for broken/outdated root solutions as I believe the responsibility shall not lie on the application side. This means there are no hacks for `sepolicy` live patching, `app_process` relocating etc. Any modern root solution with sane SELinux implementation should work: the library is tested on Magisk (supports API 17+), but the latest SuperSU on modern Android should also be fine.
+
+##### Debugging Root Services
+If the application process creating the root service has a debugger attached, the root service will automatically enable debugging mode and will wait for a debugger before running anything. In Android Studio, go to **"Run > Attach Debugger to Android Process"**, tick the **"Show all processes"** box, and you should be able to manually attach to the remote root process. Currently, only the **"Java only"** debugger is supported.
 
 ### BusyBox
 If you want to embed BusyBox directly in your app to ensure 100% reliable/reproducible shell environment, add `com.github.topjohnwu.libsu:busybox` as a dependency (`android:extractNativeLibs=false` is **NOT** compatible with the `busybox` module):
