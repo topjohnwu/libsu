@@ -641,6 +641,12 @@ public abstract class Shell implements Closeable {
      * ***************/
 
     /**
+     * @deprecated please set {@link #enableVerboseLogging} instead
+     */
+    @Deprecated
+    public static final int FLAG_VERBOSE_LOGGING = (1 << 2);
+
+    /**
      * Static methods for configuring the behavior of {@link Shell}.
      * @deprecated please use {@link Builder} to config and build Shell.
      */
