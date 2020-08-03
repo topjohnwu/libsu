@@ -1,3 +1,26 @@
+## 3.0.0
+New major release, introducing root service support!<br>
+3.0.0 is fully source compatible with 2.6.0, but please migrate the deprecated methods as soon as possible as these shim will be removed soon.
+
+### New Features
+- New module `:service` is added: introduce `RootService` for remote root IPC
+- `SuFileInputStream` now fully support `mark(int)`, `reset()`, and `skip(long)`
+- `CallbackList` now support passing in a custom `Executor` in its constructor to configure which thread `onAddElement()` to run on
+
+### Behavior Changes
+- `CallbackList` no longer synchronizes its base `List` internally (if provided).
+It is the developer's responsibility if synchronization is required
+
+### API Changes
+- `Shell.Builder` is now used to construct `Shell` objects. Each shell instance creation now has its own configurations
+- `Shell.enableVerboseLogging` is now used to toggle verbose logging throughout the framework
+- `Shell.setDefaultBuilder(Shell.Builder)` is now used to configure the global shell instance
+
+### Deprecation
+- `Shell.FLAG_VERBOSE_LOGGING`: use `Shell.enableVerboseLogging`
+- `Shell.Config`: customize `Shell.Builder` and set it in `Shell.setDefaultBuilder(Shell.Builder)`
+- `Shell.newInstance(...)`: create `Shell.Builder` and use `Shell.Builder.build(...)`
+
 ## 2.6.0
 ### API Changes
 - New APIs to allow users to customize which thread to dispatch when returning results via callbacks
