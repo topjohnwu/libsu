@@ -28,7 +28,7 @@ import java.io.File;
  * An initializer that installs and setup the bundled BusyBox.
  * <p>
  * {@code libsu} bundles with BusyBox binaries, supporting arm/arm64/x86/x64.
- * Register this class with {@link Shell.Config#setInitializers(Class[])} to let {@code libsu}
+ * Register this class with {@link Shell.Builder#setInitializers(Class[])} to let {@code libsu}
  * install and setup the shell to use the bundled BusyBox binary.
  * <p>
  * After the initializer is run, the shell will be using BusyBox's "Standalone Mode ASH".

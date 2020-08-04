@@ -73,7 +73,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             }
         }
 
-        Shell.Config.verboseLogging(System.getenv(LOGGING_ENV) != null);
+        Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
 
         mName = name;
         Class<RootService> clz = (Class<RootService>) Class.forName(name.getClassName());
