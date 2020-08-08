@@ -42,7 +42,7 @@ dependencies {
 ## License
 This project is licensed under the Apache License, Version 2.0. Please refer to `LICENSE` for the full text.
 
-In the module `busybox`, a prebuilt BusyBox binary is included. BusyBox is licensed under GPLv2, please check its repository for full detail. The binaries included in the project are built with sources from [this repository](https://github.com/topjohnwu/ndk-busybox).
+In the module `busybox`, prebuilt BusyBox binaries iare included. BusyBox is licensed under GPLv2, please check its repository for full detail. The binaries included in the project are built with sources from [this repository](https://github.com/topjohnwu/ndk-busybox).
 
 Theoretically, using a GPLv2 binary without linkage does not affect your app, so it should be fine to use it in closed source or other licensed projects as long as the source code of the binary itself is released (which I just provided), but **this is not legal advice**. Please consult legal experts if feeling concerned using the `busybox` module.
 
@@ -135,7 +135,7 @@ if (logs.exists()) {
 
 ### Root Services
 ##### (minSdkVersion = 18)
-If interacting with a root shell and the I/O classes still do not serve your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
+If interacting with a root shell and the I/O classes still do not serve your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). `libsu` also allows you to create root services running as a daemon (runs independently of the lifecycle of your app), please read Javadoc and check out the example app for more details. Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
 
 ```java
 public class RootConnection implements ServiceConnection { ... }
@@ -143,6 +143,11 @@ public class ExampleService extends RootService {
     @Override
     public IBinder onBind(Intent intent) {
         // return IBinder from Messenger or AIDL stub implementation
+    }
+    @Override
+    public boolean onUnbind(Intent intent) {
+        // return true to run as a daemon, false for normal root service
+        return false;
     }
 }
 RootConnection conn = new RootConnection();
