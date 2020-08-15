@@ -8,7 +8,7 @@ An Android library providing a complete solution for apps using root permissions
 
 ## [Changelog](./CHANGELOG.md)
 
-## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/3.0.1/javadoc/overview-summary.html)
+## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/3.0.2/javadoc/overview-summary.html)
 
 ## Download
 ```groovy
