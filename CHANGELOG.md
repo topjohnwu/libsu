@@ -1,3 +1,7 @@
+## 3.0.2
+- Fix regression that could cause crashes on older Android versions when getting application context internally
+- Add more nullability annotations for better Kotlin integration
+
 ## 3.0.1
 New major release, introducing root service support!<br>
 3.0.1 is fully source compatible with 2.6.0, but please migrate the deprecated methods as soon as possible as these shim will be removed soon.

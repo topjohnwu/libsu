@@ -23,7 +23,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '3.0.1'
+    def libsuVersion = '3.0.2'
 
     // The core module is used by all other components
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
@@ -42,7 +42,7 @@ dependencies {
 ## License
 This project is licensed under the Apache License, Version 2.0. Please refer to `LICENSE` for the full text.
 
-In the module `busybox`, prebuilt BusyBox binaries iare included. BusyBox is licensed under GPLv2, please check its repository for full detail. The binaries included in the project are built with sources from [this repository](https://github.com/topjohnwu/ndk-busybox).
+In the module `busybox`, prebuilt BusyBox binaries are included. BusyBox is licensed under GPLv2, please check its repository for full detail. The binaries included in the project are built with sources from [this repository](https://github.com/topjohnwu/ndk-busybox).
 
 Theoretically, using a GPLv2 binary without linkage does not affect your app, so it should be fine to use it in closed source or other licensed projects as long as the source code of the binary itself is released (which I just provided), but **this is not legal advice**. Please consult legal experts if feeling concerned using the `busybox` module.
 
