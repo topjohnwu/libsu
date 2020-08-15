@@ -68,18 +68,19 @@ public final class Utils {
 
     @SuppressLint("PrivateApi")
     public static synchronized Context getContext() {
-        try {
-            if (context == null) {
-                Method currentApplication = Class.forName("android.app.ActivityThread")
-                        .getMethod("currentApplication");
-                context = (Context) currentApplication.invoke(null);
-            }
-            return context;
-        } catch (Exception e) {
-            // Shall never happen
-            Utils.err(e);
-            return null;
+        if (context == null) {
+            UiThreadHandler.runAndWait(() -> {
+                try {
+                    Method currentApplication = Class.forName("android.app.ActivityThread")
+                            .getMethod("currentApplication");
+                    context = (Context) currentApplication.invoke(null);
+                } catch (Exception e) {
+                    // Shall never happen
+                    Utils.err(e);
+                }
+            });
         }
+        return context;
     }
 
     public static Context getDeContext(Context context) {

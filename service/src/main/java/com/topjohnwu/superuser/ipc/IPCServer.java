@@ -30,6 +30,7 @@ import android.os.RemoteException;
 import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.internal.Container;
 import com.topjohnwu.superuser.internal.IRootIPC;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
@@ -146,8 +147,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             mClient = bundle.getBinder(BUNDLE_BINDER_KEY);
             mClient.linkToDeath(this, 0);
 
-            class Container { IBinder obj; }
-            Container c = new Container();
+            Container<IBinder> c = new Container<>();
             UiThreadHandler.runAndWait(() -> {
                 if (mIntent != null) {
                     Utils.log(TAG, mName + " rebind");
