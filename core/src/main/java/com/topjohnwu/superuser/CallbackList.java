@@ -16,6 +16,9 @@
 
 package com.topjohnwu.superuser;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.util.AbstractList;
@@ -48,21 +51,21 @@ public abstract class CallbackList<E> extends AbstractList<E> {
     /**
      * {@link #onAddElement(Object)} runs on the main thread; sets a backing list.
      */
-    protected CallbackList(List<E> base) {
+    protected CallbackList(@Nullable List<E> base) {
         this(UiThreadHandler.executor, base);
     }
 
     /**
      * {@link #onAddElement(Object)} runs with the executor; no backing list.
      */
-    protected CallbackList(Executor executor) {
+    protected CallbackList(@NonNull Executor executor) {
         this(executor, null);
     }
 
     /**
      * {@link #onAddElement(Object)} runs with the executor; sets a backing list.
      */
-    protected CallbackList(Executor executor, List<E> base) {
+    protected CallbackList(@NonNull Executor executor, @Nullable List<E> base) {
         mExecutor = executor;
         mBase = base;
     }

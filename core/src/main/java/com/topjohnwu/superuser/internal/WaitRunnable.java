@@ -16,17 +16,18 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.NonNull;
+
 public final class WaitRunnable implements Runnable {
 
     private Runnable r;
-    private boolean done = false;
 
-    public WaitRunnable(Runnable run) {
+    public WaitRunnable(@NonNull Runnable run) {
         r = run;
     }
 
     public synchronized void waitUntilDone() {
-        while (!done) {
+        while (r != null) {
             try {
                 wait();
             } catch (InterruptedException ignored) {}
@@ -36,7 +37,7 @@ public final class WaitRunnable implements Runnable {
     @Override
     public synchronized void run() {
         r.run();
-        done = true;
+        r = null;
         notifyAll();
     }
 }
