@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -32,25 +31,11 @@ import java.util.concurrent.TimeoutException;
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class SerialExecutorService extends AbstractExecutorService implements Callable<Void> {
+public class SerialExecutorService extends AbstractExecutorService {
 
     private boolean isShutdown = false;
     private ArrayDeque<Runnable> mTasks = new ArrayDeque<>();
     private FutureTask<Void> scheduleTask = null;
-
-    @Override
-    public Void call() {
-        for (;;) {
-            Runnable task;
-            synchronized (this) {
-                if ((task = mTasks.poll()) == null) {
-                    scheduleTask = null;
-                    return null;
-                }
-            }
-            task.run();
-        }
-    }
 
     @Override
     public synchronized void execute(Runnable r) {
@@ -60,7 +45,7 @@ public class SerialExecutorService extends AbstractExecutorService implements Ca
         }
         mTasks.offer(r);
         if (scheduleTask == null) {
-            scheduleTask = new FutureTask<>(this);
+            scheduleTask = new FutureTask<>(this::executeTasks);
             EXECUTOR.execute(scheduleTask);
         }
     }
@@ -104,5 +89,18 @@ public class SerialExecutorService extends AbstractExecutorService implements Ca
             return false;
         } catch (ExecutionException ignored) {}
         return true;
+    }
+
+    private Void executeTasks() {
+        for (;;) {
+            Runnable task;
+            synchronized (this) {
+                if ((task = mTasks.poll()) == null) {
+                    scheduleTask = null;
+                    return null;
+                }
+            }
+            task.run();
+        }
     }
 }
