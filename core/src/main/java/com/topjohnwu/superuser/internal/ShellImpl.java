@@ -142,26 +142,26 @@ class ShellImpl extends Shell {
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT))) {
 
-        STDIN.write(("echo SHELL_TEST\n").getBytes(UTF_8));
-        STDIN.flush();
-        String s = br.readLine();
-        if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
-            throw new IOException("Created process is not a shell");
-        int status = NON_ROOT_SHELL;
+            STDIN.write(("echo SHELL_TEST\n").getBytes(UTF_8));
+            STDIN.flush();
+            String s = br.readLine();
+            if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
+                throw new IOException("Created process is not a shell");
+            int status = NON_ROOT_SHELL;
 
-        STDIN.write(("id\n").getBytes(UTF_8));
-        STDIN.flush();
-        s = br.readLine();
-        if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
-            status = ROOT_SHELL;
+            STDIN.write(("id\n").getBytes(UTF_8));
+            STDIN.flush();
+            s = br.readLine();
+            if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
+                status = ROOT_SHELL;
 
-        if (status == ROOT_SHELL && this.status == ROOT_MOUNT_MASTER)
-            status = ROOT_MOUNT_MASTER;
+            if (status == ROOT_SHELL && this.status == ROOT_MOUNT_MASTER)
+                status = ROOT_MOUNT_MASTER;
 
-        br.close();
-        this.status = status;
+            this.status = status;
+        }
         return null;
     }
 
