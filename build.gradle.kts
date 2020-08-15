@@ -92,7 +92,7 @@ subprojects {
     afterEvaluate {
         android.apply {
             compileSdkVersion(30)
-            buildToolsVersion = "30.0.1"
+            buildToolsVersion = "30.0.2"
 
             defaultConfig {
                 if (minSdkVersion == null)
