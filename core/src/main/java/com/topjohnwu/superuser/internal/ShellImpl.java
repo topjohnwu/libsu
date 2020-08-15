@@ -41,6 +41,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
 
@@ -105,7 +107,7 @@ class ShellImpl extends Shell {
         Utils.log(TAG, "UUID: " + uuid);
         outGobbler = new StreamGobbler.OUT(uuid);
         errGobbler = new StreamGobbler.ERR(uuid);
-        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes("UTF-8");
+        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes(UTF_8);
         executor = new SerialExecutorService();
 
         if (cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
@@ -142,14 +144,14 @@ class ShellImpl extends Shell {
 
         BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT));
 
-        STDIN.write(("echo SHELL_TEST\n").getBytes("UTF-8"));
+        STDIN.write(("echo SHELL_TEST\n").getBytes(UTF_8));
         STDIN.flush();
         String s = br.readLine();
         if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
             throw new IOException("Created process is not a shell");
         int status = NON_ROOT_SHELL;
 
-        STDIN.write(("id\n").getBytes("UTF-8"));
+        STDIN.write(("id\n").getBytes(UTF_8));
         STDIN.flush();
         s = br.readLine();
         if (!TextUtils.isEmpty(s) && s.contains("uid=0"))

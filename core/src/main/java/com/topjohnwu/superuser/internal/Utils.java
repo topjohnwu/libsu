@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -37,6 +38,7 @@ public final class Utils {
 
     @SuppressLint("StaticFieldLeak")
     public static Context context;
+    static final Charset UTF_8 = Charset.forName("UTF-8"); // Use StandardCharsets.UTF_8 when API allows it
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
 

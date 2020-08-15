@@ -22,6 +22,8 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 abstract class StreamGobbler<T> implements Callable<T> {
 
     private static final String TAG = "SHELLOUT";
@@ -72,7 +74,7 @@ abstract class StreamGobbler<T> implements Callable<T> {
         @Override
         public Integer call() throws Exception {
             int code;
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
                 for (;;) {
                     if (isEOS(br.readLine()))
                         break;
@@ -92,7 +94,7 @@ abstract class StreamGobbler<T> implements Callable<T> {
 
         @Override
         public Void call() throws Exception {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
                 for (;;) {
                     if (isEOS(br.readLine()))
                         break;
