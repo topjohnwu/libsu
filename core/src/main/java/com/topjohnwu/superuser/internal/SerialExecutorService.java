@@ -19,7 +19,7 @@ package com.topjohnwu.superuser.internal;
 import androidx.annotation.RestrictTo;
 
 import java.util.ArrayDeque;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
@@ -77,7 +77,7 @@ public class SerialExecutorService extends AbstractExecutorService implements Ca
         if (scheduleTask != null)
             scheduleTask.cancel(true);
         try {
-            return Arrays.asList(mTasks.toArray(new Runnable[]{}));
+            return new ArrayList<>(mTasks);
         } finally {
             mTasks.clear();
         }
