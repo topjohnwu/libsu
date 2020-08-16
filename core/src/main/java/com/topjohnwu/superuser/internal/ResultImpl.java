@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 class ResultImpl extends Shell.Result {
+    private static final List<String> EMPTY_RESULT = Collections.emptyList();
     List<String> out;
     List<String> err;
     int code = JOB_NOT_EXECUTED;
@@ -34,13 +35,13 @@ class ResultImpl extends Shell.Result {
     @NonNull
     @Override
     public List<String> getOut() {
-        return out == null ? Collections.emptyList() : out;
+        return out == null ? EMPTY_RESULT : out;
     }
 
     @NonNull
     @Override
     public List<String> getErr() {
-        return err == null ? Collections.emptyList() : err;
+        return err == null ? EMPTY_RESULT : err;
     }
 
     @Override
