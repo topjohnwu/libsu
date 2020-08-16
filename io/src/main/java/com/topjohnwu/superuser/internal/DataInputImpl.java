@@ -106,12 +106,10 @@ interface DataInputImpl extends DataInput {
         int b;
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         try {
-            while (true) {
+            do {
                 b = readUnsignedByte();
                 buf.write(b);
-                if (b == '\n')
-                    break;
-            }
+            } while (b != '\n');
         } catch (EOFException ignored) {
             if (buf.size() == 0)
                 return null;
