@@ -29,6 +29,7 @@ import java.lang.reflect.Constructor;
 
 import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
 import static com.topjohnwu.superuser.Shell.FLAG_NON_ROOT_SHELL;
+import static com.topjohnwu.superuser.Shell.FLAG_REDIRECT_STDERR;
 import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -72,7 +73,7 @@ public class BuilderImpl extends Shell.Builder {
     @Override
     public ShellImpl build(String... commands) {
         try {
-            ShellImpl shell = new ShellImpl(timeout, hasFlags(Shell.FLAG_REDIRECT_STDERR), commands);
+            ShellImpl shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), commands);
             try {
                 Context ctx = Utils.getContext();
                 MGR.setCachedShell(shell);
