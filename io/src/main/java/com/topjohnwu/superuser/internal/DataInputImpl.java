@@ -18,14 +18,12 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 interface DataInputImpl extends DataInput {
 
@@ -115,8 +113,8 @@ interface DataInputImpl extends DataInput {
                 return null;
         }
 
-        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(
-                buf.toByteArray()))).readLine();
+        byte[] bytes = buf.toByteArray();
+        return new String(bytes, 0, bytes.length-1);
     }
 
     @NonNull
