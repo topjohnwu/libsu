@@ -215,6 +215,52 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     }
 
     @Override
+    public String readLine() throws IOException {
+        ByteOutputStream bs = new ByteOutputStream();
+        boolean eos = false;
+
+        // Continually read aligned 512-byte blocks and check for new line
+        do {
+            long skip = fileOff / 512;
+            byte[] buf = new byte[512];
+            int read = alignedRead(buf, 0, 1, (int) skip, 512);
+            if (read == 0)
+                break;
+            int i = (int) (fileOff - skip * 512);
+            for (; i < read; ++i) {
+                byte b = buf[i];
+                bs.write(b);
+                if (b == '\n') {
+                    ++i;
+                    eos = true;
+                    break;
+                }
+            }
+            if (eof) {
+                // alignedRead hit eof, double check if we have reached it
+                if (i != read)
+                    eof = false;
+            }
+        } while (!eof && !eos);
+
+        int size = bs.size();
+        if (size == 0)
+            return null;
+
+        fileOff += size;
+
+        // Strip new line and carriage return
+        byte[] bytes = bs.getBuf();
+        if (bytes[size - 1] == '\n') {
+            size -= 1;
+            if (size > 0 && bytes[size - 1] == '\r')
+                size -= 1;
+        }
+
+        return new String(bytes, 0, size, "UTF-8");
+    }
+
+    @Override
     public void seek(long pos) throws IOException {
         fileOff = pos;
         eof = false;

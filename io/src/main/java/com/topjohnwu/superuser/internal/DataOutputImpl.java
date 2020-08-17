@@ -18,7 +18,6 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -96,25 +95,25 @@ interface DataOutputImpl extends DataOutput {
 
     @Override
     default void writeBytes(@NonNull String s) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        ByteOutputStream buf = new ByteOutputStream();
         DataOutputStream out = new DataOutputStream(buf);
         out.writeBytes(s);
-        write(buf.toByteArray());
+        buf.writeTo(this);
     }
 
     @Override
     default void writeChars(@NonNull String s) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        ByteOutputStream buf = new ByteOutputStream();
         DataOutputStream out = new DataOutputStream(buf);
         out.writeChars(s);
-        write(buf.toByteArray());
+        buf.writeTo(this);
     }
 
     @Override
     default void writeUTF(@NonNull String s) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        ByteOutputStream buf = new ByteOutputStream();
         DataOutputStream out = new DataOutputStream(buf);
         out.writeUTF(s);
-        write(buf.toByteArray());
+        buf.writeTo(this);
     }
 }

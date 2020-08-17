@@ -18,14 +18,11 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 interface DataInputImpl extends DataInput {
 
@@ -103,21 +100,28 @@ interface DataInputImpl extends DataInput {
 
     @Override
     default String readLine() throws IOException {
-        int b;
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        ByteOutputStream buf = new ByteOutputStream();
         try {
-            while (true) {
+            int b;
+            do {
                 b = readUnsignedByte();
                 buf.write(b);
-                if (b == '\n')
-                    break;
-            }
-        } catch (EOFException ignored) {
-            if (buf.size() == 0)
-                return null;
+            } while (b != '\n');
+        } catch (EOFException ignored) {}
+
+        int size = buf.size();
+        if (size == 0)
+            return null;
+
+        // Strip new line and carriage return
+        byte[] bytes = buf.getBuf();
+        if (bytes[size - 1] == '\n') {
+            size -= 1;
+            if (size > 0 && bytes[size - 1] == '\r')
+                size -= 1;
         }
 
-        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(buf.toByteArray()))).readLine();
+        return new String(bytes, 0, size, "UTF-8");
     }
 
     @NonNull
