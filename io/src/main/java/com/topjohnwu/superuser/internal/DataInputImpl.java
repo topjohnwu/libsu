@@ -24,6 +24,8 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 interface DataInputImpl extends DataInput {
 
     @Override
@@ -121,7 +123,7 @@ interface DataInputImpl extends DataInput {
                 size -= 1;
         }
 
-        return new String(bytes, 0, size, "UTF-8");
+        return new String(bytes, 0, size, UTF_8);
     }
 
     @NonNull

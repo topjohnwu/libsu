@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 interface InputHandler {
 
     String TAG = "SHELL_IN";
@@ -29,7 +31,7 @@ interface InputHandler {
     static InputHandler newInstance(String... cmd) {
         return in -> {
             for (String command : cmd) {
-                in.write(command.getBytes("UTF-8"));
+                in.write(command.getBytes(UTF_8));
                 in.write('\n');
                 Utils.log(TAG, command);
             }

@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Locale;
 
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImpl {
 
     private static final String TAG = "SHELLIO";
@@ -106,7 +108,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                         file.getAbsolutePath(), len, fileOff, WRITE_CONV);
             }
             Utils.log(TAG, cmd);
-            in.write(cmd.getBytes("UTF-8"));
+            in.write(cmd.getBytes(UTF_8));
             in.write('\n');
             in.flush();
             in.write(b, off, len);
@@ -123,7 +125,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             String cmd = String.format(Locale.ROOT,
                     "dd bs=%d count=1 >> '%s' 2>/dev/null; echo", len, file.getAbsolutePath());
             Utils.log(TAG, cmd);
-            in.write(cmd.getBytes("UTF-8"));
+            in.write(cmd.getBytes(UTF_8));
             in.write('\n');
             in.flush();
             in.write(b, off, len);
@@ -197,7 +199,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                     "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2\n",
                     file.getAbsolutePath(), bs, skip, count, len);
             Utils.log(TAG, cmd);
-            in.write(cmd.getBytes("UTF-8"));
+            in.write(cmd.getBytes(UTF_8));
             in.flush();
 
             // Poll until we read everything
@@ -257,7 +259,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                 size -= 1;
         }
 
-        return new String(bytes, 0, size, "UTF-8");
+        return new String(bytes, 0, size, UTF_8);
     }
 
     @Override
@@ -278,7 +280,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                     "dd of='%s' bs=%d seek=1 count=0 2>/dev/null; echo",
                     file.getAbsolutePath(), newLength);
             Utils.log(TAG, cmd);
-            in.write(cmd.getBytes("UTF-8"));
+            in.write(cmd.getBytes(UTF_8));
             in.write('\n');
             in.flush();
             // Wait till the operation is done
