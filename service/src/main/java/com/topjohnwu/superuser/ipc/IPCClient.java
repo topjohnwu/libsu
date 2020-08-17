@@ -55,7 +55,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
     static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
 
     private static final String BROADCAST_ACTION = "com.topjohnwu.superuser.BROADCAST_IPC";
-    private static final String IPCSERVER_CLASSNAME = "com.topjohnwu.superuser.internal.IPCMain";
+    private static final String IPCMAIN_CLASSNAME = "com.topjohnwu.superuser.internal.IPCMain";
 
     private final ComponentName name;
     private final Map<ServiceConnection, Executor> connections = new HashMap<>();
@@ -85,7 +85,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         // Execute main.jar through root shell
         String cmd = String.format(Locale.US,
                 "(CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s)&",
-                mainJar, Process.myPid(), IPCSERVER_CLASSNAME,
+                mainJar, Process.myPid(), IPCMAIN_CLASSNAME,
                 name.flattenToString(), CMDLINE_STOP_SERVER /* command args */);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
@@ -129,7 +129,7 @@ class IPCClient implements IBinder.DeathRecipient, Closeable {
         String cmd = String.format(Locale.US,
                 "CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
                 mainJar, Process.myPid(), debugParams, context.getPackageName(),
-                IPCSERVER_CLASSNAME, /* main class */
+                IPCMAIN_CLASSNAME, /* main class */
                 name.flattenToString(), IPCServer.class.getName() /* command args */);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
