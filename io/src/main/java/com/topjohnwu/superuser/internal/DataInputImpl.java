@@ -117,8 +117,7 @@ interface DataInputImpl extends DataInput {
                 return null;
         }
 
-        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(
-                buf.toByteArray()))).readLine();
+        return new BufferedReader(new InputStreamReader(new ByteArrayInputStream(buf.toByteArray()))).readLine();
     }
 
     @NonNull

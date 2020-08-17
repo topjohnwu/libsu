@@ -49,13 +49,13 @@ class ShellBlockIO extends ShellIO {
     }
 
     @Override
-    int read(byte[] b, int off, int len, long fileOff, long bs) throws IOException {
+    protected int alignedRead(byte[] b, int _off, int count, int skip, int bs) throws IOException {
         // dd skip past boundary is extremely slow, avoid it
-        if (fileOff >= blockSize) {
+        if (skip * bs >= blockSize) {
             eof = true;
             return -1;
         }
-        return super.read(b, off, len, fileOff, bs);
+        return super.alignedRead(b, _off, count, skip, bs);
     }
 
     @Override

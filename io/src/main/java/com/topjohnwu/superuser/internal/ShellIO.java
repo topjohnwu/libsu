@@ -117,9 +117,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         fileOff += len;
     }
 
-    /**
-     * Optimized for stream based I/O
-     */
+    // Optimized for internal appending streams
     void streamWrite(byte[] b, int off, int len) throws IOException {
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
@@ -151,73 +149,75 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         if (eof)
             return -1;
         // Try to use as large block as possible
-        long gcd = ShellUtils.gcd(fileOff, len);
+        int gcd = (int) ShellUtils.gcd(fileOff, len);
         if (gcd >= 512) {
             // Aligned, directly process it
-            len = read(b, off, len, fileOff, gcd);
+            len = alignedRead(b, off, len / gcd, (int) (fileOff / gcd), gcd);
         } else {
-            /* Unaligned reading is too slow, try reading with 512-byte aligned
-            * and copy those in interest (still faster than unaligned reading) */
-            long start = fileOff / 512 * 512;
-            long end = (fileOff + len + 511) / 512 * 512;
-            byte[] buf = new byte[(int) (end - start)];
-            len = Math.min(read(buf, 0, buf.length, start, 512), len);
-            if (len > 0)
-                System.arraycopy(buf, (int) (fileOff - start), b, off, len);
+            // Unaligned reading is too slow, try reading with 512-byte aligned
+            // and copy those in interest (still faster than unaligned reading)
+            long skip = fileOff / 512;
+            int count = (int) ((fileOff + len + 511) / 512 - skip);
+            byte[] buf = new byte[count * 512];
+            long startOff = skip * 512;
+            int read = alignedRead(buf, 0, count, (int)skip, 512);
+            if (read > 0) {
+                int valid = (int) (startOff + read - fileOff);
+                eof = valid < len;
+                len = Math.min(valid, len);
+                System.arraycopy(buf, (int) (fileOff - startOff), b, off, len);
+            }
         }
-        if (len > 0)
-            fileOff += len;
-        return len;
-    }
-
-    /**
-     * Optimized for stream based I/O
-     */
-    int streamRead(byte[] b) throws IOException {
-        /* assert fileOff % b.length == 0 */
-        int len = read(b, 0, b.length, fileOff, b.length);
         fileOff += len;
-        return len;
+        return len == 0 ? -1 : len;
     }
 
-    private class Int {
-        int i;
+    // assert fileOff % b.length == 0
+    // Optimized for internal aligned buffered streams
+    int streamRead(byte[] b) throws IOException {
+        int len = alignedRead(b, 0, 1, (int) (fileOff / b.length), b.length);
+        if (len > 0) {
+            fileOff += len;
+            return len;
+        }
+        return -1;
     }
 
-    int read(byte[] b, int _off, int _len, long fileOff, long bs) throws IOException {
-        /* assert fileOff % bs == 0 && _len % bs == 0 */
+    // return actual bytes read, always >= 0
+    protected int alignedRead(byte[] b, int _off, int count, int skip, int bs) throws IOException {
+        // fail fast
         if (eof)
-            return -1;
-        Int count = new Int();
+            return 0;
+        Container<Integer> total = new Container<>();
+        total.obj = 0;
+        int len = count * bs;
         Shell.getShell().execTask((in, out, err) -> {
             int off = _off;
-            int len = _len;
             String cmd = String.format(Locale.ROOT,
-                    "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2",
-                    file.getAbsolutePath(), bs, fileOff / bs, len / bs, len);
+                    "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2\n",
+                    file.getAbsolutePath(), bs, skip, count, len);
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes("UTF-8"));
-            in.write('\n');
             in.flush();
 
-            // Poll until we read everything or operation is done
-            while ((count.i != _len && err.available() == 0) || out.available() != 0) {
+            // Poll until we read everything
+            while ((total.obj != len && err.available() == 0) || out.available() != 0) {
                 int read = out.read(b, off, out.available());
                 off += read;
-                len -= read;
-                count.i += read;
+                total.obj += read;
             }
-            // Wait till the operation is done
+            // Wait till the operation is done for synchronization
             err.read(JUNK);
         });
-        if (count.i != _len)
+        if (total.obj == 0 || total.obj != len)
             eof = true;
-        return count.i;
+        return total.obj;
     }
 
     @Override
     public void seek(long pos) throws IOException {
         fileOff = pos;
+        eof = false;
     }
 
     @Override
@@ -252,9 +252,11 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
 
     @Override
     public int skipBytes(int n) {
-        long skip = Math.min(length(), fileOff + n) - fileOff;
-        fileOff += skip;
-        return (int) skip;
+        if (n <= 0)
+            return 0;
+        long old = fileOff;
+        fileOff = Math.min(length(), fileOff + n);
+        return (int) (fileOff - old);
     }
 
     @Override
