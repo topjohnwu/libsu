@@ -45,7 +45,11 @@ class ShellBlockIO extends ShellIO {
             // No blockdev available, no choice but to assume no boundary
             blockSize = Long.MAX_VALUE;
         }
-        WRITE_CONV = "";
+    }
+
+    @Override
+    protected String getConv() {
+        return "";
     }
 
     @Override

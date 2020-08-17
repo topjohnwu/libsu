@@ -18,19 +18,39 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.superuser.io.DataInputPlus;
+
 import java.io.ByteArrayInputStream;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
-interface DataInputImpl extends DataInput {
+interface DataInputImpl extends DataInputPlus {
+
+    @Override
+    default int read() throws IOException {
+        byte[] b = new byte[1];
+        if (read(b) != 1)
+            return -1;
+        return b[0] & 0xFF;
+    }
+
+    @Override
+    default int read(byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
 
     @Override
     default void readFully(@NonNull byte[] b) throws IOException {
         readFully(b, 0, b.length);
+    }
+
+    @Override
+    default void readFully(byte[] b, int off, int len) throws IOException {
+        if (read(b, off, len) != len)
+            throw new EOFException();
     }
 
     @Override

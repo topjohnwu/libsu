@@ -19,35 +19,36 @@ package com.topjohnwu.superuser.io;
 import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 /**
- * Access files using the global shell instance and mimics {@link java.io.RandomAccessFile}.
+ * Access files using the global shell instance and mimics {@link RandomAccessFile}.
  * <p>
  * This class always checks whether using a shell is necessary. If not, it simply opens a new
- * {@link java.io.RandomAccessFile} and behaves as a wrapper. This class has the exact same
- * methods as {@link java.io.RandomAccessFile} and can be treated as a drop-in replacement.
+ * {@link RandomAccessFile} and behaves as a wrapper. This class has the exact same
+ * methods as {@link RandomAccessFile} and can be treated as a drop-in replacement.
  * <p>
  * File random access via shell is extremely limited. Each I/O operation comes with a relatively
  * large overhead. For optimal performance, please consider using {@link SuFileInputStream} and
  * {@link SuFileOutputStream} since those classes are specifically optimized for I/O throughput.
- * @see java.io.RandomAccessFile
+ * @see RandomAccessFile
  */
-public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
+public abstract class SuRandomAccessFile implements DataInputPlus, DataOutput, Closeable {
 
     /**
-     * @see java.io.RandomAccessFile#RandomAccessFile(File, String)
      * @param file the file object.
      * @param mode the access mode.
-     *             Note: {@code rws}, {@code rwd} behaves exactly the same as {@code rw}
+     *             Note: {@code rws}, {@code rwd} behaves exactly the same as {@code rw} if
+     *             it end up using shell-backed implementation.
      * @return an instance of {@link SuRandomAccessFile}.
      * @throws FileNotFoundException
+     * @see RandomAccessFile#RandomAccessFile(File, String)
      */
     public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile) {
@@ -61,32 +62,42 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
         }
     }
 
+    /**
+     * {@code SuRandomAccessFile.open(new File(path), mode)}
+     */
     public static SuRandomAccessFile open(String path, String mode) throws FileNotFoundException {
         return open(new File(path), mode);
     }
 
-    public int read() throws IOException {
-        byte[] b = new byte[1];
-        if (read(b) != 1)
-            return -1;
-        return b[0] & 0xFF;
-    }
-
-    public int read(byte[] b) throws IOException {
-        return read(b, 0, b.length);
-    }
-
-    public abstract int read(byte[] b, int off, int len) throws IOException;
-
+    /**
+     * @see RandomAccessFile#seek(long)
+     */
     public abstract void seek(long pos) throws IOException;
 
+    /**
+     * @see RandomAccessFile#seek(long)
+     */
     public abstract void setLength (long newLength) throws IOException;
 
+    /**
+     * @see RandomAccessFile#length()
+     */
     public abstract long length() throws IOException;
 
+    /**
+     * @see RandomAccessFile#getFilePointer()
+     */
     public abstract long getFilePointer() throws IOException;
 
+    /**
+     * Will throw {@link UnsupportedOperationException} if this instance is shell-backed.
+     * @see RandomAccessFile#getFD()
+     */
     public abstract FileDescriptor getFD() throws IOException;
 
+    /**
+     * Will throw {@link UnsupportedOperationException} if this instance is shell-backed.
+     * @see RandomAccessFile#getChannel()
+     */
     public abstract FileChannel getChannel();
 }

@@ -23,7 +23,6 @@ import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
-import java.io.EOFException;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -46,14 +45,18 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
 
     boolean eof;
     long fileOff;
-    String WRITE_CONV;
+
+    static ShellIO get(SuFile file, String mode) throws FileNotFoundException {
+        if (file.isBlock())
+            return new ShellBlockIO(file, mode);
+        return new ShellIO(file, mode);
+    }
 
     ShellIO(SuFile file, String mode) throws FileNotFoundException {
         this.file = file;
         if (file.isDirectory())
             throw FNF;
         fileOff = 0L;
-        WRITE_CONV = "conv=notrunc";
         switch (mode) {
             case "r":
                 if (!file.exists())
@@ -71,10 +74,8 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         }
     }
 
-    static ShellIO get(SuFile file, String mode) throws FileNotFoundException {
-        if (file.isBlock())
-            return new ShellBlockIO(file, mode);
-        return new ShellIO(file, mode);
+    protected String getConv() {
+        return "conv=notrunc";
     }
 
     @Override
@@ -100,16 +101,15 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             String cmd;
             if (fileOff == 0) {
                 cmd = String.format(Locale.ROOT,
-                        "dd of='%s' bs=%d count=1 %s 2>/dev/null; echo",
-                        file.getAbsolutePath(), len, WRITE_CONV);
+                        "dd of='%s' bs=%d count=1 %s 2>/dev/null; echo\n",
+                        file.getAbsolutePath(), len, getConv());
             } else {
                 cmd = String.format(Locale.ROOT,
-                        "dd of='%s' ibs=%d count=1 obs=%d seek=1 %s 2>/dev/null; echo",
-                        file.getAbsolutePath(), len, fileOff, WRITE_CONV);
+                        "dd of='%s' ibs=%d count=1 obs=%d seek=1 %s 2>/dev/null; echo\n",
+                        file.getAbsolutePath(), len, fileOff, getConv());
             }
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
-            in.write('\n');
             in.flush();
             in.write(b, off, len);
             in.flush();
@@ -123,10 +123,9 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     void streamWrite(byte[] b, int off, int len) throws IOException {
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo", len, file.getAbsolutePath());
+                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo\n", len, file.getAbsolutePath());
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
-            in.write('\n');
             in.flush();
             in.write(b, off, len);
             in.flush();
@@ -134,12 +133,6 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             out.read(JUNK);
         });
         fileOff += len;
-    }
-
-    @Override
-    public void readFully(@NonNull byte[] b, int off, int len) throws IOException {
-        if (read(b, off, len) != len)
-            throw new EOFException();
     }
 
     @Override
@@ -277,11 +270,10 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         }
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd of='%s' bs=%d seek=1 count=0 2>/dev/null; echo",
+                    "dd of='%s' bs=%d seek=1 count=0 2>/dev/null; echo\n",
                     file.getAbsolutePath(), newLength);
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
-            in.write('\n');
             in.flush();
             // Wait till the operation is done
             out.read(JUNK);
