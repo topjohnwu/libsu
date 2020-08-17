@@ -152,8 +152,8 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             return -1;
         // Try to use as large block as possible
         int gcd = (int) ShellUtils.gcd(fileOff, len);
-        if (gcd >= 512) {
-            // Aligned, directly process it
+        if (gcd >= 512 || len < 512) {
+            // Aligned or small reads, directly process it
             len = alignedRead(b, off, len / gcd, (int) (fileOff / gcd), gcd);
         } else {
             // Unaligned reading is too slow, try reading with 512-byte aligned
