@@ -65,7 +65,7 @@ import java.util.concurrent.ExecutorService;
  * {@link Context#startService(Intent)} because root services are strictly bound only.
  * A root service process will be terminated in the following conditions:
  * <ul>
- *     <li>(For non daemon services) All clients had unbound or terminated</li>
+ *     <li>(For non-daemon services) All clients had unbound or terminated</li>
  *     <li>Client called {@link #stop(Intent)}</li>
  *     <li>Root service called {@link #stopSelf()}</li>
  *     <li>The source application is updated/deleted</li>
