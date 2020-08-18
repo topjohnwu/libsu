@@ -27,7 +27,7 @@ import java.io.InputStream;
 /**
  * This class makes sure actual I/O is always done in size of chunks (buf.length) regardless
  * whatever happens, including when user requests mark/reset operations.
- * The reason is because non aligned I/O using shell is extremely inefficient.
+ * The reason is because unaligned I/O using shell is extremely inefficient.
  * Default chunk size is 4KB.
  */
 class ShellInputStream extends InputStream {
