@@ -41,7 +41,7 @@ import java.util.Locale;
  * All methods for this class will be backed by executing commands via the global root shell.
  * The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
  * <p>
- * This class has the exact same behavior as a normal {@link File}, however non of the operations
+ * This class has the exact same behavior as a normal {@link File}, however none of the operations
  * are atomic. This is a limitation of using shells, be aware of it.
  * <p>
  * For full functionality, the environment require: {@code rm}, {@code rmdir}, {@code readlink},
