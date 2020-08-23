@@ -29,12 +29,14 @@ abstract class StreamGobbler<T> implements Callable<T> {
     private static final String TAG = "SHELLOUT";
 
     private final String eos;
+    private final int eosLength;
 
     protected InputStream in;
     protected List<String> list;
 
     StreamGobbler(String eos) {
         this.eos = eos;
+        this.eosLength = this.eos.length();
     }
 
     public Callable<T> set(InputStream in, List<String> list) {
@@ -44,19 +46,16 @@ abstract class StreamGobbler<T> implements Callable<T> {
     }
 
     protected boolean isEOS(String line) {
-        boolean eof = false;
-        int sl = line.length() - 1;
-        int tl = eos.length() - 1;
-        if (sl >= tl) {
-            eof = true;
-            for (; tl >= 0; --tl, --sl) {
-                if (eos.charAt(tl) != line.charAt(sl)) {
-                    eof = false;
-                    break;
-                }
+        if (line == null) {
+            return true;
+        }
+        boolean eof = line.endsWith(eos);
+        if (eof) {
+            if (line.length() > eosLength) {
+                line = line.substring(0, eosLength);
+            } else {
+                line = null;
             }
-            if (eof)
-                line = sl >= 0 ? line.substring(0, sl + 1) : null;
         }
         if (list != null && line != null) {
             list.add(line);
@@ -67,6 +66,8 @@ abstract class StreamGobbler<T> implements Callable<T> {
 
     static class OUT extends StreamGobbler<Integer> {
 
+        private static final int NO_RESULT_CODE = 1;
+
         OUT(String eos) {
             super(eos);
         }
@@ -75,11 +76,12 @@ abstract class StreamGobbler<T> implements Callable<T> {
         public Integer call() throws Exception {
             int code;
             try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
-                for (;;) {
-                    if (isEOS(br.readLine()))
-                        break;
-                }
-                code = Integer.parseInt(br.readLine());
+                String line;
+                do {
+                    line = br.readLine();
+                } while (!isEOS(line));
+                String resultCodeLine = br.readLine();
+                code = resultCodeLine == null ? NO_RESULT_CODE : Integer.parseInt(resultCodeLine);
             }
             in = null;
             list = null;
@@ -95,10 +97,10 @@ abstract class StreamGobbler<T> implements Callable<T> {
         @Override
         public Void call() throws Exception {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
-                for (;;) {
-                    if (isEOS(br.readLine()))
-                        break;
-                }
+                String line;
+                do {
+                    line = br.readLine();
+                } while (!isEOS(line));
             }
             in = null;
             list = null;
