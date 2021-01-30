@@ -14,7 +14,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:4.0.1")
+        classpath("com.android.tools.build:gradle:4.1.2")
         classpath("com.github.dcendents:android-maven-gradle-plugin:2.1")
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -22,7 +22,7 @@ buildscript {
     }
 }
 
-val dlPackageList = tasks.register("dlPackageList") {
+val dlPackageList by tasks.registering {
     outputs.upToDateWhen { false }
     doLast {
         /* Merge framework packages with AndroidX packages into the same list
@@ -51,7 +51,7 @@ val javadoc = tasks.replace("javadoc", Javadoc::class).apply {
     setDestinationDir(File(rootProject.buildDir, "javadoc"))
 }
 
-val javadocJar = tasks.register("javadocJar", Jar::class) {
+val javadocJar by tasks.registering(Jar::class) {
     dependsOn(javadoc)
     archiveClassifier.set("javadoc")
     from(javadoc.destinationDir)
@@ -115,7 +115,7 @@ subprojects {
         }
 
         if (plugins.hasPlugin("com.github.dcendents.android-maven")) {
-            val sources = android.sourceSets.getByName("main").java.sourceFiles
+            val sources = android.sourceSets.getByName("main").java.getSourceFiles()
 
             (rootProject.tasks["javadoc"] as Javadoc).apply {
                 source += sources
