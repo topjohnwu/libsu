@@ -77,6 +77,7 @@ public abstract class Shell implements Closeable {
      * Constant value {@value}.
      */
     public static final int ROOT_MOUNT_MASTER = 2;
+
     /**
      * If set, create a non-root shell.
      * <p>
@@ -634,90 +635,5 @@ public abstract class Shell implements Closeable {
          */
         @MainThread
         void onResult(@NonNull Result out);
-    }
-
-    /* ***************
-     * Deprecated APIs
-     * ***************/
-
-    /**
-     * @deprecated please set {@link #enableVerboseLogging} instead
-     */
-    @Deprecated
-    public static final int FLAG_VERBOSE_LOGGING = (1 << 2);
-
-    /**
-     * Static methods for configuring the behavior of {@link Shell}.
-     * @deprecated please use {@link Builder} to config and build Shell.
-     */
-    @Deprecated
-    public static final class Config {
-
-        private Config() {}
-
-        /**
-         * Set the desired {@link Initializer}s.
-         * @see Initializer
-         * @param classes the classes of desired initializers.
-         */
-        @SafeVarargs
-        public static void setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            MGR.getBuilder().setInitializers(classes);
-        }
-
-        /**
-         * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
-         * constructed.
-         * @param flags the desired flags.
-         *              Value is either 0 or bitwise-or'd value of
-         *              {@link #FLAG_NON_ROOT_SHELL},
-         *              {@link #FLAG_MOUNT_MASTER}, or
-         *              {@link #FLAG_REDIRECT_STDERR}
-         */
-        public static void setFlags(int flags) {
-            MGR.getBuilder().setFlags(flags);
-        }
-
-        /**
-         * Set whether enable verbose logging.
-         * <p>
-         * Convenient function to toggle verbose logging with a boolean value.
-         * For example: {@code Shell.verboseLogging(BuildConfig.DEBUG)}.
-         */
-        public static void verboseLogging(boolean verbose) {
-            Shell.enableVerboseLogging = verbose;
-        }
-
-        /**
-         * Set the maximum time to wait for a new shell construction.
-         * <p>
-         * After the timeout occurs and the new shell still has no response,
-         * the shell process will be force-closed and throw {@link NoShellException}.
-         * @param timeout the maximum time to wait in seconds.
-         *                The default timeout is 20 seconds.
-         */
-        public static void setTimeout(long timeout) {
-            MGR.getBuilder().setTimeout(timeout);
-        }
-    }
-
-    /**
-     * @see Builder#build()
-     * @deprecated please use {@link Builder} to config and build Shell.
-     */
-    @Deprecated
-    @NonNull
-    public static Shell newInstance() {
-        return MGR.getBuilder().build();
-    }
-
-    /**
-     * @see Builder#build(String...)
-     * @deprecated please use {@link Builder} to config and build Shell.
-     */
-    @Deprecated
-    @NonNull
-    public static Shell newInstance(String... commands) {
-        return MGR.getBuilder().build(commands);
     }
 }

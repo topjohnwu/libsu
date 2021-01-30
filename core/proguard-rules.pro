@@ -25,9 +25,6 @@
 	public static void log(...);
 	public static void ex(...);
 }
--assumenosideeffects class com.topjohnwu.superuser.Shell.Config {
-	public static void verboseLogging(...);
-}
 -assumevalues class com.topjohnwu.superuser.internal.Utils {
 	public static boolean vLog() return false;
 }
