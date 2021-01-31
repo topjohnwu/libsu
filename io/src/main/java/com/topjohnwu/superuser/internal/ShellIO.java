@@ -35,10 +35,6 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
 
     private static final String TAG = "SHELLIO";
     private static final byte[] JUNK = new byte[1];
-    private static final FileNotFoundException FNF =
-            new FileNotFoundException("No such file or directory");
-    private static final UnsupportedOperationException UOE =
-            new UnsupportedOperationException("Unsupported operation in shell backed I/O");
 
     private final SuFile file;
     private boolean readOnly;
@@ -53,23 +49,24 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     }
 
     ShellIO(SuFile file, String mode) throws FileNotFoundException {
+        FileNotFoundException fnf = new FileNotFoundException("No such file or directory");
         this.file = file;
         if (file.isDirectory())
-            throw FNF;
+            throw fnf;
         fileOff = 0L;
         switch (mode) {
             case "r":
                 if (!file.exists())
-                    throw FNF;
+                    throw fnf;
                 readOnly = true;
                 break;
             case "w":
                 if (!file.clear())
-                    throw FNF;
+                    throw fnf;
                 break;
             case "rw":
                 if (!file.exists() && !file.createNewFile())
-                    throw FNF;
+                    throw fnf;
                 break;
         }
     }
@@ -85,9 +82,9 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         if (readOnly)
             throw new IOException("File is opened as read-only");
         if (fileOff > 0 && fileOff < 512 && len > 512) {
-            /* If fileOff is small, out block size will also be small and
-            * causes extremely low I/O throughput. First write to 512, then
-            * use at least 512B block size for writing */
+            // If fileOff is small, out block size will also be small and
+            // causes extremely low I/O throughput. First write to 512, then
+            // use at least 512B block size for writing
             int size = 512 - (int) fileOff;
             write0(b, off, size);
             len -= size;
@@ -133,6 +130,16 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             out.read(JUNK);
         });
         fileOff += len;
+    }
+
+    @Override
+    public int read() throws IOException {
+        return DataInputImpl.super.read();
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException {
+        return DataInputImpl.super.read(b);
     }
 
     @Override
@@ -304,11 +311,11 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
 
     @Override
     public FileDescriptor getFD() {
-        throw UOE;
+        throw new UnsupportedOperationException("Unsupported operation in shell backed I/O");
     }
 
     @Override
     public FileChannel getChannel() {
-        throw UOE;
+        throw new UnsupportedOperationException("Unsupported operation in shell backed I/O");
     }
 }

@@ -16,11 +16,14 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.RestrictTo;
+
 import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class IOFactory {
     private IOFactory() {}
 
@@ -41,8 +44,7 @@ public final class IOFactory {
         return ShellIO.get(file, internalMode);
     }
 
-    public static RAFWrapper createRAFWrapper(File file, String mode)
-            throws FileNotFoundException {
+    public static RAFWrapper createRAFWrapper(File file, String mode) throws FileNotFoundException {
         return new RAFWrapper(file, mode);
     }
 

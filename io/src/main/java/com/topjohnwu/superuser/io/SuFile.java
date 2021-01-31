@@ -46,17 +46,17 @@ import java.util.Locale;
  * <p>
  * For full functionality, the environment require: {@code rm}, {@code rmdir}, {@code readlink},
  * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, and {@code stat}.
- * These tools are available on modern Android versions with toybox, however for consistent results
- * using {@code busybox} would be desirable. Some operations could have oddities
- * without busybox due to the lack of tools or different behavior of the tools,
- * check the method descriptions for more bashrc before using them.
+ * These tools are available on modern Android versions with toybox, however for consistent
+ * results, using {@code busybox} would be desirable. Some operations could have oddities
+ * without busybox due to the lack of tools or slightly different behavior,
+ * check each individual method descriptions for more details.
  * <p>
  * There are also handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
  * instances. These factory methods will return a normal {@link File} instance if the underlying
  * shell does not have root access, or else returns a {@link SuFile} instance.
  */
 public class SuFile extends File {
-    
+
     private String[] CMDs;
 
     public static File open(String pathname) {
@@ -439,10 +439,10 @@ public class SuFile extends File {
     /**
      * Sets the last-modified time of the file or directory named by this abstract pathname.
      * <p>
-     * Note: On older Android devices, the {@code touch} commands accepts a different timestamp
-     * format than GNU {@code touch}. This shell implementation uses the format accepted in GNU
-     * coreutils, which is the same in toybox and busybox, so the operation
-     * might fail on older Android versions without busybox.
+     * Note: On older Android devices, the {@code touch} command accepts a different timestamp
+     * format than GNU {@code touch}. This implementation uses the format accepted in GNU
+     * coreutils, which is the same format accepted by toybox and busybox, so this operation
+     * may fail on older Android versions without busybox.
      * @param time The new last-modified time, measured in milliseconds since the epoch.
      * @return {@code true} if and only if the operation succeeded; {@code false} otherwise.
      */
@@ -453,11 +453,25 @@ public class SuFile extends File {
         return cmdBool("[ -e \"$__F_\" ] && touch -t " + date + " \"$__F_\"");
     }
 
+    /**
+     * Returns an array of strings naming the files and directories in the
+     * directory denoted by this abstract pathname.
+     * <p>
+     * Requires command {@code ls}.
+     * @see File#list()
+     */
     @Override
     public String[] list() {
         return list(null);
     }
 
+    /**
+     * Returns an array of strings naming the files and directories in the
+     * directory denoted by this abstract pathname that satisfy the specified filter.
+     * <p>
+     * Requires command {@code ls}.
+     * @see File#list(FilenameFilter)
+     */
     @Override
     public String[] list(FilenameFilter filter) {
         if (!isDirectory())
@@ -478,6 +492,13 @@ public class SuFile extends File {
         return out.toArray(new String[0]);
     }
 
+    /**
+     * Returns an array of abstract pathnames denoting the files in the
+     * directory denoted by this abstract pathname.
+     * <p>
+     * Requires command {@code ls}.
+     * @see File#listFiles()
+     */
     @Override
     public SuFile[] listFiles() {
         if (!isDirectory())
@@ -492,6 +513,13 @@ public class SuFile extends File {
         return fs;
     }
 
+    /**
+     * Returns an array of abstract pathnames denoting the files in the
+     * directory denoted by this abstract pathname that satisfy the specified filter.
+     * <p>
+     * Requires command {@code ls}.
+     * @see File#listFiles(FilenameFilter)
+     */
     @Override
     public SuFile[] listFiles(FilenameFilter filter) {
         if (!isDirectory())
@@ -506,6 +534,13 @@ public class SuFile extends File {
         return fs;
     }
 
+    /**
+     * Returns an array of abstract pathnames denoting the files in the
+     * directory denoted by this abstract pathname that satisfy the specified filter.
+     * <p>
+     * Requires command {@code ls}.
+     * @see File#listFiles(FileFilter)
+     */
     @Override
     public SuFile[] listFiles(FileFilter filter) {
         String[] ss = list();

@@ -19,6 +19,7 @@ package com.topjohnwu.superuser.io;
 import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.FileDescriptor;
@@ -34,12 +35,12 @@ import java.nio.channels.FileChannel;
  * {@link RandomAccessFile} and behaves as a wrapper. This class has the exact same
  * methods as {@link RandomAccessFile} and can be treated as a drop-in replacement.
  * <p>
- * File random access via shell is extremely limited. Each I/O operation comes with a relatively
- * large overhead. For optimal performance, please consider using {@link SuFileInputStream} and
- * {@link SuFileOutputStream} since those classes are specifically optimized for I/O throughput.
+ * Usage of this class is strongly NOT recommended. Each I/O operation comes with a large
+ * overhead and depends on certain behavior of external commands.
+ * Please use {@link SuFileInputStream} and {@link SuFileOutputStream} whenever possible.
  * @see RandomAccessFile
  */
-public abstract class SuRandomAccessFile implements DataInputPlus, DataOutput, Closeable {
+public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
 
     /**
      * @param file the file object.
@@ -68,6 +69,21 @@ public abstract class SuRandomAccessFile implements DataInputPlus, DataOutput, C
     public static SuRandomAccessFile open(String path, String mode) throws FileNotFoundException {
         return open(new File(path), mode);
     }
+
+    /**
+     * @see RandomAccessFile#read()
+     */
+    public abstract int read() throws IOException;
+
+    /**
+     * @see RandomAccessFile#read(byte[])
+     */
+    public abstract int read(byte[] b) throws IOException;
+
+    /**
+     * @see RandomAccessFile#read(byte[], int, int)
+     */
+    public abstract int read(byte[] b, int off, int len) throws IOException;
 
     /**
      * @see RandomAccessFile#seek(long)
