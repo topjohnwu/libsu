@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
 
 class RAFWrapper extends SuRandomAccessFile {
 
-    private RandomAccessFile raf;
+    private final RandomAccessFile raf;
 
     RAFWrapper(File file, String mode) throws FileNotFoundException {
         raf = new RandomAccessFile(file, mode);
@@ -214,18 +214,15 @@ class RAFWrapper extends SuRandomAccessFile {
         return raf.readLine();
     }
 
-    @NonNull
     @Override
     public String readUTF() throws IOException {
         return raf.readUTF();
     }
 
-    @Override
     public FileDescriptor getFD() throws IOException {
         return raf.getFD();
     }
 
-    @Override
     public FileChannel getChannel() {
         return raf.getChannel();
     }

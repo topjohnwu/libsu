@@ -23,10 +23,8 @@ import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
-import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.Locale;
 
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
@@ -309,13 +307,4 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     @Override
     public void close() { /* We don't actually hold resources */ }
 
-    @Override
-    public FileDescriptor getFD() {
-        throw new UnsupportedOperationException("Unsupported operation in shell backed I/O");
-    }
-
-    @Override
-    public FileChannel getChannel() {
-        throw new UnsupportedOperationException("Unsupported operation in shell backed I/O");
-    }
 }

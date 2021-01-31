@@ -22,22 +22,21 @@ import java.io.Closeable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 
 /**
  * Access files using the global shell instance and mimics {@link RandomAccessFile}.
  * <p>
+ * Usage of this class is strongly NOT recommended. Each I/O operation comes with a large
+ * overhead and depends on certain behavior of the command {@code dd}.
+ * Please use {@link SuFileInputStream} and {@link SuFileOutputStream} whenever possible.
+ * <p>
  * This class always checks whether using a shell is necessary. If not, it simply opens a new
- * {@link RandomAccessFile} and behaves as a wrapper. This class has the exact same
+ * {@link RandomAccessFile} and behaves as a wrapper. This class has almost the exact same
  * methods as {@link RandomAccessFile} and can be treated as a drop-in replacement.
  * <p>
- * Usage of this class is strongly NOT recommended. Each I/O operation comes with a large
- * overhead and depends on certain behavior of external commands.
- * Please use {@link SuFileInputStream} and {@link SuFileOutputStream} whenever possible.
  * @see RandomAccessFile
  */
 public abstract class SuRandomAccessFile implements DataInput, DataOutput, Closeable {
@@ -104,16 +103,4 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      * @see RandomAccessFile#getFilePointer()
      */
     public abstract long getFilePointer() throws IOException;
-
-    /**
-     * Will throw {@link UnsupportedOperationException} if this instance is shell-backed.
-     * @see RandomAccessFile#getFD()
-     */
-    public abstract FileDescriptor getFD() throws IOException;
-
-    /**
-     * Will throw {@link UnsupportedOperationException} if this instance is shell-backed.
-     * @see RandomAccessFile#getChannel()
-     */
-    public abstract FileChannel getChannel();
 }
