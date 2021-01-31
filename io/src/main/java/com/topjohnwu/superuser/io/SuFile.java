@@ -20,7 +20,6 @@ import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
-import com.topjohnwu.superuser.internal.Env;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -222,8 +221,6 @@ public class SuFile extends File {
     }
 
     private long statFS(String fmt) {
-        if (!Env.stat())
-            return Long.MAX_VALUE;
         String[] res = cmd("stat -fc '%S " + fmt + "' \"$__F_\"").split(" ");
         if (res.length != 2)
             return Long.MAX_VALUE;
@@ -309,8 +306,6 @@ public class SuFile extends File {
     @Override
     public long lastModified() {
         try {
-            if (!Env.stat())
-                return 0L;
             return Long.parseLong(cmd("stat -c '%Y' \"$__F_\"")) * 1000;
         } catch (NumberFormatException e) {
             return 0L;
@@ -326,16 +321,9 @@ public class SuFile extends File {
     @Override
     public long length() {
         try {
-            if (Env.stat()) {
-                return Long.parseLong(cmd("stat -c '%s' \"$__F_\""));
-            } else if (Env.wc()) {
-                return Long.parseLong(cmd("[ -f \"$__F_\" ] && wc -c < \"$__F_\" || echo 0"));
-            } else {
-                return 0L;
-            }
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+            Long.parseLong(cmd("stat -c '%s' \"$__F_\""));
+        } catch (NumberFormatException ignored) {}
+        return 0L;
     }
 
     /**
@@ -373,10 +361,10 @@ public class SuFile extends File {
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
-        if (!Env.stat())
-            return false;
         char[] perms = cmd("stat -c '%a' \"$__F_\"").toCharArray();
-        for (int i = 0; i < perms.length; ++i) {
+        if (perms.length != 3)
+            return false;
+        for (int i = 0; i < 3; ++i) {
             int perm = perms[i] - '0';
             if (set && (!ownerOnly || i == 0))
                 perm |= b;

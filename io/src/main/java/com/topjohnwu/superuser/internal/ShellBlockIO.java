@@ -29,22 +29,19 @@ import java.io.IOException;
  */
 class ShellBlockIO extends ShellIO {
 
-    // Block size is constant
-    private long blockSize;
+    private final long blockSize;
 
     ShellBlockIO(SuFile file, String mode) throws FileNotFoundException {
         super(file, mode);
-        if (Env.blockdev()) {
-            try {
-                blockSize = Long.parseLong(ShellUtils.fastCmd(
-                        "blockdev --getsize64 '" + file.getAbsolutePath() + "'"));
-            } catch (NumberFormatException e) {
-                blockSize = Long.MAX_VALUE;
-            }
-        } else {
-            // No blockdev available, no choice but to assume no boundary
-            blockSize = Long.MAX_VALUE;
+        long bs;
+        try {
+            bs = Long.parseLong(ShellUtils.fastCmd(
+                    "blockdev --getsize64 '" + file.getAbsolutePath() + "'"));
+        } catch (NumberFormatException e) {
+            // Error, no choice but to assume no boundary
+            bs = Long.MAX_VALUE;
         }
+        blockSize = bs;
     }
 
     @Override
