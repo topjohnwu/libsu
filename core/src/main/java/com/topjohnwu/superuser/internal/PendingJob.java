@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 
 class PendingJob extends JobImpl {
 
-    private boolean isSU;
+    private final boolean isSU;
     private boolean retried;
 
     PendingJob(boolean su) {
@@ -40,7 +40,7 @@ class PendingJob extends JobImpl {
     @Override
     public Shell.Result exec() {
         try {
-            shell = MGR.getShell();
+            shell = MainShell.get();
         } catch (NoShellException e) {
             return ResultImpl.INSTANCE;
         }
@@ -59,7 +59,7 @@ class PendingJob extends JobImpl {
 
     @Override
     public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
-        MGR.getShell(null, s -> {
+        MainShell.get(null, s -> {
             if (isSU && !s.isRoot()) {
                 ResultImpl.INSTANCE.callback(executor, cb);
                 return;

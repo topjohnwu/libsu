@@ -30,7 +30,7 @@ import java.util.concurrent.Executor;
 class JobImpl extends Shell.Job {
 
     protected List<String> out, err;
-    private List<InputHandler> handlers;
+    private final List<InputHandler> handlers;
     protected ShellImpl shell;
     private boolean stderrSet = false;
 

@@ -76,14 +76,14 @@ public class BuilderImpl extends Shell.Builder {
             ShellImpl shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), commands);
             try {
                 Context ctx = Utils.getContext();
-                MGR.setCachedShell(shell);
+                MainShell.set(shell);
                 if (initClasses != null) {
                     for (Class<? extends Shell.Initializer> cls : initClasses) {
                         Constructor<? extends Shell.Initializer> ic = cls.getDeclaredConstructor();
                         ic.setAccessible(true);
                         Shell.Initializer init = ic.newInstance();
                         if (!init.onInit(ctx, shell)) {
-                            MGR.setCachedShell(null);
+                            MainShell.set(null);
                             throw new NoShellException("Unable to init shell");
                         }
                     }

@@ -28,36 +28,40 @@ import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static com.topjohnwu.superuser.Shell.GetShellCallback;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public final class MGR {
+public final class MainShell {
 
-    private static boolean isInitGlobal;
-    private static ShellImpl globalShell;
-    private static BuilderImpl globalBuilder;
+    private static boolean isInitMain;
+    private static ShellImpl mainShell;
+    private static BuilderImpl defaultBuilder;
 
-    public static synchronized ShellImpl getShell() {
-        ShellImpl shell = getCachedShell();
+    private MainShell() {}
+
+    public static synchronized ShellImpl get() {
+        ShellImpl shell = getCached();
         if (shell == null) {
-            isInitGlobal = true;
+            isInitMain = true;
             shell = getBuilder().build();
-            isInitGlobal = false;
+            isInitMain = false;
         }
         return shell;
     }
 
-    public static void getShell(Executor executor, GetShellCallback callback) {
-        Shell shell = getCachedShell();
+    public static void get(Executor executor, GetShellCallback callback) {
+        Shell shell = getCached();
         if (shell != null) {
-            // If cached shell exists, run synchronously
-            callback.onShell(shell);
+            if (executor == null)
+                callback.onShell(shell);
+            else
+                executor.execute(() -> callback.onShell(shell));
         } else {
             // Else we get shell in worker thread and call the callback when we get a Shell
             EXECUTOR.execute(() -> {
                 Shell s;
                 try {
-                    synchronized (MGR.class) {
-                        isInitGlobal = true;
+                    synchronized (MainShell.class) {
+                        isInitMain = true;
                         s = getBuilder().build();
-                        isInitGlobal = false;
+                        isInitMain = false;
                     }
                 } catch (NoShellException e) {
                     Utils.ex(e);
@@ -71,27 +75,25 @@ public final class MGR {
         }
     }
 
-    public static synchronized ShellImpl getCachedShell() {
-        if (globalShell != null && globalShell.getStatus() < 0)
-            globalShell = null;
-        return globalShell;
+    public static synchronized ShellImpl getCached() {
+        if (mainShell != null && mainShell.getStatus() < 0)
+            mainShell = null;
+        return mainShell;
     }
 
-    static synchronized void setCachedShell(ShellImpl shell) {
-        if (isInitGlobal) {
-            // Set the global shell
-            globalShell = shell;
-        }
+    static synchronized void set(ShellImpl shell) {
+        if (isInitMain)
+            mainShell = shell;
     }
 
     public static synchronized void setBuilder(Shell.Builder builder) {
-        globalBuilder = (BuilderImpl) builder;
+        defaultBuilder = (BuilderImpl) builder;
     }
 
-    public static synchronized BuilderImpl getBuilder() {
-        if (globalBuilder == null)
-            globalBuilder = new BuilderImpl();
-        return globalBuilder;
+    private static BuilderImpl getBuilder() {
+        if (defaultBuilder == null)
+            defaultBuilder = new BuilderImpl();
+        return defaultBuilder;
     }
 
     public static Shell.Job newJob(boolean su, InputStream in) {

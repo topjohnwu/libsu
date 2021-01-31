@@ -23,7 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.internal.BuilderImpl;
-import com.topjohnwu.superuser.internal.MGR;
+import com.topjohnwu.superuser.internal.MainShell;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.io.Closeable;
@@ -138,7 +138,7 @@ public abstract class Shell implements Closeable {
      * Set this before the main shell is created anywhere in the program.
      */
     public static void setDefaultBuilder(Builder builder) {
-        MGR.setBuilder(builder);
+        MainShell.setBuilder(builder);
     }
 
     /**
@@ -160,7 +160,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Shell getShell() {
-        return MGR.getShell();
+        return MainShell.get();
     }
 
     /**
@@ -172,7 +172,7 @@ public abstract class Shell implements Closeable {
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
-        MGR.getShell(UiThreadHandler.executor, callback);
+        MainShell.get(UiThreadHandler.executor, callback);
     }
 
     /**
@@ -180,13 +180,13 @@ public abstract class Shell implements Closeable {
      * <p>
      * If {@link #getCachedShell()} returns null, the default {@link Builder} will be used to
      * construct a new {@code Shell} in a background thread.
-     * The cached/created shell instance is returned to the callback using the provided executor.
+     * The cached/created shell instance is returned to the callback executed by provided executor.
      * @param executor the executor used to handle the result callback event.
      *                 If {@code null} is passed, the callback can run on any thread.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@Nullable Executor executor, @NonNull GetShellCallback callback) {
-        MGR.getShell(executor, callback);
+        MainShell.get(executor, callback);
     }
 
     /**
@@ -196,7 +196,7 @@ public abstract class Shell implements Closeable {
      */
     @Nullable
     public static Shell getCachedShell() {
-        return MGR.getCachedShell();
+        return MainShell.getCached();
     }
 
     /**
@@ -223,7 +223,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull String... commands) {
-        return MGR.newJob(true, commands);
+        return MainShell.newJob(true, commands);
     }
 
     /**
@@ -243,7 +243,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull String... commands) {
-        return MGR.newJob(false, commands);
+        return MainShell.newJob(false, commands);
     }
 
     /**
@@ -252,7 +252,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job su(@NonNull InputStream in) {
-        return MGR.newJob(true, in);
+        return MainShell.newJob(true, in);
     }
 
     /**
@@ -266,7 +266,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job sh(@NonNull InputStream in) {
-        return MGR.newJob(false, in);
+        return MainShell.newJob(false, in);
     }
 
     /* ***************
