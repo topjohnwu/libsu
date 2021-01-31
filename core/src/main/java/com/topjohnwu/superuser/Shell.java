@@ -37,9 +37,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A class providing an API to an interactive (root) shell.
+ * A class providing APIs to an interactive (root) shell.
  * <p>
- * In most cases, developers do not need to directly access a {@code Shell} instance.
+ * Similar to threads where there is a special "main thread", {@code libsu} also has the
+ * concept of the "main shell". For each process, there is a single globally shared
+ * "main shell" that is constructed on-demand and cached.
+ * <p>
+ * To obtain/create the main shell, use the static {@code Shell.getShell(...)} methods.
+ * However in most cases, developers do not need to directly access a {@code Shell} instance.
  * Use these high level APIs instead:
  * <ul>
  *     <li>{@link #sh(String...)}</li>
@@ -47,9 +52,7 @@ import java.util.concurrent.TimeUnit;
  *     <li>{@link #sh(InputStream)}</li>
  *     <li>{@link #su(InputStream)}</li>
  * </ul>
- * These methods not only uses the global shell instance but are also more convenient to use.
- * The global shell instance is constructed on-demand and cached.
- * To get the global shell instance, use the static {@code getShell(...)} methods.
+ * These methods not only use the main shell but also are more convenient to use.
  */
 public abstract class Shell implements Closeable {
 
@@ -72,7 +75,8 @@ public abstract class Shell implements Closeable {
      */
     public static final int ROOT_SHELL = 1;
     /**
-     * Shell status: Root shell with mount master enabled. One possible result of {@link #getStatus()}.
+     * Shell status: Root shell with mount master enabled.
+     * One possible result of {@link #getStatus()}.
      * <p>
      * Constant value {@value}.
      */
@@ -85,7 +89,7 @@ public abstract class Shell implements Closeable {
      */
     public static final int FLAG_NON_ROOT_SHELL = (1 << 0);
     /**
-     * If set, create a root shell with {@code --mount-master} option.
+     * If set, create a root shell with the {@code --mount-master} option.
      * <p>
      * Constant value {@value}.
      */
@@ -94,7 +98,7 @@ public abstract class Shell implements Closeable {
     /* Preserve (1 << 2) due to historical reasons */
 
     /**
-     * If set, STDERR outputs will be stored in STDOUT outputs.
+     * If set, STDERR outputs will be redirected to STDOUT outputs.
      * <p>
      * Note: This flag only affects the following methods:
      * <ul>
@@ -130,19 +134,29 @@ public abstract class Shell implements Closeable {
     /**
      * Override the default {@link Builder}.
      * <p>
-     * This builder will be used to build {@code Shell}s in {@link #getShell()},
-     * {@link #getShell(GetShellCallback)}, and {@link #getShell(Executor, GetShellCallback)}.
+     * This shell builder will be used to construct the main shell.
+     * Set this before the main shell is created anywhere in the program.
      */
     public static void setDefaultBuilder(Builder builder) {
         MGR.setBuilder(builder);
     }
 
     /**
-     * Get {@code Shell} via {@link #getCachedShell()} or create new if required.
+     * Get the main shell instance.
      * <p>
-     * If {@link #getCachedShell()} returns null, it will use the default {@link Builder} to
+     * If {@link #getCachedShell()} returns null, the default {@link Builder} will be used to
      * construct a new {@code Shell}.
-     * @return a {@code Shell} instance
+     * <p>
+     * Unless already cached, this method blocks until the main shell is created.
+     * The process could take a very long time (e.g. root permission request prompt),
+     * so be extra careful when calling this method from the main thread!
+     * <p>
+     * A good practice is to "preheat" the main shell during app initialization
+     * (e.g. the splash screen) by either calling this method in a background thread or
+     * calling {@link #getShell(GetShellCallback)} so subsequent calls to this function
+     * returns immediately.
+     * @return the cached/created main shell instance.
+     * @see Builder#build()
      */
     @NonNull
     public static Shell getShell() {
@@ -150,11 +164,11 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
+     * Get the main shell instance asynchronously via a callback.
      * <p>
-     * If {@link #getCachedShell()} does not return null, the shell will be directly returned through
-     * the callback, or else it will use the default {@link Builder} to construct a new {@code Shell}
-     * in a background thread and return the result to the callback on the main thread.
+     * If {@link #getCachedShell()} returns null, the default {@link Builder} will be used to
+     * construct a new {@code Shell} in a background thread.
+     * The cached/created shell instance is returned to the callback on the main thread.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@NonNull GetShellCallback callback) {
@@ -162,13 +176,13 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Get {@code Shell} via {@link #getCachedShell()} or create new if required, returns via callback.
+     * Get the main shell instance asynchronously via a callback.
      * <p>
-     * If {@link #getCachedShell()} does not return null, the shell will be directly returned through
-     * the callback, or else it will use the default {@link Builder} to construct a new {@code Shell}
-     * in a background thread.
+     * If {@link #getCachedShell()} returns null, the default {@link Builder} will be used to
+     * construct a new {@code Shell} in a background thread.
+     * The cached/created shell instance is returned to the callback using the provided executor.
      * @param executor the executor used to handle the result callback event.
-     *                 Pass {@code null} to run the callback on the same thread creating the shell.
+     *                 If {@code null} is passed, the callback can run on any thread.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@Nullable Executor executor, @NonNull GetShellCallback callback) {
@@ -176,8 +190,9 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Get the cached global {@code Shell} instance
-     * @return a {@code Shell} instance, {@code null} if no active shell is cached.
+     * Get the cached main shell.
+     * @return a {@code Shell} instance. {@code null} can be returned either when
+     * no main shell has been cached, or the cached shell is no longer active.
      */
     @Nullable
     public static Shell getCachedShell() {
@@ -185,8 +200,9 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Return whether the global shell has root access.
-     * @return {@code true} if the global shell has root access.
+     * {@code Shell.getShell().isRoot()}
+     * <p>
+     * Please refer to {@link #getShell()} for info about concerns on blocking.
      */
     public static boolean rootAccess() {
         try {
@@ -202,7 +218,8 @@ public abstract class Shell implements Closeable {
      * ************/
 
     /**
-     * Equivalent to {@link #sh(String...)} with root access check.
+     * Equivalent to {@link #sh(String...)}, with the only difference being in the case
+     * when the main shell does not have root access, the returned Job will do nothing.
      */
     @NonNull
     public static Job su(@NonNull String... commands) {
@@ -212,17 +229,17 @@ public abstract class Shell implements Closeable {
     /**
      * Create a {@link Job} with commands.
      * <p>
-     * This method is functionally equivalent to
-     * {@code Shell.getShell().newJob().add(commands).to(new ArrayList<>())}, but internally
-     * it is specifically optimized for this case and does not run this exact code.
-     * The developer can manually override output destination with either
+     * This method can be treated as functionally equivalent to
+     * {@code Shell.getShell().newJob().add(commands).to(new ArrayList<>())}, but the internal
+     * implementation is specialized for this use case and does not run this exact code.
+     * The developer can manually override output destination(s) with either
      * {@link Job#to(List)} or {@link Job#to(List, List)}.
      * <p>
-     * {@code Shell} will not be requested until the developer invokes either
+     * The main shell will NOT be requested until the developer invokes either
      * {@link Job#exec()} or {@code Job.submit(...)}. This makes it possible to
-     * construct {@link Job}s before the program will request any root access.
-     * @param commands the commands to run within the {@link Job}.
+     * construct {@link Job}s before the program has created any root shell.
      * @return a job that the developer can execute or submit later.
+     * @see Job#add(String...)
      */
     @NonNull
     public static Job sh(@NonNull String... commands) {
@@ -230,7 +247,8 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Equivalent to {@link #sh(InputStream)} with root access check.
+     * Equivalent to {@link #sh(InputStream)}, with the only difference being in the case
+     * when the main shell does not have root access, the returned Job will do nothing.
      */
     @NonNull
     public static Job su(@NonNull InputStream in) {
@@ -240,11 +258,11 @@ public abstract class Shell implements Closeable {
     /**
      * Create a {@link Job} with an {@link InputStream}.
      * <p>
-     * This method is functionally equivalent to
-     * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}
-     * Check {@link #sh(String...)} for more details.
-     * @param in the data in this {@link InputStream} will be served to {@code STDIN}.
+     * This method can be treated as functionally equivalent to
+     * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}.
+     * Please check {@link #sh(String...)} for more details.
      * @return a job that the developer can execute or submit later.
+     * @see Job#add(InputStream)
      */
     @NonNull
     public static Job sh(@NonNull InputStream in) {
@@ -256,33 +274,31 @@ public abstract class Shell implements Closeable {
      * ****************/
 
     /**
-     * Return whether the {@code Shell} is still alive.
-     * @return {@code true} if the {@code Shell} is still alive.
+     * Return whether the shell is still alive.
+     * @return {@code true} if the shell is still alive.
      */
     public abstract boolean isAlive();
 
     /**
-     * Execute a {@code Task} with the shell. USE THIS METHOD WITH CAUTION!
+     * Execute a low-level {@link Task} using the shell. USE THIS METHOD WITH CAUTION!
      * <p>
-     * This method exposes raw STDIN/STDOUT/STDERR directly to the task. This is meant for
-     * implementing low-level operations. Operation may stall if the buffer of STDOUT/STDERR
-     * is full, so it is recommended to use separate threads to read STDOUT/STDERR if you expect
-     * large outputs.
+     * This method exposes raw STDIN/STDOUT/STDERR directly to the developer. This is meant for
+     * implementing low-level operations. The shell may stall if the buffer of STDOUT/STDERR
+     * is full. It is recommended to use additional threads to consume STDOUT/STDERR in parallel.
      * <p>
      * STDOUT/STDERR is cleared before executing the task. No output from any previous tasks should
-     * be left over. It is the developer's responsibility to make sure all operations are done:
-     * the shell should be in idle and waiting for further input to be sent to STDIN when the task
-     * returns.
+     * be left over. It is the developer's responsibility to make sure all operations are done;
+     * the shell should be in idle and waiting for further input when the task returns.
      * @param task the desired task.
      * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
      */
     public abstract void execTask(@NonNull Task task) throws IOException;
 
     /**
-     * Construct a new {@link Job} that will use the shell for execution.
+     * Construct a new {@link Job} that uses the shell for execution.
      * <p>
-     * Be aware that unlike {@code Shell.su(...)/Shell.sh(...)}, <strong>NO</strong> output will
-     * be produced if the developer did not set the output destination with {@link Job#to(List)}
+     * Unlike {@code Shell.su(...)/Shell.sh(...)}, <strong>NO</strong> output will
+     * be collected if the developer did not set the output destination with {@link Job#to(List)}
      * or {@link Job#to(List, List)}.
      * @return a job that the developer can execute or submit later.
      */
@@ -306,17 +322,17 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Wait for all tasks to be done before closing this shell
-     * and releasing any system resources associated with the shell.
+     * Wait for any current/pending tasks to finish before closing this shell
+     * and release any system resources associated with the shell.
      * <p>
-     * Blocks until all tasks have completed execution, or
+     * Blocks until all current/pending tasks have completed execution, or
      * the timeout occurs, or the current thread is interrupted,
      * whichever happens first.
      * @param timeout the maximum time to wait
      * @param unit the time unit of the timeout argument
      * @return {@code true} if this shell is terminated and
-     *         {@code false} if the timeout elapsed before termination.
-     *         The shell can still to be used afterwards in this case.
+     *         {@code false} if the timeout elapsed before termination, in which
+     *         the shell can still to be used afterwards.
      * @throws IOException if an I/O error occurs.
      * @throws InterruptedException if interrupted while waiting.
      */
@@ -324,8 +340,8 @@ public abstract class Shell implements Closeable {
             throws IOException, InterruptedException;
 
     /**
-     * Wait for all tasks to be done indefinitely before closing the shell
-     * and releasing any system resources associated with the shell.
+     * Wait indefinitely for any current/pending tasks to finish before closing this shell
+     * and release any system resources associated with the shell.
      * @throws IOException if an I/O error occurs.
      */
     public void waitAndClose() throws IOException {
@@ -344,11 +360,11 @@ public abstract class Shell implements Closeable {
     /**
      * Builder class for {@link Shell} objects.
      * <p>
-     * Set the default builder for the globally shared shell instance with
+     * Set the default builder for the main shell instance with
      * {@link #setDefaultBuilder(Builder)}, or directly use a builder object to create new
      * {@link Shell} objects.
      * <p>
-     * Please do not subclass this class, use {@link #create()} to get a new Builder object.
+     * Do not subclass this class, use {@link #create()} to get a new Builder object.
      */
     public abstract static class Builder {
 
@@ -396,7 +412,7 @@ public abstract class Shell implements Closeable {
         /**
          * Set the maximum time to wait for a new shell construction.
          * <p>
-         * After the timeout occurs and the new shell still has no response,
+         * If after the timeout occurs and the new shell still has no response,
          * the shell process will be force-closed and throw {@link NoShellException}.
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
@@ -422,11 +438,11 @@ public abstract class Shell implements Closeable {
          *     {@code su}. It may fail if the device is not rooted, or root permission is
          *     not granted.</li>
          *     <li>Construct a Unix shell by calling {@code sh}. This would never fail in normal
-         *     conditions, but should it fails, it will throw {@link NoShellException}</li>
+         *     conditions, but should it fail, it will throw {@link NoShellException}</li>
          * </ol>
          * The developer should check the status of the returned {@code Shell} with
-         * {@link #getStatus()} since it may return the result of any of the 3 possible methods.
-         * @return the built {@code Shell} instance.
+         * {@link #getStatus()} since it may be constructed with any of the 3 possible methods.
+         * @return the created {@code Shell} instance.
          * @throws NoShellException impossible to construct a {@link Shell} instance, or
          * initialization failed when using the configured {@link Initializer}.
          */
@@ -531,6 +547,7 @@ public abstract class Shell implements Closeable {
         /**
          * Add a new operation serving an InputStream to STDIN.
          * @param in the InputStream to serve to STDIN.
+         *           The stream will be closed after consumption.
          * @return this Job object for chaining of calls.
          */
         @NonNull
@@ -576,16 +593,14 @@ public abstract class Shell implements Closeable {
      * This is an advanced feature. If you need to run specific operations when a new {@code Shell}
      * is constructed, extend this class, add your own implementation, and register it with
      * {@link Builder#setInitializers(Class[])}.
-     * The concept is a bit like {@code .bashrc}: a specific script/command will run when the shell
-     * starts up. {@link #onInit(Context, Shell)} will be called as soon as the {@code Shell} is
+     * The concept is similar to {@code .bashrc}: run specific scripts/commands when the shell
+     * starts up. {@link #onInit(Context, Shell)} will be called as soon as the shell is
      * constructed and tested as a valid shell.
      * <p>
      * An initializer will be constructed and the callbacks will be invoked each time a new
-     * {@code Shell} is created. A {@code Context} will be passed to the callbacks, use it to
-     * access resources within the APK (e.g. shell scripts).
+     * shell is created.
      */
     public static class Initializer {
-
         /**
          * Called when a new shell is constructed.
          * @param context the application context.
@@ -605,7 +620,7 @@ public abstract class Shell implements Closeable {
     public interface Task {
         /**
          * This method will be called when a task is executed by a shell.
-         * {@link Closeable#close()} on all streams is NOP, it is safe to close them.
+         * Calling {@link Closeable#close()} on all streams is NOP (does nothing).
          * @param stdin the STDIN of the shell.
          * @param stdout the STDOUT of the shell.
          * @param stderr the STDERR of the shell.
