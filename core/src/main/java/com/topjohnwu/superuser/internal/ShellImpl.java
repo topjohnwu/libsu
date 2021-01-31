@@ -43,6 +43,13 @@ import java.util.concurrent.TimeoutException;
 
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
+class ShellTerminatedException extends IOException {
+
+    ShellTerminatedException() {
+        super("Shell terminated unexpectedly");
+    }
+}
+
 class ShellImpl extends Shell {
     private static final String TAG = "SHELLIMPL";
 
@@ -241,17 +248,17 @@ class ShellImpl extends Shell {
         return new JobImpl(this);
     }
 
-    Task newTask(List<InputHandler> handlers, ResultImpl res) {
-        return new DefaultTask(handlers, res);
+    Task newTask(List<ShellInputSource> sources, ResultImpl res) {
+        return new DefaultTask(sources, res);
     }
 
     private class DefaultTask implements Task {
 
         private final ResultImpl res;
-        private final List<InputHandler> handlers;
+        private final List<ShellInputSource> sources;
 
-        DefaultTask(List<InputHandler> h, ResultImpl r) {
-            handlers = h;
+        DefaultTask(List<ShellInputSource> s, ResultImpl r) {
+            sources = s;
             res = r;
         }
 
@@ -271,8 +278,8 @@ class ShellImpl extends Shell {
                 err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
             }
 
-            for (InputHandler handler : handlers)
-                handler.handleInput(stdin);
+            for (ShellInputSource src : sources)
+                src.serve(stdin);
             stdin.write(endCmd);
             stdin.flush();
             try {

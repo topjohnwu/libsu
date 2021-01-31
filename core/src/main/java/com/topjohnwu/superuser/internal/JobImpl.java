@@ -21,21 +21,22 @@ import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-class JobImpl extends Shell.Job {
+class JobImpl extends Shell.Job implements Closeable {
 
     protected List<String> out, err;
-    private final List<InputHandler> handlers;
+    private final List<ShellInputSource> sources;
     protected ShellImpl shell;
     private boolean stderrSet = false;
 
     JobImpl() {
-        handlers = new ArrayList<>();
+        sources = new ArrayList<>();
     }
 
     JobImpl(ShellImpl s) {
@@ -48,7 +49,7 @@ class JobImpl extends Shell.Job {
         boolean redirect = !stderrSet && shell.redirect;
         result.out = out;
         result.err = redirect ? out : err;
-        Shell.Task task = shell.newTask(handlers, result);
+        Shell.Task task = shell.newTask(sources, result);
         try {
             shell.execTask(task);
         } catch (IOException e) {
@@ -58,6 +59,8 @@ class JobImpl extends Shell.Job {
                 Utils.err(e);
                 return ResultImpl.INSTANCE;
             }
+        } finally {
+            close();
         }
         if (redirect)
             result.err = null;
@@ -97,7 +100,7 @@ class JobImpl extends Shell.Job {
     @Override
     public Shell.Job add(@NonNull InputStream in) {
         if (in != null)
-            handlers.add(InputHandler.newInstance(in));
+            sources.add(new InputStreamSource(in));
         return this;
     }
 
@@ -105,8 +108,13 @@ class JobImpl extends Shell.Job {
     @Override
     public Shell.Job add(@NonNull String... cmds) {
         if (cmds != null && cmds.length > 0)
-            handlers.add(InputHandler.newInstance(cmds));
+            sources.add(new CommandSource(cmds));
         return this;
     }
 
+    @Override
+    public void close() {
+        for (ShellInputSource src : sources)
+            src.close();
+    }
 }

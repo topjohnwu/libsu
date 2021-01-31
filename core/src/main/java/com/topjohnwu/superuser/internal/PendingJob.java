@@ -28,11 +28,11 @@ import java.util.concurrent.Executor;
 class PendingJob extends JobImpl {
 
     private final boolean isSU;
-    private boolean retried;
+    private boolean retry;
 
     PendingJob(boolean su) {
         isSU = su;
-        retried = false;
+        retry = true;
         to(NOPList.getInstance());
     }
 
@@ -42,16 +42,19 @@ class PendingJob extends JobImpl {
         try {
             shell = MainShell.get();
         } catch (NoShellException e) {
+            close();
             return ResultImpl.INSTANCE;
         }
-        if (isSU && !shell.isRoot())
+        if (isSU && !shell.isRoot()) {
+            close();
             return ResultImpl.INSTANCE;
+        }
         if (out instanceof NOPList)
             out = new ArrayList<>();
         Shell.Result res = super.exec();
-        if (!retried && res == ResultImpl.SHELL_ERR) {
+        if (retry && res == ResultImpl.SHELL_ERR) {
             // The cached shell is terminated, try to re-run this task
-            retried = true;
+            retry = false;
             return exec();
         }
         return res;
@@ -61,6 +64,7 @@ class PendingJob extends JobImpl {
     public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
         MainShell.get(null, s -> {
             if (isSU && !s.isRoot()) {
+                close();
                 ResultImpl.INSTANCE.callback(executor, cb);
                 return;
             }
@@ -68,9 +72,9 @@ class PendingJob extends JobImpl {
                 out = (cb == null) ? null : new ArrayList<>();
             shell = (ShellImpl) s;
             super.submit(executor, res -> {
-                if (!retried && res == ResultImpl.SHELL_ERR) {
+                if (retry && res == ResultImpl.SHELL_ERR) {
                     // The cached shell is terminated, try to re-schedule this task
-                    retried = true;
+                    retry = false;
                     submit(executor, cb);
                 } else if (cb != null) {
                     cb.onResult(res);
