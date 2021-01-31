@@ -25,33 +25,41 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 class JobImpl extends Shell.Job implements Closeable {
 
     protected List<String> out, err;
-    private final List<ShellInputSource> sources;
+    private final List<ShellInputSource> sources = new ArrayList<>();
     protected ShellImpl shell;
     private boolean stderrSet = false;
 
-    JobImpl() {
-        sources = new ArrayList<>();
-    }
+    JobImpl() {}
 
     JobImpl(ShellImpl s) {
-        this();
         shell = s;
     }
 
     private ResultImpl exec0() {
-        ResultImpl result = new ResultImpl();
         boolean redirect = !stderrSet && shell.redirect;
-        result.out = out;
-        result.err = redirect ? out : err;
-        Shell.Task task = shell.newTask(sources, result);
+        if (redirect)
+            err = out;
+
+        ResultImpl result = new ResultImpl();
+        if (out != null && out == err && !Utils.isSynchronized(out)) {
+            // Synchronize the list internally only if both lists are the same and are not
+            // already synchronized by the user
+            List<String> list = Collections.synchronizedList(out);
+            result.out = list;
+            result.err = list;
+        } else {
+            result.out = out;
+            result.err = err;
+        }
         try {
-            shell.execTask(task);
+            shell.execTask(new TaskImpl(sources, result));
         } catch (IOException e) {
             if (e instanceof ShellTerminatedException) {
                 return ResultImpl.SHELL_ERR;
@@ -61,9 +69,9 @@ class JobImpl extends Shell.Job implements Closeable {
             }
         } finally {
             close();
+            result.out = out;
+            result.err = redirect ? null : err;
         }
-        if (redirect)
-            result.err = null;
         return result;
     }
 

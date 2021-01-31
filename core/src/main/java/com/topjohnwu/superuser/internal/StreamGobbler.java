@@ -17,93 +17,79 @@
 package com.topjohnwu.superuser.internal;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.topjohnwu.superuser.internal.TaskImpl.END_UUID;
+import static com.topjohnwu.superuser.internal.TaskImpl.UUID_LEN;
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 abstract class StreamGobbler<T> implements Callable<T> {
 
     private static final String TAG = "SHELLOUT";
 
-    private final String eos;
-    private final int eosLength;
+    protected final InputStream in;
+    protected final List<String> list;
 
-    protected InputStream in;
-    protected List<String> list;
-
-    StreamGobbler(String eos) {
-        this.eos = eos;
-        this.eosLength = this.eos.length();
-    }
-
-    public Callable<T> set(InputStream in, List<String> list) {
+    StreamGobbler(InputStream in, List<String> list) {
         this.in = in;
         this.list = list;
-        return this;
     }
 
-    protected boolean isEOS(String line) {
-        if (line == null) {
-            return true;
+    private boolean outputAndCheck(String line) {
+        if (line == null)
+            return false;
+
+        int len = line.length();
+        boolean end = line.startsWith(END_UUID, len - UUID_LEN);
+        if (end) {
+            if (len == UUID_LEN)
+                return false;
+            line = line.substring(0, len - UUID_LEN);
         }
-        boolean eof = line.endsWith(eos);
-        if (eof) {
-            if (line.length() > eosLength) {
-                line = line.substring(0, eosLength);
-            } else {
-                line = null;
-            }
-        }
-        if (list != null && line != null) {
+        if (list != null) {
             list.add(line);
             Utils.log(TAG, line);
         }
-        return eof;
+        return !end;
+    }
+
+    protected String process(boolean res) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8));
+        String line;
+        do {
+            line = br.readLine();
+        } while (outputAndCheck(line));
+        return res ? br.readLine() : null;
     }
 
     static class OUT extends StreamGobbler<Integer> {
 
         private static final int NO_RESULT_CODE = 1;
 
-        OUT(String eos) {
-            super(eos);
-        }
+        OUT(InputStream in, List<String> list) { super(in, list); }
 
         @Override
         public Integer call() throws Exception {
-            int code;
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
-                String line;
-                do {
-                    line = br.readLine();
-                } while (!isEOS(line));
-                String resultCodeLine = br.readLine();
-                code = resultCodeLine == null ? NO_RESULT_CODE : Integer.parseInt(resultCodeLine);
+            String code = process(true);
+            try {
+                return code == null ? NO_RESULT_CODE : Integer.parseInt(code);
+            } catch (NumberFormatException e) {
+                return NO_RESULT_CODE;
             }
-            in = null;
-            list = null;
-            return code;
         }
     }
 
     static class ERR extends StreamGobbler<Void> {
-        ERR(String eos) {
-            super(eos);
-        }
+
+        ERR(InputStream in, List<String> list) { super(in, list); }
 
         @Override
         public Void call() throws Exception {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, UTF_8))) {
-                String line;
-                do {
-                    line = br.readLine();
-                } while (!isEOS(line));
-            }
-            in = null;
-            list = null;
+            process(false);
             return null;
         }
     }

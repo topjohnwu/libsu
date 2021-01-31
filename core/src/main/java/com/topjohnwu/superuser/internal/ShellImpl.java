@@ -30,11 +30,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -61,9 +57,6 @@ class ShellImpl extends Shell {
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
     private final NoCloseInputStream STDERR;
-    private final StreamGobbler.OUT outGobbler;
-    private final StreamGobbler.ERR errGobbler;
-    private final byte[] endCmd;
 
     private static class NoCloseInputStream extends FilterInputStream {
 
@@ -109,12 +102,6 @@ class ShellImpl extends Shell {
         STDIN = new NoCloseOutputStream(process.getOutputStream());
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
-
-        String uuid = UUID.randomUUID().toString();
-        Utils.log(TAG, "UUID: " + uuid);
-        outGobbler = new StreamGobbler.OUT(uuid);
-        errGobbler = new StreamGobbler.ERR(uuid);
-        endCmd = String.format("__RET=$?;echo %s;echo %s >&2;echo $__RET;unset __RET\n", uuid, uuid).getBytes(UTF_8);
         executor = new SerialExecutorService();
 
         if (cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
@@ -248,46 +235,4 @@ class ShellImpl extends Shell {
         return new JobImpl(this);
     }
 
-    Task newTask(List<ShellInputSource> sources, ResultImpl res) {
-        return new DefaultTask(sources, res);
-    }
-
-    private class DefaultTask implements Task {
-
-        private final ResultImpl res;
-        private final List<ShellInputSource> sources;
-
-        DefaultTask(List<ShellInputSource> s, ResultImpl r) {
-            sources = s;
-            res = r;
-        }
-
-        @Override
-        public void run(@NonNull OutputStream stdin, @NonNull InputStream stdout, @NonNull InputStream stderr) throws IOException {
-            Future<Integer> out;
-            Future<Void> err;
-            if (res.out != null && res.out == res.err &&
-                    !Utils.isSynchronized(res.out)) {
-                // Synchronize the list internally only if both lists are the same and are not
-                // already synchronized by the user
-                List<String> list = Collections.synchronizedList(res.out);
-                out = EXECUTOR.submit(outGobbler.set(stdout, list));
-                err = EXECUTOR.submit(errGobbler.set(stderr, list));
-            } else {
-                out = EXECUTOR.submit(outGobbler.set(stdout, res.out));
-                err = EXECUTOR.submit(errGobbler.set(stderr, res.err));
-            }
-
-            for (ShellInputSource src : sources)
-                src.serve(stdin);
-            stdin.write(endCmd);
-            stdin.flush();
-            try {
-                res.code = out.get();
-                err.get();
-            } catch (ExecutionException | InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
-            }
-        }
-    }
 }
