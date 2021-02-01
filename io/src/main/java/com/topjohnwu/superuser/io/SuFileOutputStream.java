@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.io;
 
+import android.os.Build;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
@@ -26,56 +28,175 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 /**
- * An {@link java.io.OutputStream} that read files using the global shell instance.
+ * Open {@link OutputStream}s that read files with root access.
  * <p>
- * This class always checks whether using a shell is necessary. If not, it simply opens a new
- * {@link FileOutputStream}.
- * <p>
- * Note: this class is <b>always buffered internally</b>, do not add another layer of
- * {@link BufferedOutputStream} to add more overhead!
+ * Directly creating instances of this class is deprecated, please use the static helper
+ * methods to open new OutputStreams.
  */
 public class SuFileOutputStream extends BufferedOutputStream {
 
     /**
-     * @see FileOutputStream#FileOutputStream(String)
+     * {@code SuFileOutputStream.open(new File(path), false)}
      */
-    public SuFileOutputStream(String path) throws FileNotFoundException {
-        this(path, false);
+    public static OutputStream open(String path) throws FileNotFoundException {
+        return open(new File(path), false);
     }
 
     /**
-     * @see FileOutputStream#FileOutputStream(String, boolean)
+     * {@code SuFileOutputStream.open(new File(path), append)}
      */
-    public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        this(new File(path), append);
+    public static OutputStream open(String path, boolean append) throws FileNotFoundException {
+        return open(new File(path), append);
     }
 
     /**
-     * @see FileOutputStream#FileOutputStream(File)
+     * {@code SuFileOutputStream.open(file, false)}
      */
-    public SuFileOutputStream(File file) throws FileNotFoundException {
-        this(file, false);
+    public static OutputStream open(File file) throws FileNotFoundException {
+        return open(file, false);
     }
 
-    private static OutputStream getOut(File file, boolean append) throws FileNotFoundException {
+    /**
+     * Open an {@link OutputStream} with root access.
+     * <p>
+     * Unless {@code file} is an {@link SuFile}, this method will always try to directly
+     * open a {@link FileOutputStream}, and fallback to using root access when it fails.
+     * <p>
+     * <strong>Root Access Streams:</strong><br>
+     * On Android 5.0 and higher (API 21+), internally a named pipe (FIFO) is created
+     * to bridge all I/O operations across process boundary, providing 100% native
+     * {@link FileOutputStream} performance.
+     * A single root command is issued through the main shell.
+     * <br>
+     * On Android 4.4 and lower, all write operations will be applied to a temporary file in
+     * the application cache folder. When the stream is closed, the temporary file
+     * will then be copied over to the provided {@code file} at once then deleted.
+     * <p>
+     * Unlike {@link #openCompat(File, boolean)}, the stream is NOT buffered internally.
+     * @see FileOutputStream#FileOutputStream(File, boolean)
+     */
+    public static OutputStream open(File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            return IOFactory.createShellOutputStream((SuFile) file, append);
+            return root((SuFile) file, append);
         } else {
             try {
-                // Try normal FileOutputStream
+                // Try normal FileInputStream
                 return new FileOutputStream(file, append);
             } catch (FileNotFoundException e) {
                 if (!Shell.rootAccess())
                     throw e;
-                return IOFactory.createShellOutputStream(new SuFile(file), append);
+                return root(new SuFile(file), append);
             }
         }
     }
 
     /**
+     * {@code SuFileOutputStream.openCompat(new File(path), false)}
+     */
+    public static OutputStream openCompat(String path) throws FileNotFoundException {
+        return openCompat(new File(path), false);
+    }
+
+    /**
+     * {@code SuFileOutputStream.openCompat(new File(path), append)}
+     */
+    public static OutputStream openCompat(String path, boolean append) throws FileNotFoundException {
+        return openCompat(new File(path), append);
+    }
+
+    /**
+     * {@code SuFileOutputStream.openCompat(file, false)}
+     */
+    public static OutputStream openCompat(File file) throws FileNotFoundException {
+        return openCompat(file, false);
+    }
+
+    /**
+     * Open an {@link OutputStream} with root access (compatibility mode).
+     * <p>
+     * Unless {@code file} is an {@link SuFile}, this method will always try to directly
+     * open a {@link FileOutputStream}, and fallback to using root access when it fails.
+     * <p>
+     * <strong>Root Access Streams:</strong><br>
+     * On Android 5.0 and higher (API 21+), this is the same as {@link #open(File, boolean)}, but
+     * additionally wrapped with {@link BufferedOutputStream} for consistency.
+     * <br>
+     * On Android 4.4 and lower, the returned stream will do every I/O operation with {@code dd}
+     * commands via the main root shell. This was the implementation in older versions of
+     * {@code libsu} and is proven to be error prone, but preserved as "compatibility mode".
+     * <p>
+     * The returned stream is <b>already buffered</b>, do not add another
+     * layer of {@link BufferedOutputStream} to add more overhead!
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
+    public static OutputStream openCompat(File file, boolean append) throws FileNotFoundException {
+        return new BufferedOutputStream(compat(file, append));
+    }
+
+    private static OutputStream compat(File file, boolean append) throws FileNotFoundException {
+        if (file instanceof SuFile) {
+            return shell((SuFile) file, append);
+        } else {
+            try {
+                // Try normal FileInputStream
+                return new FileOutputStream(file, append);
+            } catch (FileNotFoundException e) {
+                if (!Shell.rootAccess())
+                    throw e;
+                return shell(new SuFile(file), append);
+            }
+        }
+    }
+
+    private static OutputStream root(SuFile file, boolean append) throws FileNotFoundException {
+        if (Build.VERSION.SDK_INT >= 21)
+            return IOFactory.fifoOut(file, append);
+        else
+            return IOFactory.copyOut(file, append);
+    }
+
+    private static OutputStream shell(SuFile file, boolean append) throws FileNotFoundException {
+        if (Build.VERSION.SDK_INT >= 21)
+            return IOFactory.fifoOut(file, append);
+        else
+            return IOFactory.shellOut(file, append);
+    }
+
+    // Deprecated APIs
+
+    /**
+     * Same as {@link #openCompat(String)}
+     * @deprecated please switch to {@link #open(String)}
+     */
+    @Deprecated
+    public SuFileOutputStream(String path) throws FileNotFoundException {
+        this(new File(path), false);
+    }
+
+    /**
+     * Same as {@link #openCompat(String, boolean)}
+     * @deprecated please switch to {@link #open(String, boolean)}
+     */
+    @Deprecated
+    public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
+        this(new File(path), append);
+    }
+
+    /**
+     * Same as {@link #openCompat(File)}
+     * @deprecated please switch to {@link #open(File, boolean)}
+     */
+    @Deprecated
+    public SuFileOutputStream(File file) throws FileNotFoundException {
+        this(file, false);
+    }
+
+    /**
+     * Same as {@link #openCompat(File, boolean)}
+     * @deprecated please switch to {@link #open(File, boolean)}
+     */
+    @Deprecated
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
-        super(getOut(file, append), 4 * 1024 * 1024);
+        super(compat(file, append));
     }
 }

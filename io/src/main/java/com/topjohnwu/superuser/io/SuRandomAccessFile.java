@@ -52,12 +52,12 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      */
     public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            return IOFactory.createShellIO((SuFile) file, mode);
+            return IOFactory.shellIO((SuFile) file, mode);
         } else {
             try {
-                return IOFactory.createRAFWrapper(file, mode);
+                return IOFactory.raf(file, mode);
             } catch (FileNotFoundException e) {
-                return IOFactory.createShellIO(new SuFile(file), mode);
+                return IOFactory.shellIO(new SuFile(file), mode);
             }
         }
     }

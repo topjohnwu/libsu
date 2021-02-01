@@ -16,6 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
+import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.io.SuFile;
@@ -27,33 +28,51 @@ import java.io.FileNotFoundException;
 public final class IOFactory {
     private IOFactory() {}
 
-    public static ShellIO createShellIO(SuFile file, String mode) throws FileNotFoundException {
-        String internalMode;
+    public static ShellIO shellIO(SuFile file, String mode) throws FileNotFoundException {
         switch (mode) {
             case "r":
-                internalMode = "r";
                 break;
             case "rw":
             case "rws":
             case "rwd":
-                internalMode = "rw";
+                mode = "rw";
                 break;
             default:
                 throw new IllegalArgumentException("Unknown mode: " + mode);
         }
-        return ShellIO.get(file, internalMode);
+        return ShellIO.get(file, mode);
     }
 
-    public static RAFWrapper createRAFWrapper(File file, String mode) throws FileNotFoundException {
+    public static RAFWrapper raf(File file, String mode) throws FileNotFoundException {
         return new RAFWrapper(file, mode);
     }
 
-    public static ShellInputStream createShellInputStream(SuFile file) throws FileNotFoundException {
+    public static ShellInputStream shellIn(SuFile file) throws FileNotFoundException {
         return new ShellInputStream(file);
     }
 
-    public static ShellOutputStream createShellOutputStream(SuFile file, boolean append)
+    @RequiresApi(21)
+    public static FifoInputStream fifoIn(SuFile file) throws FileNotFoundException {
+        return new FifoInputStream(file);
+    }
+
+    public static CopyInputStream copyIn(SuFile file) throws FileNotFoundException {
+        return new CopyInputStream(file);
+    }
+
+    public static ShellOutputStream shellOut(SuFile file, boolean append)
             throws FileNotFoundException {
         return new ShellOutputStream(file, append);
+    }
+
+    @RequiresApi(21)
+    public static FifoOutputStream fifoOut(SuFile file, boolean append)
+            throws FileNotFoundException {
+        return new FifoOutputStream(file, append);
+    }
+
+    public static CopyOutputStream copyOut(SuFile file, boolean append)
+            throws FileNotFoundException {
+        return new CopyOutputStream(file, append);
     }
 }
