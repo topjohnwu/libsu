@@ -53,7 +53,8 @@ public class MainActivity extends Activity implements Handler.Callback {
         Shell.setDefaultBuilder(Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
                 // BusyBoxInstaller should come first!
-                .setInitializers(BusyBoxInstaller.class, ExampleInitializer.class));
+                .setInitializers(BusyBoxInstaller.class, ExampleInitializer.class)
+        );
     }
 
     private ITestService testIPC;
@@ -197,6 +198,7 @@ public class MainActivity extends Activity implements Handler.Callback {
 
         binding.closeShell.setOnClickListener(v -> {
             try {
+                StressTest.cancel();
                 Shell shell = Shell.getCachedShell();
                 if (shell != null)
                     shell.close();
@@ -214,6 +216,8 @@ public class MainActivity extends Activity implements Handler.Callback {
                 Shell.sh("test_async").to(consoleList).submit());
 
         binding.clear.setOnClickListener(v -> binding.console.setText(""));
+
+        binding.stressTest.setOnClickListener(v -> StressTest.perform(consoleList));
     }
 
     /**

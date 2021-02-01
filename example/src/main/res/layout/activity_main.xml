@@ -120,6 +120,14 @@
             android:layout_weight="1"
             android:text="Stop Daemon" />
 
+        <Button
+            android:id="@+id/stress_test"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Stress Test" />
+
     </LinearLayout>
 
 </LinearLayout>
