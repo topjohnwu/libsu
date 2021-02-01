@@ -26,11 +26,9 @@ import com.topjohnwu.superuser.io.SuFile;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Future;
 
 import static com.topjohnwu.libsuexample.MainActivity.TAG;
 
@@ -40,7 +38,6 @@ public class StressTest {
     private static OutputStream out;
     private static FileCallback callback;
     private static final byte[] buf = new byte[64 * 1024];
-    private static Future<?> task;
 
     interface FileCallback {
         void onFile(SuFile file) throws Exception;
@@ -48,24 +45,24 @@ public class StressTest {
 
     public static void perform(List<String> c) {
         console = c;
-        task = Shell.EXECUTOR.submit(() -> {
+        Shell.EXECUTOR.execute(() -> {
             try {
                 run();
             } catch (Exception e){
                 Log.d(TAG, "", e);
+            } finally {
+                cancel();
             }
         });
     }
 
     public static void cancel() {
-        if (task != null) {
-            task.cancel(true);
-            task = null;
-            if (out != null) {
-                try { out.close(); } catch (IOException ignored) {}
-                out = null;
-            }
-            console = null;
+        // These shall force tons of exceptions and cancel the thread :)
+        console = null;
+        callback = null;
+        if (out != null) {
+            try { out.close(); } catch (IOException ignored) {}
+            out = null;
         }
     }
 
@@ -90,7 +87,7 @@ public class StressTest {
             // Make sure FifoInputStream works fine
             callback = file -> {
                 try (InputStream in = IOFactory.fifoIn(file)) {
-                    pump(in, out);
+                    pump(in);
                 }
             };
             traverse(root);
@@ -112,7 +109,7 @@ public class StressTest {
         // Make sure CopyInputStream works fine
         callback = file -> {
             try (InputStream in = IOFactory.copyIn(file)) {
-                pump(in, out);
+                pump(in);
             }
         };
         traverse(root);
@@ -120,20 +117,13 @@ public class StressTest {
         // Make sure ShellInputStream works fine
         callback = file -> {
             try (InputStream in = IOFactory.shellIn(file)) {
-                pump(in, out);
+                pump(in);
             }
         };
         traverse(root);
-
-        // Don't leak memory
-        out.close();
-        console = null;
     }
 
     private static void traverse(SuFile base) throws Exception {
-        if (Thread.interrupted()) {
-            throw new InterruptedException();
-        }
         console.add(base.getPath());
         if (base.isDirectory()) {
             SuFile[] ls = base.listFiles();
@@ -147,12 +137,9 @@ public class StressTest {
         }
     }
 
-    public static void pump(InputStream in, OutputStream out) throws IOException {
+    public static void pump(InputStream in) throws IOException {
         Random r = new Random();
         for (;;) {
-            if (Thread.interrupted()) {
-                throw new InterruptedIOException();
-            }
             // Randomize read/write length to test unaligned I/O
             int len = r.nextInt(buf.length);
             int read = in.read(buf, 0, len);
