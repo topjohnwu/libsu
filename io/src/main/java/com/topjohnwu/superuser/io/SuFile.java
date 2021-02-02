@@ -37,26 +37,24 @@ import java.util.Locale;
 /**
  * A {@link File} implementation using root shell.
  * <p>
- * All methods for this class will be backed by executing commands via the global root shell.
- * The {@code Shell} instance will be acquired via {@link Shell#getShell()}.
+ * All methods of this class are implemented by executing commands via the main shell.
  * <p>
- * This class has the exact same behavior as a normal {@link File}, however none of the operations
- * are atomic. This is a limitation of using shells, be aware of it.
+ * This class has the same behavior as a normal {@link File}, however none of the operations
+ * are atomic. This is a limitation for using shell commands.
  * <p>
- * For full functionality, the environment require: {@code rm}, {@code rmdir}, {@code readlink},
- * {@code mv}, {@code ls}, {@code mkdir}, {@code touch}, and {@code stat}.
- * These tools are available on modern Android versions with toybox, however for consistent
- * results, using {@code busybox} would be desirable. Some operations could have oddities
- * without busybox due to the lack of tools or slightly different behavior,
- * check each individual method descriptions for more details.
+ * Each method description in this class will list out its required commands.
+ * The following commands exists on all Android versions: {@code rm}, {@code rmdir},
+ * {@code mv}, {@code ls}, and {@code mkdir}.
+ * The following commands require {@code toybox} on Android 6.0 and higher, or {@code busybox}
+ * to support legacy devices: {@code readlink}, {@code touch}, and {@code stat}.
  * <p>
- * There are also handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
- * instances. These factory methods will return a normal {@link File} instance if the underlying
- * shell does not have root access, or else returns a {@link SuFile} instance.
+ * This class has handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
+ * instances. These factory methods will return a normal {@link File} instance if the main
+ * shell does not have root access, or else return a {@link SuFile} instance.
  */
 public class SuFile extends File {
 
-    private String[] CMDs;
+    private final String[] CMDs;
 
     public static File open(String pathname) {
         return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
@@ -124,16 +122,9 @@ public class SuFile extends File {
         return cmdBool("[ -w \"$__F_\" ]");
     }
 
-    /**
-     * Creates a new, empty file named by this abstract pathname if
-     * and only if a file with this name does not yet exist.
-     * <p>
-     * Requires command {@code touch}.
-     * @see File#createNewFile()
-     */
     @Override
     public boolean createNewFile() {
-        return cmdBool("[ ! -e \"$__F_\" ] && touch \"$__F_\"");
+        return cmdBool("[ ! -e \"$__F_\" ] && echo -n > \"$__F_\"");
     }
 
     /**
@@ -141,7 +132,7 @@ public class SuFile extends File {
      * this pathname denotes a directory, then the directory must be empty in
      * order to be deleted.
      * <p>
-     * Requires command {@code rm}, or {@code rmdir} for directories.
+     * Requires command {@code rm} for files, and {@code rmdir} for directories.
      * @see File#delete()
      */
     @Override
@@ -163,8 +154,8 @@ public class SuFile extends File {
 
     /**
      * Clear the content of the file denoted by this abstract pathname.
-     * Creates a new file is it does not already exist.
-     * @return true if operation succeed
+     * Creates a new file if it does not already exist.
+     * @return true if the operation succeeded
      */
     public boolean clear() {
         return cmdBool("echo -n > \"$__F_\"");
@@ -175,7 +166,7 @@ public class SuFile extends File {
      */
     @Override
     public void deleteOnExit() {
-        throw new UnsupportedOperationException("Unsupported operation in shell backed File");
+        throw new UnsupportedOperationException("Unsupported SuFile operation");
     }
 
     @Override
@@ -315,7 +306,7 @@ public class SuFile extends File {
     /**
      * Returns the length of the file denoted by this abstract pathname.
      * <p>
-     * Requires either command {@code stat} or {@code wc}.
+     * Requires command {@code stat}.
      * @see File#length()
      */
     @Override
@@ -427,7 +418,7 @@ public class SuFile extends File {
     /**
      * Sets the last-modified time of the file or directory named by this abstract pathname.
      * <p>
-     * Note: On older Android devices, the {@code touch} command accepts a different timestamp
+     * Note: On Android 5.1 and lower, the {@code touch} command accepts a different timestamp
      * format than GNU {@code touch}. This implementation uses the format accepted in GNU
      * coreutils, which is the same format accepted by toybox and busybox, so this operation
      * may fail on older Android versions without busybox.
