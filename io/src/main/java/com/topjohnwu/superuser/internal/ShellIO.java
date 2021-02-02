@@ -149,23 +149,26 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         if (eof)
             return -1;
         // Try to use as large block as possible
-        int gcd = (int) ShellUtils.gcd(fileOff, len);
-        if (gcd >= 512 || len < 512) {
+        int bs = (int) ShellUtils.gcd(fileOff, len);
+        if (bs >= 512 || len < 512) {
             // Aligned or small reads, directly process it
-            len = alignedRead(b, off, len / gcd, (int) (fileOff / gcd), gcd);
+            len = alignedRead(b, off, len / bs, (int) (fileOff / bs), bs);
         } else {
-            // Unaligned reading is too slow, try reading with 512-byte aligned
+            // Unaligned reading is too slow, try reading with 4K aligned
             // and copy those in interest (still faster than unaligned reading)
-            long skip = fileOff / 512;
-            int count = (int) ((fileOff + len + 511) / 512 - skip);
-            byte[] buf = new byte[count * 512];
-            long startOff = skip * 512;
-            int read = alignedRead(buf, 0, count, (int)skip, 512);
+            bs = 4096;
+
+            long skip = fileOff / bs;
+            int count = (int) ((fileOff + len + bs - 1) / bs - skip);
+            byte[] buf = new byte[count * bs];
+            long start = skip * bs;
+            int read = alignedRead(buf, 0, count, (int) skip, bs);
             if (read > 0) {
-                int valid = (int) (startOff + read - fileOff);
-                eof = valid < len;
+                int valid = (int) (start + read - fileOff);
+                if (valid < len)
+                    eof = true;
                 len = Math.min(valid, len);
-                System.arraycopy(buf, (int) (fileOff - startOff), b, off, len);
+                System.arraycopy(buf, (int) (fileOff - start), b, off, len);
             }
         }
         fileOff += len;
