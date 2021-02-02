@@ -54,7 +54,7 @@ import java.util.Locale;
  */
 public class SuFile extends File {
 
-    private final String[] CMDs;
+    private final String quotedPath;
 
     public static File open(String pathname) {
         return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
@@ -74,8 +74,7 @@ public class SuFile extends File {
 
     SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        CMDs = new String[2];
-        CMDs[0] = "__F_='" + file.getAbsolutePath() +  "'";
+        quotedPath = '"' + getPath() + '"';
     }
 
     public SuFile(String pathname) {
@@ -94,37 +93,34 @@ public class SuFile extends File {
         this(new File(uri));
     }
 
-    private String[] setCmd(String c) {
-        CMDs[1] = c;
-        return CMDs;
-    }
-
     private String cmd(String c) {
-        return ShellUtils.fastCmd(setCmd(c));
+        // Use replace instead of format for performance
+        return ShellUtils.fastCmd(c.replace("@@", quotedPath));
     }
 
     private boolean cmdBool(String c) {
-        return ShellUtils.fastCmdResult(setCmd(c));
+        // Use replace instead of format for performance
+        return ShellUtils.fastCmdResult(c.replace("@@", quotedPath));
     }
 
     @Override
     public boolean canExecute() {
-        return cmdBool("[ -x \"$__F_\" ]");
+        return cmdBool("[ -x @@ ]");
     }
 
     @Override
     public boolean canRead() {
-        return cmdBool("[ -r \"$__F_\" ]");
+        return cmdBool("[ -r @@ ]");
     }
 
     @Override
     public boolean canWrite() {
-        return cmdBool("[ -w \"$__F_\" ]");
+        return cmdBool("[ -w @@ ]");
     }
 
     @Override
     public boolean createNewFile() {
-        return cmdBool("[ ! -e \"$__F_\" ] && echo -n > \"$__F_\"");
+        return cmdBool("[ ! -e @@ ] && echo -n > @@");
     }
 
     /**
@@ -137,7 +133,7 @@ public class SuFile extends File {
      */
     @Override
     public boolean delete() {
-        return cmdBool("rm -f \"$__F_\" || rmdir -f \"$__F_\"");
+        return cmdBool("rm -f @@ || rmdir -f @@");
     }
 
     /**
@@ -149,7 +145,7 @@ public class SuFile extends File {
      * @see File#delete()
      */
     public boolean deleteRecursive() {
-        return cmdBool("rm -rf \"$__F_\"");
+        return cmdBool("rm -rf @@");
     }
 
     /**
@@ -158,7 +154,7 @@ public class SuFile extends File {
      * @return true if the operation succeeded
      */
     public boolean clear() {
-        return cmdBool("echo -n > \"$__F_\"");
+        return cmdBool("echo -n > @@");
     }
 
     /**
@@ -171,7 +167,7 @@ public class SuFile extends File {
 
     @Override
     public boolean exists() {
-        return cmdBool("[ -e \"$__F_\" ]");
+        return cmdBool("[ -e @@ ]");
     }
 
     @NonNull
@@ -189,7 +185,7 @@ public class SuFile extends File {
     @NonNull
     @Override
     public String getCanonicalPath() {
-        String path = cmd("readlink -f \"$__F_\"");
+        String path = cmd("readlink -f @@");
         return path.isEmpty() ? getAbsolutePath() : path;
     }
 
@@ -212,7 +208,7 @@ public class SuFile extends File {
     }
 
     private long statFS(String fmt) {
-        String[] res = cmd("stat -fc '%S " + fmt + "' \"$__F_\"").split(" ");
+        String[] res = cmd("stat -fc '%S " + fmt + "' @@").split(" ");
         if (res.length != 2)
             return Long.MAX_VALUE;
         try {
@@ -258,33 +254,33 @@ public class SuFile extends File {
 
     @Override
     public boolean isDirectory() {
-        return cmdBool("[ -d \"$__F_\" ]");
+        return cmdBool("[ -d @@ ]");
     }
 
     @Override
     public boolean isFile() {
-        return cmdBool("[ -f \"$__F_\" ]");
+        return cmdBool("[ -f @@ ]");
     }
 
     /**
      * @return true if the abstract pathname denotes a block device.
      */
     public boolean isBlock() {
-        return cmdBool("[ -b \"$__F_\" ]");
+        return cmdBool("[ -b @@ ]");
     }
 
     /**
      * @return true if the abstract pathname denotes a character device.
      */
     public boolean isCharacter() {
-        return cmdBool("[ -c \"$__F_\" ]");
+        return cmdBool("[ -c @@ ]");
     }
 
     /**
      * @return true if the abstract pathname denotes a symbolic link file.
      */
     public boolean isSymlink() {
-        return cmdBool("[ -L \"$__F_\" ]");
+        return cmdBool("[ -L @@ ]");
     }
 
     /**
@@ -297,7 +293,7 @@ public class SuFile extends File {
     @Override
     public long lastModified() {
         try {
-            return Long.parseLong(cmd("stat -c '%Y' \"$__F_\"")) * 1000;
+            return Long.parseLong(cmd("stat -c '%Y' @@")) * 1000;
         } catch (NumberFormatException e) {
             return 0L;
         }
@@ -312,7 +308,7 @@ public class SuFile extends File {
     @Override
     public long length() {
         try {
-            Long.parseLong(cmd("stat -c '%s' \"$__F_\""));
+            Long.parseLong(cmd("stat -c '%s' @@"));
         } catch (NumberFormatException ignored) {}
         return 0L;
     }
@@ -325,7 +321,7 @@ public class SuFile extends File {
      */
     @Override
     public boolean mkdir() {
-        return cmdBool("mkdir \"$__F_\"");
+        return cmdBool("mkdir @@");
     }
 
     /**
@@ -337,7 +333,7 @@ public class SuFile extends File {
      */
     @Override
     public boolean mkdirs() {
-        return cmdBool("mkdir -p \"$__F_\"");
+        return cmdBool("mkdir -p @@");
     }
 
     /**
@@ -348,11 +344,11 @@ public class SuFile extends File {
      */
     @Override
     public boolean renameTo(File dest) {
-        return cmdBool("mv -f \"$__F_\" '" + dest.getAbsolutePath() + "'");
+        return cmdBool("mv -f @@ '" + dest.getAbsolutePath() + "'");
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
-        char[] perms = cmd("stat -c '%a' \"$__F_\"").toCharArray();
+        char[] perms = cmd("stat -c '%a' @@").toCharArray();
         if (perms.length != 3)
             return false;
         for (int i = 0; i < 3; ++i) {
@@ -363,7 +359,7 @@ public class SuFile extends File {
                 perm &= ~(b);
             perms[i] = (char) (perm + '0');
         }
-        return cmdBool("chmod " + new String(perms) + " \"$__F_\"");
+        return cmdBool("chmod " + new String(perms) + " @@");
     }
 
     /**
@@ -429,7 +425,7 @@ public class SuFile extends File {
     public boolean setLastModified(long time) {
         DateFormat df = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
         String date = df.format(new Date(time));
-        return cmdBool("[ -e \"$__F_\" ] && touch -t " + date + " \"$__F_\"");
+        return cmdBool("[ -e @@ ] && touch -t " + date + " @@");
     }
 
     /**
@@ -455,18 +451,14 @@ public class SuFile extends File {
     public String[] list(FilenameFilter filter) {
         if (!isDirectory())
             return null;
-        FilenameFilter defFilter = (file, name) -> name.equals(".") || name.equals("..");
-        List<String> out = Shell.su(setCmd("ls -a \"$__F_\"")).to(new LinkedList<>(), null)
-                .exec().getOut();
-        String name;
+        String cmd = "ls -a " + quotedPath;
+        List<String> out = Shell.su(cmd).to(new LinkedList<>(), null).exec().getOut();
         for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
-            name = it.next();
-            if (filter != null && !filter.accept(this, name)) {
+            String name = it.next();
+            if (name.equals(".") || name.equals("..") ||
+                    (filter != null && !filter.accept(this, name))) {
                 it.remove();
-                continue;
             }
-            if (defFilter.accept(this, name))
-                it.remove();
         }
         return out.toArray(new String[0]);
     }
