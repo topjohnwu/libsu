@@ -27,12 +27,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
 
+import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImpl {
 
     private static final String TAG = "SHELLIO";
-    private static final byte[] JUNK = new byte[1];
 
     private final SuFile file;
     private boolean readOnly;

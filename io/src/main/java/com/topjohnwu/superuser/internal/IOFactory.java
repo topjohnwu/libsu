@@ -26,6 +26,9 @@ import java.io.FileNotFoundException;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class IOFactory {
+
+    static final byte[] JUNK = new byte[1];
+
     private IOFactory() {}
 
     public static ShellIO shellIO(SuFile file, String mode) throws FileNotFoundException {

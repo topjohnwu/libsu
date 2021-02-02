@@ -36,10 +36,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
 import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 @RequiresApi(21)
 class FifoOutputStream extends BaseSuOutputStream {
+
+    // Set a reasonable timeout here. It is possible that `cat` failed, and the
+    // FIFO cannot be opened on our side without blocking forever.
+    static final int FIFO_TIMEOUT = 250;
+    static final String TAG = "FIFOIO";
+    static final byte[] END_CMD = "echo\n".getBytes(UTF_8);
 
     private final File fifo;
 
@@ -69,9 +76,13 @@ class FifoOutputStream extends BaseSuOutputStream {
         try {
             Shell.getShell().execTask((in, out, err) -> {
                 String cmd = "cat " + fifo + op() + file + " 2>/dev/null &\n";
+                Utils.log(TAG, cmd);
                 in.write(cmd.getBytes(UTF_8));
                 in.flush();
-                Utils.log("FIFO", cmd);
+                in.write(END_CMD);
+                in.flush();
+                // Wait till the operation is done
+                out.read(JUNK);
             });
         } catch (IOException e) {
             throw (FileNotFoundException)
@@ -79,9 +90,9 @@ class FifoOutputStream extends BaseSuOutputStream {
         }
 
         // Open the fifo only after the shell request
-        Future<OutputStream> check = Shell.EXECUTOR.submit(() -> new FileOutputStream(fifo));
+        Future<OutputStream> stream = Shell.EXECUTOR.submit(() -> new FileOutputStream(fifo));
         try {
-            out = check.get(10, TimeUnit.MILLISECONDS);
+            out = stream.get(FIFO_TIMEOUT, TimeUnit.MILLISECONDS);
             // Root command might fail for any random reason, bail out
         } catch (ExecutionException |InterruptedException| TimeoutException e) {
             Throwable cause = e.getCause();
@@ -89,7 +100,7 @@ class FifoOutputStream extends BaseSuOutputStream {
                 throw (FileNotFoundException) cause;
             else
                 throw (FileNotFoundException)
-                        new FileNotFoundException("Cannot open fifo").initCause(cause);
+                        new FileNotFoundException("Cannot open fifo").initCause(e);
         }
     }
 
