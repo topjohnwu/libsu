@@ -55,7 +55,7 @@ public final class ShellUtils {
     }
 
     /**
-     * Run commands with the global shell and get a single line output.
+     * Run commands with the main shell and get a single line output.
      * @param cmds the commands.
      * @return the last line of the output of the command, empty string if no output is available.
      */
@@ -77,7 +77,7 @@ public final class ShellUtils {
     }
 
     /**
-     * Run commands with the global shell and return whether returns 0 (success).
+     * Run commands with the main shell and return whether exits with 0 (success).
      * @param cmds the commands.
      * @return {@code true} if the commands succeed.
      */
@@ -86,7 +86,7 @@ public final class ShellUtils {
     }
 
     /**
-     * Run commands and return whether returns 0 (success).
+     * Run commands and return whether exits with 0 (success).
      * @param shell a shell instance.
      * @param cmds the commands.
      * @return {@code true} if the commands succeed.
