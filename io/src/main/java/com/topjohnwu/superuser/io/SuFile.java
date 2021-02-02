@@ -43,7 +43,7 @@ import java.util.Locale;
  * are atomic. This is a limitation for using shell commands.
  * <p>
  * Each method description in this class will list out its required commands.
- * The following commands exists on all Android versions: {@code rm}, {@code rmdir},
+ * The following commands exist on all Android versions: {@code rm}, {@code rmdir},
  * {@code mv}, {@code ls}, and {@code mkdir}.
  * The following commands require {@code toybox} on Android 6.0 and higher, or {@code busybox}
  * to support legacy devices: {@code readlink}, {@code touch}, and {@code stat}.
@@ -172,6 +172,13 @@ public class SuFile extends File {
 
     @NonNull
     @Override
+    public String getAbsolutePath() {
+        // We are constructed with an absolute path, no need to re-resolve again
+        return getPath();
+    }
+
+    @NonNull
+    @Override
     public SuFile getAbsoluteFile() {
         return this;
     }
@@ -186,7 +193,7 @@ public class SuFile extends File {
     @Override
     public String getCanonicalPath() {
         String path = cmd("readlink -f @@");
-        return path.isEmpty() ? getAbsolutePath() : path;
+        return path.isEmpty() ? getPath() : path;
     }
 
     /**

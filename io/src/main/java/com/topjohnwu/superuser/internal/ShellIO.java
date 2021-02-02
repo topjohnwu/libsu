@@ -97,11 +97,11 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             if (fileOff == 0) {
                 cmd = String.format(Locale.ROOT,
                         "dd of='%s' bs=%d count=1 %s 2>/dev/null; echo\n",
-                        file.getAbsolutePath(), len, getConv());
+                        file.getPath(), len, getConv());
             } else {
                 cmd = String.format(Locale.ROOT,
                         "dd of='%s' ibs=%d count=1 obs=%d seek=1 %s 2>/dev/null; echo\n",
-                        file.getAbsolutePath(), len, fileOff, getConv());
+                        file.getPath(), len, fileOff, getConv());
             }
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
@@ -118,7 +118,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     void streamWrite(byte[] b, int off, int len) throws IOException {
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
-                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo\n", len, file.getAbsolutePath());
+                    "dd bs=%d count=1 >> '%s' 2>/dev/null; echo\n", len, file.getPath());
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
             in.flush();
@@ -198,7 +198,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             int off = _off;
             String cmd = String.format(Locale.ROOT,
                     "dd if='%s' ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2\n",
-                    file.getAbsolutePath(), bs, skip, count, len);
+                    file.getPath(), bs, skip, count, len);
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
             in.flush();
@@ -279,7 +279,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         Shell.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd of='%s' bs=%d seek=1 count=0 2>/dev/null; echo\n",
-                    file.getAbsolutePath(), newLength);
+                    file.getPath(), newLength);
             Utils.log(TAG, cmd);
             in.write(cmd.getBytes(UTF_8));
             in.flush();
