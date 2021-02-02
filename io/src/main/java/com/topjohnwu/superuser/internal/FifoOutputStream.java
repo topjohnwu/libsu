@@ -105,11 +105,6 @@ class FifoOutputStream extends BaseSuOutputStream {
     }
 
     @Override
-    public void write(int b) throws IOException {
-        out.write(b);
-    }
-
-    @Override
     public void close() throws IOException {
         super.close();
         fifo.delete();

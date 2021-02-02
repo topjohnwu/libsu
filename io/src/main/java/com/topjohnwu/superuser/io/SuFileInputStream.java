@@ -53,13 +53,11 @@ public class SuFileInputStream extends FilterInputStream {
      * On Android 5.0 and higher (API 21+), internally a named pipe (FIFO) is created
      * to bridge all I/O operations across process boundary, providing 100% native
      * {@link FileInputStream} performance.
-     * A single root command is issued through the main shell.
+     * A single root command is issued through the main shell at stream construction.
      * <br>
-     * On Android 4.4 and lower, the provided {@code file} will first be copied into
-     * the application cache folder before opening an InputStream for access.
-     * The temporary file will be removed when the stream is closed.
-     * <p>
-     * Unlike {@link #openCompat(File)}, the stream is NOT buffered internally.
+     * On Android 4.4 and lower, the returned stream will do I/O operations using {@code dd}
+     * commands via the main root shell for each 4MB chunk. Due to excessive internal buffering,
+     * the performance is on par with native streams.
      * @see FileInputStream#FileInputStream(File)
      */
     public static InputStream open(File file) throws FileNotFoundException {
@@ -77,56 +75,9 @@ public class SuFileInputStream extends FilterInputStream {
         }
     }
 
-    /**
-     * {@code SuFileInputStream.openCompat(new File(path))}
-     */
-    public static InputStream openCompat(String path) throws FileNotFoundException {
-        return openCompat(new File(path));
-    }
-
-    /**
-     * Open an {@link InputStream} with root access (compatibility mode).
-     * <p>
-     * Unless {@code file} is an {@link SuFile}, this method will always try to directly
-     * open a {@link FileInputStream}, and fallback to using root access when it fails.
-     * <p>
-     * <strong>Root Access Streams:</strong><br>
-     * On Android 5.0 and higher (API 21+), this is the same as {@link #open(File)}, but
-     * additionally wrapped with {@link BufferedInputStream} for consistency.
-     * <br>
-     * On Android 4.4 and lower, the returned stream will do every I/O operation with {@code dd}
-     * commands via the main root shell. This was the implementation in older versions of
-     * {@code libsu} and is proven to be error prone, but preserved as "compatibility mode".
-     * <p>
-     * The returned stream is <b>already buffered</b>, do not add another
-     * layer of {@link BufferedInputStream} to add more overhead!
-     * @see FileInputStream#FileInputStream(File)
-     */
-    public static InputStream openCompat(File file) throws FileNotFoundException {
-        if (file instanceof SuFile) {
-            return shell((SuFile) file);
-        } else {
-            try {
-                // Try normal FileInputStream
-                return new BufferedInputStream(new FileInputStream(file));
-            } catch (FileNotFoundException e) {
-                if (!Shell.rootAccess())
-                    throw e;
-                return shell(new SuFile(file));
-            }
-        }
-    }
-
     private static InputStream root(SuFile file) throws FileNotFoundException {
         if (Build.VERSION.SDK_INT >= 21)
             return IOFactory.fifoIn(file);
-        else
-            return IOFactory.copyIn(file);
-    }
-
-    private static InputStream shell(SuFile file) throws FileNotFoundException {
-        if (Build.VERSION.SDK_INT >= 21)
-            return new BufferedInputStream(IOFactory.fifoIn(file));
         else
             return IOFactory.shellIn(file);
     }
@@ -134,21 +85,41 @@ public class SuFileInputStream extends FilterInputStream {
     // Deprecated APIs
 
     /**
-     * Same as {@link #openCompat(String)}
+     * Same as {@link #open(String)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(String)}
      */
     @Deprecated
     public SuFileInputStream(String path) throws FileNotFoundException {
-        super(openCompat(path));
+        this(new File(path));
     }
 
     /**
-     * Same as {@link #openCompat(File)}
+     * Same as {@link #open(File)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(File)}
      */
     @Deprecated
     public SuFileInputStream(File file) throws FileNotFoundException {
-        super(openCompat(file));
+        super(null);
+        if (file instanceof SuFile) {
+            in = compat((SuFile) file);
+        } else {
+            try {
+                // Try normal FileInputStream
+                in = new BufferedInputStream(new FileInputStream(file));
+            } catch (FileNotFoundException e) {
+                if (!Shell.rootAccess())
+                    throw e;
+                in = compat(new SuFile(file));
+            }
+        }
     }
 
+    private static InputStream compat(SuFile file) throws FileNotFoundException {
+        if (Build.VERSION.SDK_INT >= 21)
+            return new BufferedInputStream(IOFactory.fifoIn(file));
+        else
+            return IOFactory.shellIn(file);
+    }
 }

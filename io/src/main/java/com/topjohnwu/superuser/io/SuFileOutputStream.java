@@ -66,18 +66,17 @@ public class SuFileOutputStream extends BufferedOutputStream {
      * On Android 5.0 and higher (API 21+), internally a named pipe (FIFO) is created
      * to bridge all I/O operations across process boundary, providing 100% native
      * {@link FileOutputStream} performance.
-     * A single root command is issued through the main shell.
+     * A single root command is issued through the main shell at stream construction.
      * <br>
      * On Android 4.4 and lower, all write operations will be applied to a temporary file in
      * the application cache folder. When the stream is closed, the temporary file
-     * will then be copied over to the provided {@code file} at once then deleted.
-     * <p>
-     * Unlike {@link #openCompat(File, boolean)}, the stream is NOT buffered internally.
+     * will be copied over to the provided {@code file} by using a single {@code cat}
+     * command with the main shell, then deleted.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
     public static OutputStream open(File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            return root((SuFile) file, append);
+            return fifo((SuFile) file, append);
         } else {
             try {
                 // Try normal FileInputStream
@@ -85,55 +84,49 @@ public class SuFileOutputStream extends BufferedOutputStream {
             } catch (FileNotFoundException e) {
                 if (!Shell.rootAccess())
                     throw e;
-                return root(new SuFile(file), append);
+                return fifo(new SuFile(file), append);
             }
         }
     }
 
     /**
-     * {@code SuFileOutputStream.openCompat(new File(path), false)}
+     * {@code SuFileOutputStream.openNoCopy(new File(path), false)}
      */
-    public static OutputStream openCompat(String path) throws FileNotFoundException {
-        return openCompat(new File(path), false);
+    public static OutputStream openNoCopy(String path) throws FileNotFoundException {
+        return openNoCopy(new File(path), false);
     }
 
     /**
-     * {@code SuFileOutputStream.openCompat(new File(path), append)}
+     * {@code SuFileOutputStream.openNoCopy(new File(path), append)}
      */
-    public static OutputStream openCompat(String path, boolean append) throws FileNotFoundException {
-        return openCompat(new File(path), append);
+    public static OutputStream openNoCopy(String path, boolean append) throws FileNotFoundException {
+        return openNoCopy(new File(path), append);
     }
 
     /**
-     * {@code SuFileOutputStream.openCompat(file, false)}
+     * {@code SuFileOutputStream.openNoCopy(file, false)}
      */
-    public static OutputStream openCompat(File file) throws FileNotFoundException {
-        return openCompat(file, false);
+    public static OutputStream openNoCopy(File file) throws FileNotFoundException {
+        return openNoCopy(file, false);
     }
 
     /**
-     * Open an {@link OutputStream} with root access (compatibility mode).
+     * Open an {@link OutputStream} with root access (no internal copying).
+     * <p>
+     * <strong>If your minSdkVersion is 21 or higher, this method is irrelevant.</strong>
      * <p>
      * Unless {@code file} is an {@link SuFile}, this method will always try to directly
      * open a {@link FileOutputStream}, and fallback to using root access when it fails.
      * <p>
      * <strong>Root Access Streams:</strong><br>
-     * On Android 5.0 and higher (API 21+), this is the same as {@link #open(File, boolean)}, but
-     * additionally wrapped with {@link BufferedOutputStream} for consistency.
+     * On Android 5.0 and higher (API 21+), this is equivalent to {@link #open(File, boolean)}.
      * <br>
-     * On Android 4.4 and lower, the returned stream will do every I/O operation with {@code dd}
-     * commands via the main root shell. This was the implementation in older versions of
-     * {@code libsu} and is proven to be error prone, but preserved as "compatibility mode".
-     * <p>
-     * The returned stream is <b>already buffered</b>, do not add another
-     * layer of {@link BufferedOutputStream} to add more overhead!
+     * On Android 4.4 and lower, the returned stream will do every write operation with a
+     * {@code dd} command via the main root shell. <strong>Writing to files through shell
+     * commands is proven to be error prone. YOU HAVE BEEN WARNED!</strong>
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
-    public static OutputStream openCompat(File file, boolean append) throws FileNotFoundException {
-        return new BufferedOutputStream(compat(file, append));
-    }
-
-    private static OutputStream compat(File file, boolean append) throws FileNotFoundException {
+    public static OutputStream openNoCopy(File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
             return shell((SuFile) file, append);
         } else {
@@ -148,7 +141,7 @@ public class SuFileOutputStream extends BufferedOutputStream {
         }
     }
 
-    private static OutputStream root(SuFile file, boolean append) throws FileNotFoundException {
+    private static OutputStream fifo(SuFile file, boolean append) throws FileNotFoundException {
         if (Build.VERSION.SDK_INT >= 21)
             return IOFactory.fifoOut(file, append);
         else
@@ -165,38 +158,42 @@ public class SuFileOutputStream extends BufferedOutputStream {
     // Deprecated APIs
 
     /**
-     * Same as {@link #openCompat(String)}
+     * Same as {@link #openNoCopy(String)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(String)}
      */
     @Deprecated
     public SuFileOutputStream(String path) throws FileNotFoundException {
-        this(new File(path), false);
+        super(openNoCopy(path, false));
     }
 
     /**
-     * Same as {@link #openCompat(String, boolean)}
+     * Same as {@link #openNoCopy(String, boolean)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(String, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        this(new File(path), append);
+        super(openNoCopy(path, append));
     }
 
     /**
-     * Same as {@link #openCompat(File)}
+     * Same as {@link #openNoCopy(File)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(File, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(File file) throws FileNotFoundException {
-        this(file, false);
+        super(openNoCopy(file, false));
     }
 
     /**
-     * Same as {@link #openCompat(File, boolean)}
+     * Same as {@link #openNoCopy(File, boolean)}, but guaranteed to be buffered internally to
+     * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(File, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
-        super(compat(file, append));
+        super(openNoCopy(file, append));
     }
 }

@@ -27,10 +27,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 /**
- * Access files using the global shell instance and mimics {@link RandomAccessFile}.
+ * Access files using the main shell and mimics {@link RandomAccessFile}.
  * <p>
- * Usage of this class is strongly NOT recommended. Each I/O operation comes with a large
+ * Usage of this class is not recommended. Each I/O operation comes with a large
  * overhead and depends on certain behavior of the command {@code dd}.
+ * <strong>Writing to files through shell commands is proven to be error prone.
+ * YOU HAVE BEEN WARNED!</strong>
  * Please use {@link SuFileInputStream} and {@link SuFileOutputStream} whenever possible.
  * <p>
  * This class always checks whether using a shell is necessary. If not, it simply opens a new
