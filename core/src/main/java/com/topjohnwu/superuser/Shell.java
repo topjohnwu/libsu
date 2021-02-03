@@ -227,7 +227,7 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Create a {@link Job} with commands.
+     * Create a pending {@link Job} with commands.
      * <p>
      * This method can be treated as functionally equivalent to
      * {@code Shell.getShell().newJob().add(commands).to(new ArrayList<>())}, but the internal
@@ -256,12 +256,17 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * Create a {@link Job} with an {@link InputStream}.
+     * Create a pending {@link Job} with an {@link InputStream}.
      * <p>
      * This method can be treated as functionally equivalent to
-     * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}.
-     * Please check {@link #sh(String...)} for more details.
-     * @return a job that the developer can execute or submit later.
+     * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}, but the internal
+     * implementation is specialized for this use case and does not run this exact code.
+     * The developer can manually override output destination(s) with either
+     * {@link Job#to(List)} or {@link Job#to(List, List)}.
+     * <p>
+     * The main shell will NOT be requested until the developer invokes either
+     * {@link Job#exec()} or {@code Job.submit(...)}. This makes it possible to
+     * construct {@link Job}s before the program has created any root shell.
      * @see Job#add(InputStream)
      */
     @NonNull
@@ -546,6 +551,12 @@ public abstract class Shell implements Closeable {
 
         /**
          * Add a new operation serving an InputStream to STDIN.
+         * <p>
+         * This is NOT executing the script like {@code sh script.sh}.
+         * This is similar to sourcing the script ({@code . script.sh}) as the
+         * raw content of the script is directly fed into STDIN. If you call
+         * {@code exit} in the script, <strong>the shell will be killed and this
+         * shell instance will no longer be alive!</strong>
          * @param in the InputStream to serve to STDIN.
          *           The stream will be closed after consumption.
          * @return this Job object for chaining of calls.
