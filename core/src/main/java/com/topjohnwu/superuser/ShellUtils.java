@@ -92,7 +92,7 @@ public final class ShellUtils {
      * @return {@code true} if the commands succeed.
      */
     public static boolean fastCmdResult(Shell shell, String... cmds) {
-        return shell.newJob().add(cmds).exec().isSuccess();
+        return shell.newJob().add(cmds).to(null).exec().isSuccess();
     }
 
     /**
