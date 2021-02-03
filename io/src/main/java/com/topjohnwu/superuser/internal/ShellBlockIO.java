@@ -36,7 +36,7 @@ class ShellBlockIO extends ShellIO {
         long bs;
         try {
             bs = Long.parseLong(ShellUtils.fastCmd(
-                    "blockdev --getsize64 '" + file.getPath() + "'"));
+                    "blockdev --getsize64 " + file.getEscapedPath()));
         } catch (NumberFormatException e) {
             // Error, no choice but to assume no boundary
             bs = Long.MAX_VALUE;

@@ -115,6 +115,25 @@ public final class ShellUtils {
     }
 
     /**
+     * Format string to quoted and escaped string suitable for shell commands.
+     * @param s the string to be formatted.
+     * @return the formatted string.
+     */
+    public static String escapedString(String s) {
+        StringBuilder sb = new StringBuilder();
+        sb.append('"');
+        int len = s.length();
+        for (int i = 0; i < len; ++i) {
+            char c = s.charAt(i);
+            if ("$`\"\\".indexOf(c) >= 0)
+                sb.append('\\');
+            sb.append(c);
+        }
+        sb.append('"');
+        return sb.toString();
+    }
+
+    /**
      * Get the greatest common divisor of 2 integers with binary algorithm.
      * @param u an integer.
      * @param v an integer.

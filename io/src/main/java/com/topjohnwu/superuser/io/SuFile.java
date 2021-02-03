@@ -54,7 +54,7 @@ import java.util.Locale;
  */
 public class SuFile extends File {
 
-    private final String quotedPath;
+    private final String escapedPath;
 
     public static File open(String pathname) {
         return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
@@ -74,7 +74,7 @@ public class SuFile extends File {
 
     SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        quotedPath = '"' + getPath() + '"';
+        escapedPath = ShellUtils.escapedString(getPath());
     }
 
     public SuFile(String pathname) {
@@ -95,12 +95,21 @@ public class SuFile extends File {
 
     private String cmd(String c) {
         // Use replace instead of format for performance
-        return ShellUtils.fastCmd(c.replace("@@", quotedPath));
+        return ShellUtils.fastCmd(c.replace("@@", escapedPath));
     }
 
     private boolean cmdBool(String c) {
         // Use replace instead of format for performance
-        return ShellUtils.fastCmdResult(c.replace("@@", quotedPath));
+        return ShellUtils.fastCmdResult(c.replace("@@", escapedPath));
+    }
+
+    /**
+     * Converts this abstract pathname into a pathname string suitable
+     * for shell commands.
+     * @return the formatted string form of this abstract pathname
+     */
+    public String getEscapedPath() {
+        return escapedPath;
     }
 
     @Override
@@ -458,7 +467,7 @@ public class SuFile extends File {
     public String[] list(FilenameFilter filter) {
         if (!isDirectory())
             return null;
-        String cmd = "ls -a " + quotedPath;
+        String cmd = "ls -a " + escapedPath;
         List<String> out = Shell.su(cmd).to(new LinkedList<>(), null).exec().getOut();
         for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
             String name = it.next();
