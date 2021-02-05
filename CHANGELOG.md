@@ -5,6 +5,7 @@
 - On Android 4.4 and lower, `SuFileOutputStream.open(...)` will write all data to a temporary file in the application's cache folder, and will only actually output the data to the target location when the stream is closed. Please refer to Javadocs for more detail.
 - If the internal copying of `SuFileOutputStream.open(...)` is unacceptable, `SuFileOutputStream.openNoCopy(...)` can be used to force the old implementation (shell command backed `OutputStream`) on Android 4.4 and lower. **However, according to stress test results, this implementation is error prone and I strongly recommend against using it.**
 - If your `minSdkVersion` is 21 or higher (which most apps now are), these I/O stream changes basically improve performance and reliability for free without any complexities mentioned above.
+- The `:busybox` module is updated with new busybox binaries (1.32.1). It also adds the logic to workaround older Samsung device kernel restrictions.
 
 ### Bug fixes
 - Fix unaligned shell input (the bug did not affect `SuFileInputStream`)
