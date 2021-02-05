@@ -72,31 +72,32 @@ public class BuilderImpl extends Shell.Builder {
     @NonNull
     @Override
     public ShellImpl build(String... commands) {
+        ShellImpl shell;
         try {
-            ShellImpl shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), commands);
-            try {
-                Context ctx = Utils.getContext();
-                MainShell.set(shell);
-                if (initClasses != null) {
-                    for (Class<? extends Shell.Initializer> cls : initClasses) {
-                        Constructor<? extends Shell.Initializer> ic = cls.getDeclaredConstructor();
-                        ic.setAccessible(true);
-                        Shell.Initializer init = ic.newInstance();
-                        if (!init.onInit(ctx, shell)) {
-                            MainShell.set(null);
-                            throw new NoShellException("Unable to init shell");
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                if (e instanceof RuntimeException)
-                    throw (RuntimeException) e;
-                Utils.err(e);
-            }
-            return shell;
+            shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), commands);
         } catch (IOException e) {
             Utils.ex(e);
             throw new NoShellException("Unable to create a shell!", e);
         }
+        MainShell.set(shell);
+        if (initClasses != null) {
+            Context ctx = Utils.getContext();
+            for (Class<? extends Shell.Initializer> cls : initClasses) {
+                Shell.Initializer init;
+                try {
+                    Constructor<? extends Shell.Initializer> ic = cls.getDeclaredConstructor();
+                    ic.setAccessible(true);
+                    init = ic.newInstance();
+                } catch (Exception e) {
+                    Utils.err(e);
+                    continue;
+                }
+                if (!init.onInit(ctx, shell)) {
+                    MainShell.set(null);
+                    throw new NoShellException("Unable to init shell");
+                }
+            }
+        }
+        return shell;
     }
 }
