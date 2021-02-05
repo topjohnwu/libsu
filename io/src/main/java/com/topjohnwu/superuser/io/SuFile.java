@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.io;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
@@ -108,6 +109,7 @@ public class SuFile extends File {
      * for shell commands.
      * @return the formatted string form of this abstract pathname
      */
+    @NonNull
     public String getEscapedPath() {
         return escapedPath;
     }
@@ -486,6 +488,7 @@ public class SuFile extends File {
      * Requires command {@code ls}.
      * @see File#listFiles()
      */
+    @Nullable
     @Override
     public SuFile[] listFiles() {
         if (!isDirectory())
@@ -507,6 +510,7 @@ public class SuFile extends File {
      * Requires command {@code ls}.
      * @see File#listFiles(FilenameFilter)
      */
+    @Nullable
     @Override
     public SuFile[] listFiles(FilenameFilter filter) {
         if (!isDirectory())
@@ -528,6 +532,7 @@ public class SuFile extends File {
      * Requires command {@code ls}.
      * @see File#listFiles(FileFilter)
      */
+    @Nullable
     @Override
     public SuFile[] listFiles(FileFilter filter) {
         String[] ss = list();

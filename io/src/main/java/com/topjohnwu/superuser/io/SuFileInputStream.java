@@ -18,6 +18,8 @@ package com.topjohnwu.superuser.io;
 
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
@@ -39,7 +41,8 @@ public class SuFileInputStream extends FilterInputStream {
     /**
      * {@code SuFileInputStream.open(new File(path))}
      */
-    public static InputStream open(String path) throws FileNotFoundException {
+    @NonNull
+    public static InputStream open(@NonNull String path) throws FileNotFoundException {
         return open(new File(path));
     }
 
@@ -60,7 +63,8 @@ public class SuFileInputStream extends FilterInputStream {
      * the performance is on par with native streams.
      * @see FileInputStream#FileInputStream(File)
      */
-    public static InputStream open(File file) throws FileNotFoundException {
+    @NonNull
+    public static InputStream open(@NonNull File file) throws FileNotFoundException {
         if (file instanceof SuFile) {
             return root((SuFile) file);
         } else {

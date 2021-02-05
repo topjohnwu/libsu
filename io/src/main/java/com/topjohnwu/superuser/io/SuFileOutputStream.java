@@ -18,6 +18,8 @@ package com.topjohnwu.superuser.io;
 
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
@@ -38,21 +40,24 @@ public class SuFileOutputStream extends BufferedOutputStream {
     /**
      * {@code SuFileOutputStream.open(new File(path), false)}
      */
-    public static OutputStream open(String path) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream open(@NonNull String path) throws FileNotFoundException {
         return open(new File(path), false);
     }
 
     /**
      * {@code SuFileOutputStream.open(new File(path), append)}
      */
-    public static OutputStream open(String path, boolean append) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream open(@NonNull String path, boolean append) throws FileNotFoundException {
         return open(new File(path), append);
     }
 
     /**
      * {@code SuFileOutputStream.open(file, false)}
      */
-    public static OutputStream open(File file) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream open(@NonNull File file) throws FileNotFoundException {
         return open(file, false);
     }
 
@@ -74,7 +79,8 @@ public class SuFileOutputStream extends BufferedOutputStream {
      * command with the main shell, then deleted.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
-    public static OutputStream open(File file, boolean append) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream open(@NonNull File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
             return fifo((SuFile) file, append);
         } else {
@@ -92,21 +98,24 @@ public class SuFileOutputStream extends BufferedOutputStream {
     /**
      * {@code SuFileOutputStream.openNoCopy(new File(path), false)}
      */
-    public static OutputStream openNoCopy(String path) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream openNoCopy(@NonNull String path) throws FileNotFoundException {
         return openNoCopy(new File(path), false);
     }
 
     /**
      * {@code SuFileOutputStream.openNoCopy(new File(path), append)}
      */
-    public static OutputStream openNoCopy(String path, boolean append) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream openNoCopy(@NonNull String path, boolean append) throws FileNotFoundException {
         return openNoCopy(new File(path), append);
     }
 
     /**
      * {@code SuFileOutputStream.openNoCopy(file, false)}
      */
-    public static OutputStream openNoCopy(File file) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream openNoCopy(@NonNull File file) throws FileNotFoundException {
         return openNoCopy(file, false);
     }
 
@@ -126,7 +135,8 @@ public class SuFileOutputStream extends BufferedOutputStream {
      * commands is proven to be error prone. YOU HAVE BEEN WARNED!</strong>
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
-    public static OutputStream openNoCopy(File file, boolean append) throws FileNotFoundException {
+    @NonNull
+    public static OutputStream openNoCopy(@NonNull File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
             return shell((SuFile) file, append);
         } else {

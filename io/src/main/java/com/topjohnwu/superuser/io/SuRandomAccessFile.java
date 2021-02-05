@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.io;
 
+import androidx.annotation.NonNull;
+
 import com.topjohnwu.superuser.internal.IOFactory;
 
 import java.io.Closeable;
@@ -52,7 +54,8 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
      * @throws FileNotFoundException
      * @see RandomAccessFile#RandomAccessFile(File, String)
      */
-    public static SuRandomAccessFile open(File file, String mode) throws FileNotFoundException {
+    @NonNull
+    public static SuRandomAccessFile open(@NonNull File file, String mode) throws FileNotFoundException {
         if (file instanceof SuFile) {
             return IOFactory.shellIO((SuFile) file, mode);
         } else {
@@ -67,7 +70,8 @@ public abstract class SuRandomAccessFile implements DataInput, DataOutput, Close
     /**
      * {@code SuRandomAccessFile.open(new File(path), mode)}
      */
-    public static SuRandomAccessFile open(String path, String mode) throws FileNotFoundException {
+    @NonNull
+    public static SuRandomAccessFile open(@NonNull String path, String mode) throws FileNotFoundException {
         return open(new File(path), mode);
     }
 
