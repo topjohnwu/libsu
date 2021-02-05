@@ -1,3 +1,19 @@
+## 3.1.0
+### New Features
+- On Android 5.0 and higher (API 21+), both `SuFileInputStream.open(...)` and `SuFileOutputStream.open(...)` return I/O streams backed by FIFO (named pipes). This provides 100% native file I/O stream performance and stability.
+- On Android 4.4 and lower, `SuFileInputStream.open(...)` uses the old shell command backed `InputStream` as it was stress tested and proven reliable.
+- On Android 4.4 and lower, `SuFileOutputStream.open(...)` will write all data to a temporary file in the application's cache folder, and will only actually output the data to the target location when the stream is closed. Please refer to Javadocs for more detail.
+- If the internal copying of `SuFileOutputStream.open(...)` is unacceptable, `SuFileOutputStream.openNoCopy(...)` can be used to force the old implementation (shell command backed `OutputStream`) on Android 4.4 and lower. **However, according to stress test results, this implementation is error prone and I strongly recommend against using it.**
+- If your `minSdkVersion` is 21 or higher (which most apps now are), these I/O stream changes basically improve performance and reliability for free without any complexities mentioned above.
+
+### Bug fixes
+- Fix unaligned shell input (the bug did not affect `SuFileInputStream`)
+- `SuFile` now properly escapes special characters of file names in internal implementations
+
+### Deprecation
+- Deprecated APIs in 3.0.x is removed
+- Creating instances of `SuFileInputStream` and `SuFileOutputStream` is deprecated. Please use the static `SuFileInputStream.open(...)` and `SuFileOutputStream.open(...)` methods instead.
+
 ## 3.0.2
 - Fix regression that could cause crashes on older Android versions when getting application context internally
 - Add more nullability annotations for better Kotlin integration
