@@ -1,6 +1,7 @@
+import org.gradle.internal.os.OperatingSystem
 import java.io.OutputStream
-import java.nio.file.Paths
 import java.nio.file.Files
+import java.nio.file.Paths
 
 plugins {
     id("com.android.library")
@@ -18,8 +19,9 @@ android {
 android.libraryVariants.all {
     val jarTask = tasks.register("create${name.capitalize()}MainJar") {
         doLast {
+            val d8Command = if (OperatingSystem.current().isWindows) "d8.bat" else "d8"
             val d8 = Paths.get(android.sdkDirectory.path,
-                "build-tools", android.buildToolsVersion, "d8")
+                "build-tools", android.buildToolsVersion, d8Command)
             val classFile = Paths.get(buildDir.path, "intermediates",
                 "javac", this@all.name, "classes",
                 "com", "topjohnwu", "superuser", "internal", "IPCMain.class")
