@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Some handy utility methods that are used in {@code libsu}.
@@ -36,6 +38,9 @@ import java.util.List;
  * <strong>You have been warned!!</strong>
  */
 public final class ShellUtils {
+
+    /** The pattern of list of char to escape from shell file names. */
+    private static final Pattern BASH_ESCAPED_CHARS = Pattern.compile("[$`\"\\\\ ;&|]");
 
     private ShellUtils() {}
 
@@ -120,17 +125,8 @@ public final class ShellUtils {
      * @return the formatted string.
      */
     public static String escapedString(String s) {
-        StringBuilder sb = new StringBuilder();
-        sb.append('"');
-        int len = s.length();
-        for (int i = 0; i < len; ++i) {
-            char c = s.charAt(i);
-            if ("$`\"\\".indexOf(c) >= 0)
-                sb.append('\\');
-            sb.append(c);
-        }
-        sb.append('"');
-        return sb.toString();
+        Matcher matcher = BASH_ESCAPED_CHARS.matcher(s);
+        return "\"" + matcher.replaceAll("\\\\$0") + "\"";
     }
 
     /**
