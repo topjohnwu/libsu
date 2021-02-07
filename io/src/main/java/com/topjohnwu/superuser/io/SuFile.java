@@ -326,7 +326,7 @@ public class SuFile extends File {
     @Override
     public long length() {
         try {
-            Long.parseLong(cmd("stat -c '%s' @@"));
+            return Long.parseLong(cmd("stat -c '%s' @@"));
         } catch (NumberFormatException ignored) {}
         return 0L;
     }
