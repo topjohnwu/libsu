@@ -1,3 +1,8 @@
+## 3.1.1
+#### Bug fixes
+- Fix typo in `SuFile.length()`
+- Escape filenames of the `File` argument in `SuFile.renameTo(File)`
+
 ## 3.1.0
 ### New Features
 - On Android 5.0 and higher (API 21+), both `SuFileInputStream.open(...)` and `SuFileOutputStream.open(...)` return I/O streams backed by FIFO (named pipes). This provides 100% native file I/O stream performance and stability.
