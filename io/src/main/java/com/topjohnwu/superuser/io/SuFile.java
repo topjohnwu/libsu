@@ -362,7 +362,8 @@ public class SuFile extends File {
      */
     @Override
     public boolean renameTo(File dest) {
-        return cmdBool("mv -f @@ '" + dest.getAbsolutePath() + "'");
+        String cmd = "mv -f " + escapedPath + " " + ShellUtils.escapedString(dest.getAbsolutePath());
+        return ShellUtils.fastCmdResult(cmd);
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
