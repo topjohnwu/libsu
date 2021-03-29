@@ -23,6 +23,7 @@ import android.system.Os;
 import androidx.annotation.RequiresApi;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.File;
@@ -75,7 +76,9 @@ class FifoOutputStream extends BaseSuOutputStream {
     private void openStream(SuFile file) throws FileNotFoundException {
         try {
             Shell.getShell().execTask((in, out, err) -> {
-                String cmd = "cat " + fifo + op() + file + " 2>/dev/null &\n";
+                String filePath = ShellUtils.escapedString(file.getPath());
+                String fifoPath = ShellUtils.escapedString(fifo.getPath());
+                String cmd = "cat " + fifoPath + op() + filePath + " 2>/dev/null &\n";
                 Utils.log(TAG, cmd);
                 in.write(cmd.getBytes(UTF_8));
                 in.flush();
