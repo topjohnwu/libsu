@@ -75,7 +75,7 @@ class FifoOutputStream extends BaseSuOutputStream {
     private void openStream(SuFile file) throws FileNotFoundException {
         try {
             Shell.getShell().execTask((in, out, err) -> {
-                String cmd = "cat " + fifo + op() + file + " 2>/dev/null &\n";
+                String cmd = "cat " + fifo + op() + file.getEscapedPath() + " 2>/dev/null &\n";
                 Utils.log(TAG, cmd);
                 in.write(cmd.getBytes(UTF_8));
                 in.flush();
