@@ -1,3 +1,7 @@
+## 3.1.2
+#### Bug fixes
+- Properly escape file names in FIFO I/O streams
+
 ## 3.1.1
 #### Bug fixes
 - Fix typo in `SuFile.length()`

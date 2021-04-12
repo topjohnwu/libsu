@@ -8,7 +8,7 @@ An Android library providing a complete solution for apps using root permissions
 
 ## [Changelog](./CHANGELOG.md)
 
-## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/3.1.1/javadoc/overview-summary.html)
+## [Javadoc](https://javadoc.jitpack.io/com/github/topjohnwu/libsu/docs/3.1.2/javadoc/overview-summary.html)
 
 ## Download
 ```groovy
@@ -23,7 +23,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '3.1.1'
+    def libsuVersion = '3.1.2'
 
     // The core module is used by all other components
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
