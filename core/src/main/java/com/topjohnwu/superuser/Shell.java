@@ -465,6 +465,17 @@ public abstract class Shell implements Closeable {
          */
         @NonNull
         public abstract Shell build(String... commands);
+
+        /**
+         * Combine all of the options that have been set and build a new {@code Shell} instance
+         * with the provided process.
+         * @param process a shell {@link Process} that has already been created.
+         * @return the built {@code Shell} instance.
+         * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
+         * initialization failed when using the configured {@link Initializer}.
+         */
+        @NonNull
+        public abstract Shell build(Process process);
     }
 
     /**
