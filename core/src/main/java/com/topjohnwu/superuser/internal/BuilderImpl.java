@@ -17,6 +17,7 @@
 package com.topjohnwu.superuser.internal;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
@@ -34,6 +35,7 @@ import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class BuilderImpl extends Shell.Builder {
+    private static final String TAG = "SHELLIMPL";
 
     boolean hasFlags(int flags) {
         return (this.flags & flags) == flags;
@@ -72,9 +74,22 @@ public class BuilderImpl extends Shell.Builder {
     @NonNull
     @Override
     public ShellImpl build(String... commands) {
+        try {
+            Utils.log(TAG, "exec " + TextUtils.join(" ", commands));
+            Process process = Runtime.getRuntime().exec(commands);
+            return build(process);
+        } catch (IOException e) {
+            Utils.ex(e);
+            throw new NoShellException("Unable to create a shell!", e);
+        }
+    }
+
+    @NonNull
+    @Override
+    public ShellImpl build(Process process) {
         ShellImpl shell;
         try {
-            shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), commands);
+            shell = new ShellImpl(timeout, hasFlags(FLAG_REDIRECT_STDERR), process);
         } catch (IOException e) {
             Utils.ex(e);
             throw new NoShellException("Unable to create a shell!", e);
