@@ -47,8 +47,6 @@ class ShellTerminatedException extends IOException {
 }
 
 class ShellImpl extends Shell {
-    private static final String TAG = "SHELLIMPL";
-
     private int status;
 
     final ExecutorService executor;
@@ -93,19 +91,14 @@ class ShellImpl extends Shell {
         }
     }
 
-    ShellImpl(long timeout, boolean redirect, String... cmd) throws IOException {
+    ShellImpl(long timeout, boolean redirect, Process process) throws IOException {
         status = UNKNOWN;
         this.redirect = redirect;
-
-        Utils.log(TAG, "exec " + TextUtils.join(" ", cmd));
-        process = Runtime.getRuntime().exec(cmd);
-        STDIN = new NoCloseOutputStream(process.getOutputStream());
-        STDOUT = new NoCloseInputStream(process.getInputStream());
-        STDERR = new NoCloseInputStream(process.getErrorStream());
+        this.process = process;
+        STDIN = new NoCloseOutputStream(this.process.getOutputStream());
+        STDOUT = new NoCloseInputStream(this.process.getInputStream());
+        STDERR = new NoCloseInputStream(this.process.getErrorStream());
         executor = new SerialExecutorService();
-
-        if (cmd.length >= 2 && TextUtils.equals(cmd[1], "--mount-master"))
-            status = ROOT_MOUNT_MASTER;
 
         // Shell checks might get stuck indefinitely
         Future<Void> check = executor.submit(this::shellCheck);
@@ -151,8 +144,16 @@ class ShellImpl extends Shell {
             if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
                 status = ROOT_SHELL;
 
-            if (status == ROOT_SHELL && this.status == ROOT_MOUNT_MASTER)
-                status = ROOT_MOUNT_MASTER;
+            if (status == ROOT_SHELL) {
+                STDIN.write(("readlink /proc/self/ns/mnt\n").getBytes(UTF_8));
+                STDIN.flush();
+                s = br.readLine();
+                STDIN.write(("readlink /proc/1/ns/mnt\n").getBytes(UTF_8));
+                STDIN.flush();
+                String s2 = br.readLine();
+                if (!TextUtils.isEmpty(s) && !TextUtils.isEmpty(s2) && TextUtils.equals(s, s2))
+                    status = ROOT_MOUNT_MASTER;
+            }
 
             this.status = status;
         }
