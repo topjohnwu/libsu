@@ -10,12 +10,11 @@ plugins {
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:4.1.3")
-        classpath("com.github.dcendents:android-maven-gradle-plugin:2.1")
+        classpath("com.android.tools.build:gradle:7.0.0")
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -72,32 +71,33 @@ publishing {
     }
 }
 
-val Project.android get() = extensions.getByName<BaseExtension>("android")
+fun Project.android(configuration: BaseExtension.() -> Unit) =
+    extensions.getByName<BaseExtension>("android").configuration()
 
 subprojects {
     buildscript {
         repositories {
             google()
-            jcenter()
+            mavenCentral()
         }
     }
 
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     configurations.create("javadocDeps")
 
     afterEvaluate {
-        android.apply {
+        android {
             compileSdkVersion(30)
             buildToolsVersion = "30.0.3"
 
             defaultConfig {
                 if (minSdkVersion == null)
-                    minSdkVersion(14)
-                targetSdkVersion(30)
+                    minSdk = 14
+                targetSdk = 30
             }
 
             compileOptions {
@@ -107,29 +107,27 @@ subprojects {
         }
 
         if (plugins.hasPlugin("com.android.library")) {
-            android.apply {
+            android {
                 buildFeatures.apply {
                     buildConfig = false
                 }
-            }
-        }
 
-        if (plugins.hasPlugin("com.github.dcendents.android-maven")) {
-            val sources = android.sourceSets.getByName("main").java.getSourceFiles()
+                val sources = sourceSets.getByName("main").java.getSourceFiles()
 
-            (rootProject.tasks["javadoc"] as Javadoc).apply {
-                source += sources
-                classpath += project.files(android.bootClasspath)
-                classpath += configurations.getByName("javadocDeps")
-            }
+                (rootProject.tasks["javadoc"] as Javadoc).apply {
+                    source += sources
+                    classpath += project.files(bootClasspath)
+                    classpath += configurations.getByName("javadocDeps")
+                }
 
-            val sourcesJar = tasks.register("sourcesJar", Jar::class) {
-                archiveClassifier.set("sources")
-                from(sources)
-            }
+                val sourcesJar = tasks.register("sourcesJar", Jar::class) {
+                    archiveClassifier.set("sources")
+                    from(sources)
+                }
 
-            artifacts {
-                add("archives", sourcesJar)
+                artifacts {
+                    add("archives", sourcesJar)
+                }
             }
         }
     }

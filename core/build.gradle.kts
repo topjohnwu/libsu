@@ -1,6 +1,5 @@
 plugins {
     id("com.android.library")
-    id("com.github.dcendents.android-maven")
 }
 
 group="com.github.topjohnwu.libsu"
