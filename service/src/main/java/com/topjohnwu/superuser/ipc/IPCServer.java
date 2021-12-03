@@ -16,6 +16,13 @@
 
 package com.topjohnwu.superuser.ipc;
 
+import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
+import static com.topjohnwu.superuser.ipc.IPCClient.BUNDLE_BINDER_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_EXTRA_KEY;
+import static com.topjohnwu.superuser.ipc.IPCClient.LOGGING_ENV;
+import static com.topjohnwu.superuser.ipc.RootService.TAG;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -30,20 +37,12 @@ import android.os.RemoteException;
 import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.Container;
 import com.topjohnwu.superuser.internal.IRootIPC;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
-
-import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
-import static com.topjohnwu.superuser.ipc.IPCClient.BUNDLE_BINDER_KEY;
-import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_DEBUG_KEY;
-import static com.topjohnwu.superuser.ipc.IPCClient.INTENT_EXTRA_KEY;
-import static com.topjohnwu.superuser.ipc.IPCClient.LOGGING_ENV;
-import static com.topjohnwu.superuser.ipc.RootService.TAG;
 
 class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
 
@@ -147,7 +146,7 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
             mClient = bundle.getBinder(BUNDLE_BINDER_KEY);
             mClient.linkToDeath(this, 0);
 
-            Container<IBinder> c = new Container<>();
+            IBinder[] b = new IBinder[1];
             UiThreadHandler.runAndWait(() -> {
                 if (mIntent != null) {
                     Utils.log(TAG, mName + " rebind");
@@ -156,9 +155,9 @@ class IPCServer extends IRootIPC.Stub implements IBinder.DeathRecipient {
                     Utils.log(TAG, mName + " bind");
                     mIntent = intent.cloneFilter();
                 }
-                c.obj = service.onBind(intent);
+                b[0] = service.onBind(intent);
             });
-            return c.obj;
+            return b[0];
         } catch (Exception e) {
             Utils.err(TAG, e);
             return null;

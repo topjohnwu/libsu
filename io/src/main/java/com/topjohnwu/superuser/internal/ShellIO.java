@@ -16,6 +16,9 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
+import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
@@ -26,9 +29,6 @@ import com.topjohnwu.superuser.io.SuRandomAccessFile;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Locale;
-
-import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImpl {
 
@@ -191,8 +191,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         // fail fast
         if (eof)
             return 0;
-        Container<Integer> total = new Container<>();
-        total.obj = 0;
+        int[] total = new int[1];
         int len = count * bs;
         Shell.getShell().execTask((in, out, err) -> {
             int off = _off;
@@ -204,17 +203,17 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             in.flush();
 
             // Poll until we read everything
-            while ((total.obj != len && err.available() == 0) || out.available() != 0) {
+            while ((total[0] != len && err.available() == 0) || out.available() != 0) {
                 int read = out.read(b, off, out.available());
                 off += read;
-                total.obj += read;
+                total[0] += read;
             }
             // Wait till the operation is done for synchronization
             err.read(JUNK);
         });
-        if (total.obj == 0 || total.obj != len)
+        if (total[0] == 0 || total[0] != len)
             eof = true;
-        return total.obj;
+        return total[0];
     }
 
     @Override
