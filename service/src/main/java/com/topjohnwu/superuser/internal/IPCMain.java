@@ -16,9 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static android.os.IBinder.LAST_CALL_TRANSACTION;
+
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcel;
@@ -28,8 +31,6 @@ import androidx.annotation.RestrictTo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-
-import static android.os.IBinder.LAST_CALL_TRANSACTION;
 
 /**
  * Trampoline to start a root service.
@@ -48,9 +49,12 @@ import static android.os.IBinder.LAST_CALL_TRANSACTION;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class IPCMain {
 
-    public static final String CMDLINE_STOP_SERVER = "stopServer";
-    public static final Method getService;
-    public static final Method addService;
+    static final String CMDLINE_STOP_SERVER = "stopServer";
+    static final String CMDLINE_START_SERVER = "startServer";
+    static final Method getService;
+    static final Method addService;
+
+    static final int STOP_SERVICE_TRANSACTION = LAST_CALL_TRANSACTION - 1;
 
     static {
         try {
@@ -65,7 +69,7 @@ public class IPCMain {
     }
 
     @SuppressLint("PrivateApi")
-    public static Context getSystemContext() {
+    static Context getSystemContext() {
         try {
             synchronized (Looper.class) {
                 if (Looper.getMainLooper() == null)
@@ -82,18 +86,14 @@ public class IPCMain {
         }
     }
 
-    // Convert to a valid service name
-    public static String getServiceName(ComponentName name) {
-        return name.flattenToString().replace("$", ".").replaceAll("[^a-zA-Z0-9\\/._\\-]", "_");
-    }
-
-    private static void stopRemoteService(ComponentName name) throws Exception {
-        IBinder binder = (IBinder) getService.invoke(null, getServiceName(name));
+    static void stopRemoteService(ComponentName name) throws Exception {
+        IBinder binder = (IBinder) getService.invoke(null, name.getPackageName());
         if (binder != null) {
             Parcel p = Parcel.obtain();
             try {
-                // IPCServer should be able to handle this correctly
-                binder.transact(LAST_CALL_TRANSACTION - 1, p, null, 0);
+                // RootServiceManager should handle this correctly
+                p.writeString(name.getClassName());
+                binder.transact(STOP_SERVICE_TRANSACTION, p, null, 0);
             } finally {
                 p.recycle();
             }
@@ -120,10 +120,16 @@ public class IPCMain {
 
             // Use classloader from the package context to run everything
             ClassLoader cl = context.getClassLoader();
-            Class<?> clz = cl.loadClass(args[1]);
-            Constructor<?> con = clz.getDeclaredConstructor(Context.class, ComponentName.class);
-            con.setAccessible(true);
-            con.newInstance(context, component);
+            Class<?> clz = cl.loadClass(component.getClassName());
+            Constructor<?> ctor = clz.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Object service = ctor.newInstance();
+            Method m = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            m.setAccessible(true);
+            m.invoke(service, context);
+
+            // Main thread event loop
+            Looper.loop();
 
             // Shall never return
             System.exit(0);

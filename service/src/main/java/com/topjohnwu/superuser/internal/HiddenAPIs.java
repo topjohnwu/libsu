@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.ipc;
+package com.topjohnwu.superuser.internal;
+
+import static com.topjohnwu.superuser.internal.RootServiceClient.TAG;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 
-import com.topjohnwu.superuser.internal.IPCMain;
-import com.topjohnwu.superuser.internal.Utils;
-
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
-import static com.topjohnwu.superuser.ipc.RootService.TAG;
 
 /**
  * All hidden Android framework APIs used here are very stable.
@@ -40,22 +36,14 @@ class HiddenAPIs {
     @SuppressLint("StaticFieldLeak")
     private static Context systemContext;
 
+    // Set this flag to silence AMS's complaints. Only exist on Android 8.0+
+    public static final int FLAG_RECEIVER_FROM_SHELL =
+            Build.VERSION.SDK_INT >= 26 ? 0x00400000 : 0;
+
     static synchronized Context getSystemContext() {
         if (systemContext == null)
             systemContext = IPCMain.getSystemContext();
         return systemContext;
-    }
-
-    // Set this flag to silence AMS's complaints
-    @SuppressWarnings("JavaReflectionMemberAccess")
-    static int FLAG_RECEIVER_FROM_SHELL() {
-        try {
-            Field f = Intent.class.getDeclaredField("FLAG_RECEIVER_FROM_SHELL");
-            return (int) f.get(null);
-        } catch (Exception e) {
-            // Only exist on Android 8.0+
-            return 0;
-        }
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")

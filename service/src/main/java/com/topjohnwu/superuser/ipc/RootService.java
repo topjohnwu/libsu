@@ -27,17 +27,11 @@ import android.os.Messenger;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.SerialExecutorService;
+import com.topjohnwu.superuser.internal.RootServiceClient;
+import com.topjohnwu.superuser.internal.RootServiceManager;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
-import com.topjohnwu.superuser.internal.Utils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 
 /**
  * A remote root service using native Android Binder IPC.
@@ -78,10 +72,6 @@ import java.util.concurrent.ExecutorService;
  */
 public abstract class RootService extends ContextWrapper {
 
-    static final String TAG = "IPC";
-    static final List<IPCClient> bound = new ArrayList<>();
-    static final ExecutorService serialExecutor = new SerialExecutorService();
-
     /**
      * Connect to a root service, creating if needed.
      * @param intent identifies the service to connect to.
@@ -93,26 +83,7 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
-        serialExecutor.execute(() -> {
-            // If no root access, don't even bother
-            if (!Shell.rootAccess())
-                return;
-
-            for (IPCClient client : bound) {
-                if (client.isSameService(intent)) {
-                    client.newConnection(conn, executor);
-                    return;
-                }
-            }
-
-            try {
-                IPCClient client = new IPCClient(intent);
-                client.newConnection(conn, executor);
-                bound.add(client);
-            } catch (Exception e) {
-                Utils.err(TAG, e);
-            }
-        });
+        RootServiceClient.getInstance().bind(intent, executor, conn);
     }
 
     /**
@@ -131,60 +102,31 @@ public abstract class RootService extends ContextWrapper {
      * @see Context#unbindService(ServiceConnection)
      */
     public static void unbind(@NonNull ServiceConnection conn) {
-        serialExecutor.execute(() -> {
-            Iterator<IPCClient> it = bound.iterator();
-            while (it.hasNext()) {
-                IPCClient client = it.next();
-                if (client.unbind(conn)) {
-                    it.remove();
-                    break;
-                }
-            }
-        });
+        RootServiceClient.getInstance().unbind(conn);
     }
 
     /**
-     * Force stop a root service process.
+     * Force stop a root service.
      * <p>
      * Since root services are bound only, unlike {@link Context#stopService(Intent)}, this
      * method is used to immediately stop a root service regardless of its state.
-     * Only use this method to stop a daemon root service, for normal root services please use
+     * Only use this method to stop a daemon root service; for normal root services please use
      * {@link #unbind(ServiceConnection)} instead as this method could potentially end up starting
-     * an unnecessary root process to make sure all daemons are cleared up.
+     * an additional root process to make sure daemon services are stopped.
      * @param intent identifies the service to stop.
      */
     public static void stop(@NonNull Intent intent) {
-        serialExecutor.execute(() -> {
-            Iterator<IPCClient> it = bound.iterator();
-            while (it.hasNext()) {
-                IPCClient client = it.next();
-                if (client.isSameService(intent)) {
-                    client.stopService();
-                    it.remove();
-                    return;
-                }
-            }
-            if (!Shell.rootAccess())
-                return;
-            // No bound service of the same component, go through another root process to
-            // make sure all daemon is killed
-            try {
-                IPCClient.stopRootServer(intent.getComponent());
-            } catch (IOException e) {
-                Utils.err(TAG, e);
-            }
-        });
+        RootServiceClient.getInstance().stop(intent);
     }
-
-    private IPCServer mServer;
 
     public RootService() {
         super(null);
     }
 
-    void attach(Context base, IPCServer server) {
-        mServer = server;
-        attachBaseContext(base);
+    @Override
+    protected final void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        RootServiceManager.getInstance(base).register(this);
     }
 
     @Override
@@ -226,6 +168,6 @@ public abstract class RootService extends ContextWrapper {
      * This is the same as calling {@link #stop(Intent)} for this particular service.
      */
     public final void stopSelf() {
-        mServer.stop();
+        RootServiceManager.getInstance(this).stop(getClass().getName());
     }
 }
