@@ -16,6 +16,8 @@
 
 package com.topjohnwu.libsuexample;
 
+import static com.topjohnwu.libsuexample.MainActivity.TAG;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,12 +38,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import static com.topjohnwu.libsuexample.MainActivity.TAG;
-
 // Demonstrate root service using Messengers
 class MSGService extends RootService implements Handler.Callback {
 
     static final int MSG_GETINFO = 1;
+    static final int MSG_STOP = 2;
     static final String CMDLINE_KEY = "cmdline";
 
     @Override
@@ -54,6 +55,10 @@ class MSGService extends RootService implements Handler.Callback {
 
     @Override
     public boolean handleMessage(@NonNull Message msg) {
+        if (msg.what == MSG_STOP) {
+            stopSelf();
+            return false;
+        }
         if (msg.what != MSG_GETINFO)
             return false;
         Message reply = Message.obtain();
@@ -82,6 +87,6 @@ class MSGService extends RootService implements Handler.Callback {
     public boolean onUnbind(@NonNull Intent intent) {
         Log.d(TAG, "MSGService: onUnbind, client process unbound");
         // Default returns false, which means NOT daemon mode
-        return super.onUnbind(intent);
+        return false;
     }
 }

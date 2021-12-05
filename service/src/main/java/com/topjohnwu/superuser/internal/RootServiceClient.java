@@ -26,11 +26,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
@@ -55,7 +58,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class RootServiceClient implements IBinder.DeathRecipient {
+public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callback {
 
     private static RootServiceClient mInstance;
 
@@ -118,8 +121,11 @@ public class RootServiceClient implements IBinder.DeathRecipient {
 
     private void startRootProcess(Context context, ComponentName name) {
         Bundle connectArgs = new Bundle();
-        // This Binder is only used for tracking process death
-        connectArgs.putBinder(BUNDLE_BINDER_KEY, new Binder());
+
+        // Receive RSM service stop signal
+        Handler h = new Handler(Looper.getMainLooper(), this);
+        Messenger m = new Messenger(h);
+        connectArgs.putBinder(BUNDLE_BINDER_KEY, m.getBinder());
 
         String debugParams = "";
         // Only support debugging on SDK > 27
@@ -247,6 +253,24 @@ public class RootServiceClient implements IBinder.DeathRecipient {
         }
     }
 
+    private boolean stopInternal(ComponentName name) {
+        RemoteService s = services.remove(name);
+        if (s == null)
+            return false;
+
+        // Notify all connections
+        Iterator<Map.Entry<ServiceConnection, Pair<RemoteService, Executor>>> it =
+                connections.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
+            if (e.getValue().first.equals(s)) {
+                e.getValue().second.execute(() -> e.getKey().onServiceDisconnected(name));
+                it.remove();
+            }
+        }
+        return true;
+    }
+
     public void stop(@NonNull Intent intent) {
         ComponentName name = intent.getComponent();
 
@@ -273,20 +297,8 @@ public class RootServiceClient implements IBinder.DeathRecipient {
             return;
         }
 
-        RemoteService s = services.remove(name);
-        if (s == null)
+        if (!stopInternal(name))
             return;
-
-        // Notify all connections
-        Iterator<Map.Entry<ServiceConnection, Pair<RemoteService, Executor>>> it =
-                connections.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
-            if (e.getValue().first.equals(s)) {
-                e.getValue().second.execute(() -> e.getKey().onServiceDisconnected(name));
-                it.remove();
-            }
-        }
         try {
             manager.stop(name.getClassName());
         } catch (RemoteException e) {
@@ -307,6 +319,13 @@ public class RootServiceClient implements IBinder.DeathRecipient {
             connections.clear();
             services.clear();
         });
+    }
+
+    @Override
+    public boolean handleMessage(@NonNull Message msg) {
+        ComponentName name = (ComponentName) msg.obj;
+        stopInternal(name);
+        return false;
     }
 
     static class BindRequest {

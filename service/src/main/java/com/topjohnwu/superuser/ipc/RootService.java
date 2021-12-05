@@ -168,6 +168,6 @@ public abstract class RootService extends ContextWrapper {
      * This is the same as calling {@link #stop(Intent)} for this particular service.
      */
     public final void stopSelf() {
-        RootServiceManager.getInstance(this).stop(getClass().getName());
+        RootServiceManager.getInstance(this).selfStop(new ComponentName(this, getClass()));
     }
 }

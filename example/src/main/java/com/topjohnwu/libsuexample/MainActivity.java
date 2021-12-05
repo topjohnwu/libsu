@@ -163,6 +163,7 @@ public class MainActivity extends Activity implements Handler.Callback {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Bind to a root service; IPC via Messages
         binding.testSvc.setOnClickListener(v -> {
             if (remoteMessenger == null) {
                 serviceTestQueued = true;
@@ -173,8 +174,22 @@ public class MainActivity extends Activity implements Handler.Callback {
             testService();
         });
 
+        // Unbind service through RootService API
         binding.unbindSvc.setOnClickListener(v -> RootService.unbind(conn));
 
+        // Send a message to service and ask it to stop itself to demonstrate stopSelf()
+        binding.stopSvc.setOnClickListener(v -> {
+            if (remoteMessenger != null) {
+                Message message = Message.obtain(null, MSGService.MSG_STOP);
+                try {
+                    remoteMessenger.send(message);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Remote error", e);
+                }
+            }
+        });
+
+        // Bind to a daemon root service; IPC via AIDL
         binding.testDaemon.setOnClickListener(v -> {
             if (testIPC == null) {
                 daemonTestQueued = true;
@@ -192,7 +207,7 @@ public class MainActivity extends Activity implements Handler.Callback {
             // daemon again. You should get the same PID as last time (as it was re-using the
             // previous daemon process), and in AIDLService, onRebind should be called.
             // Note: re-running the app in Android Studio is not the same as kill + relaunch.
-            // The root service will kill itself when it detects the client APK has updated.
+            // The root process will kill itself when it detects the client APK has updated.
             RootService.stop(intent);
         });
 

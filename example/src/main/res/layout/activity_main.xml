@@ -44,7 +44,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test sync" />
+            android:text="Shell Sync" />
 
         <Button
             android:id="@+id/test_async"
@@ -52,7 +52,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test Async" />
+            android:text="Shell Async" />
 
         <Button
             android:id="@+id/close_shell"
@@ -77,7 +77,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Bind SVC" />
+            android:text="Test SVC" />
 
         <Button
             android:id="@+id/unbind_svc"
@@ -85,7 +85,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Unbind SVC" />
+            android:text="Unbind" />
+
+        <Button
+            android:id="@+id/stop_svc"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Self Stop" />
 
         <Button
             android:id="@+id/clear"
@@ -131,4 +139,3 @@
     </LinearLayout>
 
 </LinearLayout>
-

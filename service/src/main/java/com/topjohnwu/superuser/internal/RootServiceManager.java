@@ -23,6 +23,7 @@ import static com.topjohnwu.superuser.internal.RootServiceClient.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -31,6 +32,8 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.ArrayMap;
 
@@ -46,7 +49,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceManager extends IRootServiceManager.Stub implements IBinder.DeathRecipient {
@@ -54,7 +56,7 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
     @SuppressLint("StaticFieldLeak")
     private static RootServiceManager mInstance;
 
-    private final AtomicReference<IBinder> client;
+    private Messenger client;
 
     @SuppressWarnings("FieldCanBeLocal")
     private final FileObserver observer;  /* A strong reference is required */
@@ -85,7 +87,6 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
         } else {
             activeServices = new HashMap<>();
         }
-        client = new AtomicReference<>();
         observer = new AppObserver(new File(context.getPackageCodePath()));
 
         broadcast();
@@ -101,7 +102,7 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
 
     @Override
     public void connect(Bundle bundle) {
-        if (client.get() != null)
+        if (client != null)
             return;
 
         IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
@@ -109,7 +110,7 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
             return;
         try {
             binder.linkToDeath(this, 0);
-            client.set(binder);
+            client = new Messenger(binder);
         } catch (RemoteException ignored) {}
 
         if (bundle.getBoolean(BUNDLE_DEBUG_KEY, false)) {
@@ -159,12 +160,23 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
         });
     }
 
+    public void selfStop(ComponentName name) {
+        UiThreadHandler.run(() -> {
+            Utils.log(TAG, name.getClassName() + " selfStop");
+            stopService(name.getClassName(), true);
+            Message m = Message.obtain();
+            m.obj = name;
+            try {
+                client.send(m);
+            } catch (RemoteException e) {
+                Utils.err(TAG, e);
+            }
+        });
+    }
+
     @Override
     public void binderDied() {
-        IBinder binder = client.getAndSet(null);
-        if (binder != null) {
-            binder.unlinkToDeath(this, 0);
-        }
+        client = null;
         UiThreadHandler.run(() -> {
             Utils.log(TAG, "Client process terminated");
             stopAllService(false);
