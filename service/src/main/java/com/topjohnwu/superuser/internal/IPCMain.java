@@ -16,7 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static android.os.IBinder.LAST_CALL_TRANSACTION;
+import static com.topjohnwu.superuser.internal.IRootServiceManager.Stub.TRANSACTION_broadcast;
+import static com.topjohnwu.superuser.internal.IRootServiceManager.Stub.TRANSACTION_stop;
 
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
@@ -25,6 +26,7 @@ import android.content.ContextWrapper;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcel;
+import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.annotation.RestrictTo;
@@ -44,17 +46,16 @@ import java.lang.reflect.Method;
  * <p>
  * Expected command-line args:
  * args[0]: client service component name
- * args[1]: {@link #CMDLINE_STOP_SERVER} or class name of IPCServer
+ * args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class IPCMain {
 
-    static final String CMDLINE_STOP_SERVER = "stopServer";
-    static final String CMDLINE_START_SERVER = "startServer";
+    static final String CMDLINE_STOP_SERVICE = "stop";
+    static final String CMDLINE_START_SERVICE = "start";
+
     static final Method getService;
     static final Method addService;
-
-    static final int STOP_SERVICE_TRANSACTION = LAST_CALL_TRANSACTION - 1;
 
     static {
         try {
@@ -86,21 +87,6 @@ public class IPCMain {
         }
     }
 
-    static void stopRemoteService(ComponentName name) throws Exception {
-        IBinder binder = (IBinder) getService.invoke(null, name.getPackageName());
-        if (binder != null) {
-            Parcel p = Parcel.obtain();
-            try {
-                // RootServiceManager should handle this correctly
-                p.writeString(name.getClassName());
-                binder.transact(STOP_SERVICE_TRANSACTION, p, null, 0);
-            } finally {
-                p.recycle();
-            }
-        }
-        System.exit(0);
-    }
-
     public static void main(String[] args) {
         // Close STDOUT/STDERR since it belongs to the parent shell
         System.out.close();
@@ -109,18 +95,47 @@ public class IPCMain {
             System.exit(0);
 
         try {
-            ComponentName component = ComponentName.unflattenFromString(args[0]);
+            ComponentName name = ComponentName.unflattenFromString(args[0]);
 
-            if (args[1].equals(CMDLINE_STOP_SERVER))
-                stopRemoteService(component);
+            // Get existing daemon process
+            IBinder binder = (IBinder) getService.invoke(null, name.getPackageName());
+
+            if (args[1].equals(CMDLINE_STOP_SERVICE)) {
+                if (binder != null) {
+                    Parcel p = Parcel.obtain();
+                    try {
+                        p.writeInterfaceToken(IRootServiceManager.DESCRIPTOR);
+                        p.writeString(name.getClassName());
+                        binder.transact(TRANSACTION_stop, p, null, IBinder.FLAG_ONEWAY);
+                    } catch (RemoteException ignored) {
+                    } finally {
+                        p.recycle();
+                    }
+                }
+                System.exit(0);
+            }
+
+            if (binder != null) {
+                Parcel p = Parcel.obtain();
+                try {
+                    p.writeInterfaceToken(IRootServiceManager.DESCRIPTOR);
+                    binder.transact(TRANSACTION_broadcast, p, null, IBinder.FLAG_ONEWAY);
+                    // Terminate process if broadcast transaction went through
+                    System.exit(0);
+                } catch (RemoteException ignored) {
+                    // Something went wrong, restart RSM anyways
+                } finally {
+                    p.recycle();
+                }
+            }
 
             Context systemContext = getSystemContext();
-            Context context = systemContext.createPackageContext(component.getPackageName(),
+            Context context = systemContext.createPackageContext(name.getPackageName(),
                     Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
 
             // Use classloader from the package context to run everything
             ClassLoader cl = context.getClassLoader();
-            Class<?> clz = cl.loadClass(component.getClassName());
+            Class<?> clz = cl.loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
             Object service = ctor.newInstance();

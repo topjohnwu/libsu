@@ -16,8 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_START_SERVER;
-import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_STOP_SERVER;
+import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_START_SERVICE;
+import static com.topjohnwu.superuser.internal.IPCMain.CMDLINE_STOP_SERVICE;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
@@ -154,7 +154,7 @@ public class RootServiceClient implements IBinder.DeathRecipient {
         String cmd = String.format(Locale.US,
                 "CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
                 mainJar, Process.myPid(), debugParams, context.getPackageName(),
-                MAIN_CLASSNAME, name.flattenToString(), CMDLINE_START_SERVER);
+                MAIN_CLASSNAME, name.flattenToString(), CMDLINE_START_SERVICE);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
         if (Utils.vLog())
@@ -265,7 +265,7 @@ public class RootServiceClient implements IBinder.DeathRecipient {
             String cmd = String.format(Locale.US,
                     "CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s",
                     mainJar, Process.myPid(), MAIN_CLASSNAME,
-                    name.flattenToString(), CMDLINE_STOP_SERVER);
+                    name.flattenToString(), CMDLINE_STOP_SERVICE);
             // Make sure cmd is properly formatted in shell
             cmd = cmd.replace("$", "\\$");
 

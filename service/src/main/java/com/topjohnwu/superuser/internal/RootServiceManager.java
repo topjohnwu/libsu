@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.IPCMain.STOP_SERVICE_TRANSACTION;
 import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_DEBUG_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceClient.LOGGING_ENV;
@@ -32,7 +31,6 @@ import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
 import android.os.IBinder;
-import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.ArrayMap;
 
@@ -99,16 +97,6 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
             mInstance = new RootServiceManager(context);
         }
         return mInstance;
-    }
-
-    @Override
-    public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
-        if (code == STOP_SERVICE_TRANSACTION) {
-            String className = data.readString();
-            stop(className);
-            return true;
-        }
-        return super.onTransact(code, data, reply, flags);
     }
 
     @Override
