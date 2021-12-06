@@ -25,6 +25,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.Messenger;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.internal.RootServiceClient;
@@ -49,24 +50,23 @@ import java.util.concurrent.Executor;
  * of this and do not assume all context methods will work, many will result in Exceptions.
  * <p>
  * <strong>Daemon mode:</strong><br>
- * In normal circumstances, the root service process will be destroyed when no components are bound
- * to it (including when the non-root app process is terminated). However, if you'd like to have
+ * By default, the root service will be destroyed when no components are bound to it
+ * (including when the non-root app process is terminated). However, if you'd like to have
  * the root service run independently of the app's lifecycle (aka "Daemon Mode"), override the
- * method {@link #onUnbind(Intent)} and return {@code true}. Similar to normal bound services,
- * subsequent bindings will call the {@link #onRebind(Intent)} method.
+ * method {@link #onUnbind(Intent)} and return {@code true}. Subsequent bindings will call
+ * the {@link #onRebind(Intent)} method.
  * <p>
- * Unlike normal services, RootService does not have an API similar to
- * {@link Context#startService(Intent)} because root services are strictly bound only.
- * A root service process will be terminated in the following conditions:
+ * All RootServices of an app will run in the same root process, as root processes are launched
+ * per package. The root service process will terminate in the following conditions:
  * <ul>
- *     <li>(For non-daemon services) All clients had unbound or terminated</li>
- *     <li>Client called {@link #stop(Intent)}</li>
- *     <li>Root service called {@link #stopSelf()}</li>
- *     <li>The source application is updated/deleted</li>
+ *     <li>When the application is updated/deleted</li>
+ *     <li>When all services are destroyed (after {@link #onDestroy()} is called)</li>
+ *     <li>Non-daemon services will be automatically destroyed when all clients are
+ *         unbounded or terminated</li>
+ *     <li>Daemon services will only be destroyed when the client called {@link #stop(Intent)}
+ *         or the root service called {@link #stopSelf()}</li>
  * </ul>
- * When the remote root process is killed (could be unexpectedly), or the client explicitly called
- * {@link #unbind(ServiceConnection)}, {@link ServiceConnection#onServiceDisconnected(ComponentName)}
- * will be called, and the library will NOT attempt to automatically restart and bind to the service.
+ * The library will NOT attempt to automatically restart and bind to services under any circumstance.
  * @see <a href="https://developer.android.com/guide/components/bound-services">Bound services</a>
  * @see <a href="https://developer.android.com/guide/components/aidl">Android Interface Definition Language (AIDL)</a>
  */
@@ -124,15 +124,16 @@ public abstract class RootService extends ContextWrapper {
     }
 
     @Override
-    protected final void attachBaseContext(Context base) {
+    @CallSuper
+    protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         RootServiceManager.getInstance(base).register(this);
+        onCreate();
     }
 
     @Override
     public final Context getApplicationContext() {
-        // Always return ourselves
-        return this;
+        return getBaseContext();
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.IPCMain.attachBaseContext;
+import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
 import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_DEBUG_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceClient.LOGGING_ENV;
@@ -25,7 +27,6 @@ import static com.topjohnwu.superuser.internal.Utils.context;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,7 +46,6 @@ import com.topjohnwu.superuser.ipc.RootService;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,6 +55,13 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
 
     @SuppressLint("StaticFieldLeak")
     private static RootServiceManager mInstance;
+
+    public static RootServiceManager getInstance(Context context) {
+        if (mInstance == null) {
+            mInstance = new RootServiceManager(context);
+        }
+        return mInstance;
+    }
 
     private Messenger client;
 
@@ -91,13 +98,6 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
 
         broadcast();
         observer.startWatching();
-    }
-
-    public static RootServiceManager getInstance(Context context) {
-        if (mInstance == null) {
-            mInstance = new RootServiceManager(context);
-        }
-        return mInstance;
     }
 
     @Override
@@ -164,19 +164,25 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " selfStop");
             stopService(name.getClassName(), true);
-            Message m = Message.obtain();
-            m.obj = name;
-            try {
-                client.send(m);
-            } catch (RemoteException e) {
-                Utils.err(TAG, e);
+            Messenger c = client;
+            if (c != null) {
+                Message m = Message.obtain();
+                m.obj = name;
+                try {
+                    c.send(m);
+                } catch (RemoteException e) {
+                    Utils.err(TAG, e);
+                }
             }
         });
     }
 
     @Override
     public void binderDied() {
+        Messenger c = client;
         client = null;
+        if (c != null)
+            c.getBinder().unlinkToDeath(this, 0);
         UiThreadHandler.run(() -> {
             Utils.log(TAG, "Client process terminated");
             stopAllService(false);
@@ -204,9 +210,7 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
             c.service = (RootService) ctor.newInstance();
-            Method m = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
-            m.setAccessible(true);
-            m.invoke(c.service, context);
+            attachBaseContext.invoke(c.service, context);
         }
 
         if (c.binder != null) {
@@ -224,7 +228,7 @@ public class RootServiceManager extends IRootServiceManager.Stub implements IBin
     private void setAsDaemon() {
         if (!isDaemon) {
             // Register ourselves as system service
-            HiddenAPIs.addService(context.getPackageName(), this);
+            HiddenAPIs.addService(getServiceName(context.getPackageName()), this);
             isDaemon = true;
         }
     }

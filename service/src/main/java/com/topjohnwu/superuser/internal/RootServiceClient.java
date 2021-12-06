@@ -43,6 +43,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -71,12 +72,6 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
     private static final String MAIN_CLASSNAME = "com.topjohnwu.superuser.internal.IPCMain";
     private static final String INTENT_EXTRA_KEY = "binder_bundle";
 
-    private IRootServiceManager manager;
-    private List<BindRequest> pendingTasks;
-
-    private final Map<ComponentName, RemoteService> services;
-    private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections;
-
     public static RootServiceClient getInstance() {
         if (mInstance == null) {
             mInstance = new RootServiceClient();
@@ -99,16 +94,6 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
                 .putExtra(INTENT_EXTRA_KEY, bundle);
     }
 
-    private RootServiceClient() {
-        if (Build.VERSION.SDK_INT >= 19) {
-            services = new ArrayMap<>();
-            connections = new ArrayMap<>();
-        } else {
-            services = new HashMap<>();
-            connections = new HashMap<>();
-        }
-    }
-
     private static File dumpMainJar(Context context) throws IOException {
         Context de = Utils.getDeContext(context);
         File mainJar = new File(de.getCacheDir(), "main.jar");
@@ -117,6 +102,40 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
             Utils.pump(in, out);
         }
         return mainJar;
+    }
+
+    private static void enforceMainThread() {
+        if (!ShellUtils.onMainThread()) {
+            throw new IllegalStateException("This method can only be called on the main thread");
+        }
+    }
+
+    @NonNull
+    private static ComponentName enforceIntent(Intent intent) {
+        ComponentName name = intent.getComponent();
+        if (name == null) {
+            throw new IllegalArgumentException("The intent does not have a component set");
+        }
+        if (!name.getPackageName().equals(Utils.getContext().getPackageName())) {
+            throw new IllegalArgumentException("RootService shall be in the app's package");
+        }
+        return name;
+    }
+
+    private IRootServiceManager manager;
+    private List<BindRequest> pendingTasks;
+
+    private final Map<ComponentName, RemoteService> services;
+    private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections;
+
+    private RootServiceClient() {
+        if (Build.VERSION.SDK_INT >= 19) {
+            services = new ArrayMap<>();
+            connections = new ArrayMap<>();
+        } else {
+            services = new HashMap<>();
+            connections = new HashMap<>();
+        }
     }
 
     private void startRootProcess(Context context, ComponentName name) {
@@ -178,15 +197,15 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
                 try {
                     m.connect(connectArgs);
                     binder.linkToDeath(RootServiceClient.this, 0);
-                    manager = m;
-
-                    List<BindRequest> requests = pendingTasks;
-                    pendingTasks = null;
-                    for (BindRequest r : requests) {
-                        bind(r.intent, r.executor, r.name);
-                    }
                 } catch (RemoteException e) {
                     Utils.err(TAG, e);
+                    return;
+                }
+                manager = m;
+                List<BindRequest> requests = pendingTasks;
+                pendingTasks = null;
+                for (BindRequest r : requests) {
+                    bind(r.intent, r.executor, r.conn);
                 }
             }
         };
@@ -196,8 +215,10 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
     }
 
     public void bind(Intent intent, Executor executor, ServiceConnection conn) {
+        enforceMainThread();
+
         // Local cache
-        ComponentName name = intent.getComponent();
+        ComponentName name = enforceIntent(intent);
         RemoteService s = services.get(name);
         if (s != null) {
             connections.put(conn, new Pair<>(s, executor));
@@ -234,6 +255,8 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
     }
 
     public void unbind(@NonNull ServiceConnection conn) {
+        enforceMainThread();
+
         if (manager == null)
             return;
 
@@ -271,9 +294,10 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
         return true;
     }
 
-    public void stop(@NonNull Intent intent) {
-        ComponentName name = intent.getComponent();
+    public void stop(Intent intent) {
+        enforceMainThread();
 
+        ComponentName name = enforceIntent(intent);
         if (manager == null) {
             // Start a new root process
 
@@ -308,8 +332,12 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
 
     @Override
     public void binderDied() {
-        manager = null;
         UiThreadHandler.run(() -> {
+            if (manager != null) {
+                manager.asBinder().unlinkToDeath(this, 0);
+                manager = null;
+            }
+
             // Notify all connections
             for (Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e
                     : connections.entrySet()) {
@@ -331,12 +359,12 @@ public class RootServiceClient implements IBinder.DeathRecipient, Handler.Callba
     static class BindRequest {
         final Intent intent;
         final Executor executor;
-        final ServiceConnection name;
+        final ServiceConnection conn;
 
-        BindRequest(Intent intent, Executor executor, ServiceConnection name) {
+        BindRequest(Intent intent, Executor executor, ServiceConnection conn) {
             this.intent = intent;
             this.executor = executor;
-            this.name = name;
+            this.conn = conn;
         }
     }
 

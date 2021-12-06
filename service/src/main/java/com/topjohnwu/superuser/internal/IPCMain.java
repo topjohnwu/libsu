@@ -56,6 +56,7 @@ public class IPCMain {
 
     static final Method getService;
     static final Method addService;
+    static final Method attachBaseContext;
 
     static {
         try {
@@ -63,6 +64,8 @@ public class IPCMain {
             Class<?> sm = Class.forName("android.os.ServiceManager");
             getService = sm.getDeclaredMethod("getService", String.class);
             addService = sm.getDeclaredMethod("addService", String.class, IBinder.class);
+            attachBaseContext = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            attachBaseContext.setAccessible(true);
         } catch (Exception e) {
             // Shall not happen!
             throw new RuntimeException(e);
@@ -87,6 +90,11 @@ public class IPCMain {
         }
     }
 
+    // Put "libsu" in front of the service name to prevent possible conflicts
+    static String getServiceName(String pkg) {
+        return "libsu-" + pkg;
+    }
+
     public static void main(String[] args) {
         // Close STDOUT/STDERR since it belongs to the parent shell
         System.out.close();
@@ -98,7 +106,7 @@ public class IPCMain {
             ComponentName name = ComponentName.unflattenFromString(args[0]);
 
             // Get existing daemon process
-            IBinder binder = (IBinder) getService.invoke(null, name.getPackageName());
+            IBinder binder = (IBinder) getService.invoke(null, getServiceName(name.getPackageName()));
 
             if (args[1].equals(CMDLINE_STOP_SERVICE)) {
                 if (binder != null) {
@@ -138,10 +146,7 @@ public class IPCMain {
             Class<?> clz = cl.loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
-            Object service = ctor.newInstance();
-            Method m = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
-            m.setAccessible(true);
-            m.invoke(service, context);
+            attachBaseContext.invoke(ctor.newInstance(), context);
 
             // Main thread event loop
             Looper.loop();
