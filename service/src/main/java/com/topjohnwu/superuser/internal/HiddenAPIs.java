@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServiceClient.TAG;
+import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -42,7 +42,7 @@ class HiddenAPIs {
 
     static synchronized Context getSystemContext() {
         if (systemContext == null)
-            systemContext = IPCMain.getSystemContext();
+            systemContext = RootServerMain.getSystemContext();
         return systemContext;
     }
 
@@ -59,7 +59,7 @@ class HiddenAPIs {
 
     static IBinder getService(String name) {
         try {
-            return (IBinder) IPCMain.getService.invoke(null, name);
+            return (IBinder) RootServerMain.getService.invoke(null, name);
         } catch (Exception e) {
             Utils.err(TAG, e);
             return null;
@@ -68,7 +68,7 @@ class HiddenAPIs {
 
     static void addService(String name, IBinder service) {
         try {
-            IPCMain.addService.invoke(null, name, service);
+            RootServerMain.addService.invoke(null, name, service);
         } catch (Exception e) {
             Utils.err(TAG, e);
         }

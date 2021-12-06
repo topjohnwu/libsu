@@ -49,7 +49,7 @@ import java.lang.reflect.Method;
  * args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class IPCMain {
+public class RootServerMain {
 
     static final String CMDLINE_STOP_SERVICE = "stop";
     static final String CMDLINE_START_SERVICE = "start";

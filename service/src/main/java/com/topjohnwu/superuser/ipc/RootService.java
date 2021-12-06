@@ -28,8 +28,8 @@ import android.os.Messenger;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.internal.RootServiceClient;
 import com.topjohnwu.superuser.internal.RootServiceManager;
+import com.topjohnwu.superuser.internal.RootServiceServer;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 
 import java.util.concurrent.Executor;
@@ -83,7 +83,7 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
-        RootServiceClient.getInstance().bind(intent, executor, conn);
+        RootServiceManager.getInstance().bind(intent, executor, conn);
     }
 
     /**
@@ -102,7 +102,7 @@ public abstract class RootService extends ContextWrapper {
      * @see Context#unbindService(ServiceConnection)
      */
     public static void unbind(@NonNull ServiceConnection conn) {
-        RootServiceClient.getInstance().unbind(conn);
+        RootServiceManager.getInstance().unbind(conn);
     }
 
     /**
@@ -116,7 +116,7 @@ public abstract class RootService extends ContextWrapper {
      * @param intent identifies the service to stop.
      */
     public static void stop(@NonNull Intent intent) {
-        RootServiceClient.getInstance().stop(intent);
+        RootServiceManager.getInstance().stop(intent);
     }
 
     public RootService() {
@@ -127,7 +127,7 @@ public abstract class RootService extends ContextWrapper {
     @CallSuper
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        RootServiceManager.getInstance(base).register(this);
+        RootServiceServer.getInstance(base).register(this);
         onCreate();
     }
 
@@ -169,6 +169,6 @@ public abstract class RootService extends ContextWrapper {
      * This is the same as calling {@link #stop(Intent)} for this particular service.
      */
     public final void stopSelf() {
-        RootServiceManager.getInstance(this).selfStop(new ComponentName(this, getClass()));
+        RootServiceServer.getInstance(this).selfStop(new ComponentName(this, getClass()));
     }
 }

@@ -16,281 +16,366 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.IPCMain.attachBaseContext;
-import static com.topjohnwu.superuser.internal.IPCMain.getServiceName;
-import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_BINDER_KEY;
-import static com.topjohnwu.superuser.internal.RootServiceClient.BUNDLE_DEBUG_KEY;
-import static com.topjohnwu.superuser.internal.RootServiceClient.LOGGING_ENV;
-import static com.topjohnwu.superuser.internal.RootServiceClient.TAG;
-import static com.topjohnwu.superuser.internal.Utils.context;
+import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_SERVICE;
+import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_STOP_SERVICE;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
-import android.os.FileObserver;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
+import android.util.Pair;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ipc.RootService;
+import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class RootServiceManager extends IRootServiceManager.Stub implements IBinder.DeathRecipient {
+public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callback {
 
-    @SuppressLint("StaticFieldLeak")
     private static RootServiceManager mInstance;
 
-    public static RootServiceManager getInstance(Context context) {
+    static final String TAG = "IPC";
+    static final String BUNDLE_DEBUG_KEY = "debug";
+    static final String BUNDLE_BINDER_KEY = "binder";
+    static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
+
+    private static final String BROADCAST_ACTION = "com.topjohnwu.superuser.BROADCAST_IPC";
+    private static final String MAIN_CLASSNAME = "com.topjohnwu.superuser.internal.RootServerMain";
+    private static final String INTENT_EXTRA_KEY = "binder_bundle";
+
+    public static RootServiceManager getInstance() {
         if (mInstance == null) {
-            mInstance = new RootServiceManager(context);
+            mInstance = new RootServiceManager();
         }
         return mInstance;
     }
 
-    private Messenger client;
+    private static String getBroadcastAction(Context context) {
+        return BROADCAST_ACTION + "/" + context.getPackageName();
+    }
 
-    @SuppressWarnings("FieldCanBeLocal")
-    private final FileObserver observer;  /* A strong reference is required */
+    @SuppressLint("WrongConstant")
+    static Intent getBroadcastIntent(Context context, IBinder binder) {
+        Bundle bundle = new Bundle();
+        bundle.putBinder(BUNDLE_BINDER_KEY, binder);
+        return new Intent()
+                .setPackage(context.getPackageName())
+                .setAction(getBroadcastAction(context))
+                .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
+                .putExtra(INTENT_EXTRA_KEY, bundle);
+    }
 
-    private final Map<String, ServiceContainer> activeServices;
-    private boolean isDaemon = false;
-
-    private RootServiceManager(Context context) {
-        IBinder binder = HiddenAPIs.getService(context.getPackageName());
-        if (binder != null) {
-            // There was already a root process running
-            IRootServiceManager mgr = IRootServiceManager.Stub.asInterface(binder);
-            try {
-                // Trigger re-broadcast
-                mgr.broadcast();
-
-                // Our work is done!
-                System.exit(0);
-            } catch (RemoteException e) {
-                // Daemon dead, continue
-            }
+    private static File dumpMainJar(Context context) throws IOException {
+        Context de = Utils.getDeContext(context);
+        File mainJar = new File(de.getCacheDir(), "main.jar");
+        try (InputStream in = context.getResources().getAssets().open("main.jar");
+             OutputStream out = new FileOutputStream(mainJar)) {
+            Utils.pump(in, out);
         }
+        return mainJar;
+    }
 
-        Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
-        Utils.context = context;
+    private static void enforceMainThread() {
+        if (!ShellUtils.onMainThread()) {
+            throw new IllegalStateException("This method can only be called on the main thread");
+        }
+    }
+
+    @NonNull
+    private static ComponentName enforceIntent(Intent intent) {
+        ComponentName name = intent.getComponent();
+        if (name == null) {
+            throw new IllegalArgumentException("The intent does not have a component set");
+        }
+        if (!name.getPackageName().equals(Utils.getContext().getPackageName())) {
+            throw new IllegalArgumentException("RootService shall be in the app's package");
+        }
+        return name;
+    }
+
+    private IRootServiceManager manager;
+    private List<BindRequest> pendingTasks;
+
+    private final Map<ComponentName, RemoteService> services;
+    private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections;
+
+    private RootServiceManager() {
         if (Build.VERSION.SDK_INT >= 19) {
-            activeServices = new ArrayMap<>();
+            services = new ArrayMap<>();
+            connections = new ArrayMap<>();
         } else {
-            activeServices = new HashMap<>();
+            services = new HashMap<>();
+            connections = new HashMap<>();
         }
-        observer = new AppObserver(new File(context.getPackageCodePath()));
-
-        broadcast();
-        observer.startWatching();
     }
 
-    @Override
-    public void connect(Bundle bundle) {
-        if (client != null)
-            return;
+    private void startRootProcess(Context context, ComponentName name) {
+        Bundle connectArgs = new Bundle();
 
-        IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
-        if (binder == null)
-            return;
-        try {
-            binder.linkToDeath(this, 0);
-            client = new Messenger(binder);
-        } catch (RemoteException ignored) {}
+        // Receive RSM service stop signal
+        Handler h = new Handler(Looper.getMainLooper(), this);
+        Messenger m = new Messenger(h);
+        connectArgs.putBinder(BUNDLE_BINDER_KEY, m.getBinder());
 
-        if (bundle.getBoolean(BUNDLE_DEBUG_KEY, false)) {
-            // ActivityThread.attach(true, 0) will set this to system_process
-            HiddenAPIs.setAppName(context.getPackageName() + ":root");
-            // For some reason Debug.waitForDebugger() won't work, manual spin lock...
-            while (!Debug.isDebuggerConnected()) {
-                try { Thread.sleep(200); }
-                catch (InterruptedException ignored) {}
+        String debugParams = "";
+        // Only support debugging on SDK > 27
+        if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
+            connectArgs.putBoolean(BUNDLE_DEBUG_KEY, true);
+
+            // Also debug the remote root server
+            // Reference of the params to start jdwp:
+            // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
+            switch (Build.VERSION.SDK_INT) {
+                case 27:
+                    debugParams = "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y -Xcompiler-option --debuggable";
+                    break;
+                case 28:
+                    debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y -Xcompiler-option --debuggable";
+                    break;
+                default:
+                    debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y";
+                    break;
             }
         }
+
+        // Dump main.jar as trampoline
+        final File mainJar;
+        try {
+            mainJar = dumpMainJar(context);
+        } catch (IOException e) {
+            return;
+        }
+
+        // Execute main.jar through root shell
+        String cmd = String.format(Locale.US,
+                "CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
+                mainJar, Process.myPid(), debugParams, context.getPackageName(),
+                MAIN_CLASSNAME, name.flattenToString(), CMDLINE_START_SERVICE);
+        // Make sure cmd is properly formatted in shell
+        cmd = cmd.replace("$", "\\$");
+        if (Utils.vLog())
+            cmd = LOGGING_ENV + "=1 " + cmd;
+
+        // Register receiver to receive binder from root process
+        IntentFilter filter = new IntentFilter(getBroadcastAction(context));
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                context.unregisterReceiver(this);
+                Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
+                IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
+                IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
+                try {
+                    m.connect(connectArgs);
+                    binder.linkToDeath(RootServiceManager.this, 0);
+                } catch (RemoteException e) {
+                    Utils.err(TAG, e);
+                    return;
+                }
+                manager = m;
+                List<BindRequest> requests = pendingTasks;
+                pendingTasks = null;
+                for (BindRequest r : requests) {
+                    bind(r.intent, r.executor, r.conn);
+                }
+            }
+        };
+        context.registerReceiver(receiver, filter);
+
+        Shell.su("(" + cmd + ")&").exec();
     }
 
-    @Override
-    public void broadcast() {
-        Intent intent = RootServiceClient.getBroadcastIntent(context, this);
-        context.sendBroadcast(intent);
-    }
+    public void bind(Intent intent, Executor executor, ServiceConnection conn) {
+        enforceMainThread();
 
-    @Override
-    public IBinder bind(Intent intent) {
-        IBinder[] b = new IBinder[1];
-        UiThreadHandler.runAndWait(() -> {
+        // Local cache
+        ComponentName name = enforceIntent(intent);
+        RemoteService s = services.get(name);
+        if (s != null) {
+            connections.put(conn, new Pair<>(s, executor));
+            s.refCount++;
+            executor.execute(() -> conn.onServiceConnected(name, s.binder));
+            return;
+        }
+
+        if (manager == null) {
+            boolean launch = false;
+            if (pendingTasks == null) {
+                pendingTasks = new ArrayList<>();
+                launch = true;
+            }
+            pendingTasks.add(new BindRequest(intent, executor, conn));
+            if (launch) {
+                Shell.EXECUTOR.execute(() -> startRootProcess(Utils.getContext(), name));
+            }
+        } else {
             try {
-                b[0] = bindInternal(intent);
-            } catch (Exception e) {
+                IBinder binder = manager.bind(intent);
+                if (binder != null) {
+                    RemoteService r = new RemoteService(name, binder);
+                    connections.put(conn, new Pair<>(r, executor));
+                    services.put(name, r);
+                    executor.execute(() -> conn.onServiceConnected(name, binder));
+                } else if (Build.VERSION.SDK_INT >= 28) {
+                    executor.execute(() -> conn.onNullBinding(name));
+                }
+            } catch (RemoteException e) {
                 Utils.err(TAG, e);
             }
-        });
-        return b[0];
+        }
     }
 
-    @Override
-    public void unbind(String className) {
-        UiThreadHandler.run(() -> {
-            Utils.log(TAG, className + " unbind");
-            stopService(className, false);
-        });
+    public void unbind(@NonNull ServiceConnection conn) {
+        enforceMainThread();
 
-    }
+        if (manager == null)
+            return;
 
-    @Override
-    public void stop(String className) {
-        UiThreadHandler.run(() -> {
-            Utils.log(TAG, className + " stop");
-            stopService(className, true);
-        });
-    }
-
-    public void selfStop(ComponentName name) {
-        UiThreadHandler.run(() -> {
-            Utils.log(TAG, name.getClassName() + " selfStop");
-            stopService(name.getClassName(), true);
-            Messenger c = client;
-            if (c != null) {
-                Message m = Message.obtain();
-                m.obj = name;
+        Pair<RemoteService, Executor> p = connections.remove(conn);
+        if (p != null) {
+            p.first.refCount--;
+            p.second.execute(() -> conn.onServiceDisconnected(p.first.name));
+            if (p.first.refCount == 0) {
+                // Actually close the service
+                services.remove(p.first.name);
                 try {
-                    c.send(m);
+                    manager.unbind(p.first.name.getClassName());
                 } catch (RemoteException e) {
                     Utils.err(TAG, e);
                 }
             }
-        });
+        }
+    }
+
+    private boolean stopInternal(ComponentName name) {
+        RemoteService s = services.remove(name);
+        if (s == null)
+            return false;
+
+        // Notify all connections
+        Iterator<Map.Entry<ServiceConnection, Pair<RemoteService, Executor>>> it =
+                connections.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
+            if (e.getValue().first.equals(s)) {
+                e.getValue().second.execute(() -> e.getKey().onServiceDisconnected(name));
+                it.remove();
+            }
+        }
+        return true;
+    }
+
+    public void stop(Intent intent) {
+        enforceMainThread();
+
+        ComponentName name = enforceIntent(intent);
+        if (manager == null) {
+            // Start a new root process
+
+            // Dump main.jar as trampoline
+            final File mainJar;
+            try {
+                mainJar = dumpMainJar(Utils.getContext());
+            } catch (IOException e) {
+                return;
+            }
+
+            // Execute main.jar through root shell
+            String cmd = String.format(Locale.US,
+                    "CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s",
+                    mainJar, Process.myPid(), MAIN_CLASSNAME,
+                    name.flattenToString(), CMDLINE_STOP_SERVICE);
+            // Make sure cmd is properly formatted in shell
+            cmd = cmd.replace("$", "\\$");
+
+            Shell.su("(" + cmd + ")&").exec();
+            return;
+        }
+
+        if (!stopInternal(name))
+            return;
+        try {
+            manager.stop(name.getClassName());
+        } catch (RemoteException e) {
+            Utils.err(TAG, e);
+        }
     }
 
     @Override
     public void binderDied() {
-        Messenger c = client;
-        client = null;
-        if (c != null)
-            c.getBinder().unlinkToDeath(this, 0);
         UiThreadHandler.run(() -> {
-            Utils.log(TAG, "Client process terminated");
-            stopAllService(false);
+            if (manager != null) {
+                manager.asBinder().unlinkToDeath(this, 0);
+                manager = null;
+            }
+
+            // Notify all connections
+            for (Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e
+                    : connections.entrySet()) {
+                e.getValue().second.execute(() ->
+                        e.getKey().onServiceDisconnected(e.getValue().first.name));
+            }
+            connections.clear();
+            services.clear();
         });
     }
 
-    public void register(RootService svc) {
-        final String className = svc.getClass().getName();
-        ServiceContainer c = activeServices.get(className);
-        if (c == null) {
-            c = new ServiceContainer();
-            activeServices.put(className, c);
-            c.service = svc;
+    @Override
+    public boolean handleMessage(@NonNull Message msg) {
+        ComponentName name = (ComponentName) msg.obj;
+        stopInternal(name);
+        return false;
+    }
+
+    static class BindRequest {
+        final Intent intent;
+        final Executor executor;
+        final ServiceConnection conn;
+
+        BindRequest(Intent intent, Executor executor, ServiceConnection conn) {
+            this.intent = intent;
+            this.executor = executor;
+            this.conn = conn;
         }
     }
 
-    private IBinder bindInternal(Intent intent) throws Exception {
-        final String className = intent.getComponent().getClassName();
+    static class RemoteService {
+        final ComponentName name;
+        final IBinder binder;
+        int refCount = 1;
 
-        ServiceContainer c = activeServices.get(className);
-        if (c == null) {
-            c = new ServiceContainer();
-            activeServices.put(className, c);
-            Class<?> clz = Class.forName(className);
-            Constructor<?> ctor = clz.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            c.service = (RootService) ctor.newInstance();
-            attachBaseContext.invoke(c.service, context);
+        RemoteService(ComponentName name, IBinder binder) {
+            this.name = name;
+            this.binder = binder;
         }
-
-        if (c.binder != null) {
-            Utils.log(TAG, className + " rebind");
-            c.service.onRebind(c.intent);
-        } else {
-            Utils.log(TAG, className + " bind");
-            c.binder = c.service.onBind(intent);
-            c.intent = intent.cloneFilter();
-        }
-
-        return c.binder;
-    }
-
-    private void setAsDaemon() {
-        if (!isDaemon) {
-            // Register ourselves as system service
-            HiddenAPIs.addService(getServiceName(context.getPackageName()), this);
-            isDaemon = true;
-        }
-    }
-
-    private void stopService(String className, boolean force) {
-        ServiceContainer c = activeServices.get(className);
-        if (c != null) {
-            if (!c.service.onUnbind(c.intent) || force) {
-                c.service.onDestroy();
-                activeServices.remove(className);
-            } else {
-                setAsDaemon();
-            }
-        }
-        if (activeServices.isEmpty()) {
-            // Terminate root process
-            System.exit(0);
-        }
-    }
-
-    private void stopAllService(boolean force) {
-        Iterator<Map.Entry<String, ServiceContainer>> it = activeServices.entrySet().iterator();
-        while (it.hasNext()) {
-            ServiceContainer c = it.next().getValue();
-            if (!c.service.onUnbind(c.intent) || force) {
-                c.service.onDestroy();
-                it.remove();
-            } else {
-                setAsDaemon();
-            }
-        }
-        if (force || activeServices.isEmpty()) {
-            // Terminate root process
-            System.exit(0);
-        }
-    }
-
-    class AppObserver extends FileObserver {
-
-        private final String name;
-
-        AppObserver(File path) {
-            super(path.getParent(), CREATE|DELETE|DELETE_SELF|MOVED_TO|MOVED_FROM);
-            Utils.log(TAG, "Start monitoring: " + path.getParent());
-            name = path.getName();
-        }
-
-        @Override
-        public void onEvent(int event, @Nullable String path) {
-            // App APK update, force close the root process
-            if (event == DELETE_SELF || name.equals(path)) {
-                UiThreadHandler.run(() -> {
-                    Utils.log(TAG, "App updated, terminate");
-                    stopAllService(true);
-                });
-            }
-        }
-    }
-
-    static class ServiceContainer {
-        RootService service;
-        Intent intent;
-        IBinder binder;
     }
 }
