@@ -56,6 +56,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -68,9 +69,9 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     static final String BUNDLE_BINDER_KEY = "binder";
     static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
 
-    private static final String BROADCAST_ACTION = "com.topjohnwu.superuser.BROADCAST_IPC";
     private static final String MAIN_CLASSNAME = "com.topjohnwu.superuser.internal.RootServerMain";
     private static final String INTENT_EXTRA_KEY = "binder_bundle";
+    private static final String ACTION_ENV = "LIBSU_BROADCAST_ACTION";
 
     public static RootServiceManager getInstance() {
         if (mInstance == null) {
@@ -79,17 +80,13 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         return mInstance;
     }
 
-    private static String getBroadcastAction(Context context) {
-        return BROADCAST_ACTION + "/" + context.getPackageName();
-    }
-
     @SuppressLint("WrongConstant")
     static Intent getBroadcastIntent(Context context, IBinder binder) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
         return new Intent()
                 .setPackage(context.getPackageName())
-                .setAction(getBroadcastAction(context))
+                .setAction(System.getenv(ACTION_ENV))
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
                 .putExtra(INTENT_EXTRA_KEY, bundle);
     }
@@ -176,9 +173,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         }
 
         // Execute main.jar through root shell
+        String action = UUID.randomUUID().toString();
         String cmd = String.format(Locale.US,
-                "CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
-                mainJar, Process.myPid(), debugParams, context.getPackageName(),
+                "%s=%s CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
+                ACTION_ENV, action, mainJar, Process.myPid(), debugParams, context.getPackageName(),
                 MAIN_CLASSNAME, name.flattenToString(), CMDLINE_START_SERVICE);
         // Make sure cmd is properly formatted in shell
         cmd = cmd.replace("$", "\\$");
@@ -186,7 +184,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             cmd = LOGGING_ENV + "=1 " + cmd;
 
         // Register receiver to receive binder from root process
-        IntentFilter filter = new IntentFilter(getBroadcastAction(context));
+        IntentFilter filter = new IntentFilter(action);
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
