@@ -268,7 +268,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
                 // Actually close the service
                 services.remove(p.first.name);
                 try {
-                    manager.unbind(p.first.name.getClassName());
+                    manager.unbind(p.first.name);
                 } catch (RemoteException e) {
                     Utils.err(TAG, e);
                 }
@@ -324,7 +324,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         if (!stopInternal(name))
             return;
         try {
-            manager.stop(name.getClassName());
+            manager.stop(name);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
         }

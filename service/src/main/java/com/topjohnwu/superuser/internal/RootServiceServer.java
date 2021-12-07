@@ -63,12 +63,11 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         return mInstance;
     }
 
-    private Messenger client;
-
     @SuppressWarnings("FieldCanBeLocal")
     private final FileObserver observer;  /* A strong reference is required */
-
-    private final Map<String, ServiceContainer> activeServices;
+    private final Map<ComponentName, ServiceContainer> activeServices;
+    private Messenger client;
+    private ServiceContainer lastRegistered;
     private boolean isDaemon = false;
 
     private RootServiceServer(Context context) {
@@ -144,26 +143,26 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     }
 
     @Override
-    public void unbind(String className) {
+    public void unbind(ComponentName name) {
         UiThreadHandler.run(() -> {
-            Utils.log(TAG, className + " unbind");
-            stopService(className, false);
+            Utils.log(TAG, name.getClassName() + " unbind");
+            stopService(name, false);
         });
 
     }
 
     @Override
-    public void stop(String className) {
+    public void stop(ComponentName name) {
         UiThreadHandler.run(() -> {
-            Utils.log(TAG, className + " stop");
-            stopService(className, true);
+            Utils.log(TAG, name.getClassName() + " stop");
+            stopService(name, true);
         });
     }
 
     public void selfStop(ComponentName name) {
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " selfStop");
-            stopService(name.getClassName(), true);
+            stopService(name, true);
             Messenger c = client;
             if (c != null) {
                 Message m = Message.obtain();
@@ -189,35 +188,36 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         });
     }
 
-    public void register(RootService svc) {
-        final String className = svc.getClass().getName();
-        ServiceContainer c = activeServices.get(className);
-        if (c == null) {
-            c = new ServiceContainer();
-            activeServices.put(className, c);
-            c.service = svc;
-        }
+    public void register(RootService service) {
+        ServiceContainer c = new ServiceContainer();
+        c.service = service;
+        activeServices.put(service.getComponentName(), c);
+        lastRegistered = c;
     }
 
     private IBinder bindInternal(Intent intent) throws Exception {
-        final String className = intent.getComponent().getClassName();
+        ComponentName name = intent.getComponent();
 
-        ServiceContainer c = activeServices.get(className);
+        ServiceContainer c = activeServices.get(name);
         if (c == null) {
-            c = new ServiceContainer();
-            activeServices.put(className, c);
-            Class<?> clz = Class.forName(className);
+            Class<?> clz = Class.forName(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
-            c.service = (RootService) ctor.newInstance();
-            attachBaseContext.invoke(c.service, context);
+            attachBaseContext.invoke(ctor.newInstance(), context);
+
+            // RootService should be registered after attachBaseContext
+            c = lastRegistered;
+            if (c == null) {
+                return null;
+            }
         }
+        lastRegistered = null;
 
         if (c.binder != null) {
-            Utils.log(TAG, className + " rebind");
+            Utils.log(TAG, name.getClassName() + " rebind");
             c.service.onRebind(c.intent);
         } else {
-            Utils.log(TAG, className + " bind");
+            Utils.log(TAG, name.getClassName() + " bind");
             c.binder = c.service.onBind(intent);
             c.intent = intent.cloneFilter();
         }
@@ -233,7 +233,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         }
     }
 
-    private void stopService(String className, boolean force) {
+    private void stopService(ComponentName className, boolean force) {
         ServiceContainer c = activeServices.get(className);
         if (c != null) {
             if (!c.service.onUnbind(c.intent) || force) {
@@ -250,7 +250,8 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     }
 
     private void stopAllService(boolean force) {
-        Iterator<Map.Entry<String, ServiceContainer>> it = activeServices.entrySet().iterator();
+        Iterator<Map.Entry<ComponentName, ServiceContainer>> it =
+                activeServices.entrySet().iterator();
         while (it.hasNext()) {
             ServiceContainer c = it.next().getValue();
             if (!c.service.onUnbind(c.intent) || force) {

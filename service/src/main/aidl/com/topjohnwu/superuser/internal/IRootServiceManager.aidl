@@ -7,6 +7,6 @@ interface IRootServiceManager {
     oneway void broadcast();
     oneway void connect(in Bundle bundle);
     IBinder bind(in Intent intent);
-    oneway void unbind(in String className);
-    oneway void stop(in String className);
+    oneway void unbind(in ComponentName name);
+    oneway void stop(in ComponentName name);
 }

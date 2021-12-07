@@ -131,6 +131,18 @@ public abstract class RootService extends ContextWrapper {
         onCreate();
     }
 
+    /**
+     * Return the component name that will be used for service lookup.
+     * <p>
+     * Overriding this method is only for very unusual situations when a different
+     * component name other than the actual class name is desired.
+     * @return the desired component name
+     */
+    @NonNull
+    public ComponentName getComponentName() {
+        return new ComponentName(this, getClass());
+    }
+
     @Override
     public final Context getApplicationContext() {
         return getBaseContext();
@@ -169,6 +181,6 @@ public abstract class RootService extends ContextWrapper {
      * This is the same as calling {@link #stop(Intent)} for this particular service.
      */
     public final void stopSelf() {
-        RootServiceServer.getInstance(this).selfStop(new ComponentName(this, getClass()));
+        RootServiceServer.getInstance(this).selfStop(getComponentName());
     }
 }
