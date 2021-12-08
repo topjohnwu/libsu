@@ -26,7 +26,6 @@ import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
 
-import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -55,7 +54,6 @@ import java.util.Map;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceServer extends IRootServiceManager.Stub implements IBinder.DeathRecipient {
 
-    @SuppressLint("StaticFieldLeak")
     private static RootServiceServer mInstance;
 
     public static RootServiceServer getInstance(Context context) {
@@ -69,25 +67,9 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     private final FileObserver observer;  /* A strong reference is required */
     private final Map<ComponentName, ServiceContainer> activeServices;
     private Messenger client;
-    private ServiceContainer lastRegistered;
     private boolean isDaemon = false;
 
     private RootServiceServer(Context context) {
-        IBinder binder = HiddenAPIs.getService(context.getPackageName());
-        if (binder != null) {
-            // There was already a root process running
-            IRootServiceManager mgr = IRootServiceManager.Stub.asInterface(binder);
-            try {
-                // Trigger re-broadcast
-                mgr.broadcast();
-
-                // Our work is done!
-                System.exit(0);
-            } catch (RemoteException e) {
-                // Daemon dead, continue
-            }
-        }
-
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
         Utils.context = context;
         if (Build.VERSION.SDK_INT >= 19) {
@@ -163,7 +145,6 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
             Utils.log(TAG, name.getClassName() + " unbind");
             stopService(name, false);
         });
-
     }
 
     @Override
@@ -208,7 +189,6 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         ServiceContainer c = new ServiceContainer();
         c.service = service;
         activeServices.put(service.getComponentName(), c);
-        lastRegistered = c;
     }
 
     private IBinder bindInternal(Intent intent) throws Exception {
@@ -222,12 +202,11 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
             attachBaseContext.invoke(ctor.newInstance(), context);
 
             // RootService should be registered after attachBaseContext
-            c = lastRegistered;
+            c = activeServices.get(name);
             if (c == null) {
                 return null;
             }
         }
-        lastRegistered = null;
 
         if (c.binder != null) {
             Utils.log(TAG, name.getClassName() + " rebind");
