@@ -69,6 +69,9 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     static final String BUNDLE_BINDER_KEY = "binder";
     static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
 
+    static final int MSG_ACK = 1;
+    static final int MSG_STOP = 2;
+
     private static final String MAIN_CLASSNAME = "com.topjohnwu.superuser.internal.RootServerMain";
     private static final String INTENT_EXTRA_KEY = "binder_bundle";
     private static final String ACTION_ENV = "LIBSU_BROADCAST_ACTION";
@@ -120,6 +123,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     }
 
     private IRootServiceManager manager;
+    private IBinder mRemote;
     private List<BindRequest> pendingTasks;
 
     private final Map<ComponentName, RemoteService> services;
@@ -190,20 +194,18 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             public void onReceive(Context context, Intent intent) {
                 context.unregisterReceiver(this);
                 Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
+                if (bundle == null)
+                    return;
                 IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
+                if (binder == null)
+                    return;
                 IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
                 try {
-                    m.connect(connectArgs);
                     binder.linkToDeath(RootServiceManager.this, 0);
+                    m.connect(connectArgs);
+                    mRemote = binder;
                 } catch (RemoteException e) {
                     Utils.err(TAG, e);
-                    return;
-                }
-                manager = m;
-                List<BindRequest> requests = pendingTasks;
-                pendingTasks = null;
-                for (BindRequest r : requests) {
-                    bind(r.intent, r.executor, r.conn);
                 }
             }
         };
@@ -331,8 +333,9 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     @Override
     public void binderDied() {
         UiThreadHandler.run(() -> {
-            if (manager != null) {
-                manager.asBinder().unlinkToDeath(this, 0);
+            if (mRemote != null) {
+                mRemote.unlinkToDeath(this, 0);
+                mRemote = null;
                 manager = null;
             }
 
@@ -349,8 +352,20 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
 
     @Override
     public boolean handleMessage(@NonNull Message msg) {
-        ComponentName name = (ComponentName) msg.obj;
-        stopInternal(name);
+        switch (msg.what) {
+            case MSG_ACK:
+                manager = IRootServiceManager.Stub.asInterface(mRemote);
+                List<BindRequest> requests = pendingTasks;
+                pendingTasks = null;
+                for (BindRequest r : requests) {
+                    bind(r.intent, r.executor, r.conn);
+                }
+                break;
+            case MSG_STOP:
+                ComponentName name = (ComponentName) msg.obj;
+                stopInternal(name);
+                break;
+        }
         return false;
     }
 

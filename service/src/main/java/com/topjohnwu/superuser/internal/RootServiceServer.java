@@ -21,6 +21,8 @@ import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_DEBUG_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
+import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_ACK;
+import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
 
@@ -107,20 +109,33 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
         if (binder == null)
             return;
+        final Messenger c;
         try {
             binder.linkToDeath(this, 0);
-            client = new Messenger(binder);
-        } catch (RemoteException ignored) {}
+            c = new Messenger(binder);
+        } catch (RemoteException e) {
+            Utils.err(TAG, e);
+            return;
+        }
 
         if (bundle.getBoolean(BUNDLE_DEBUG_KEY, false)) {
             // ActivityThread.attach(true, 0) will set this to system_process
             HiddenAPIs.setAppName(context.getPackageName() + ":root");
+            Utils.log(TAG, "Waiting for debugger to be attached...");
             // For some reason Debug.waitForDebugger() won't work, manual spin lock...
             while (!Debug.isDebuggerConnected()) {
                 try { Thread.sleep(200); }
                 catch (InterruptedException ignored) {}
             }
+            Utils.log(TAG, "Debugger attached!");
         }
+
+        Message m = Message.obtain();
+        m.what = MSG_ACK;
+        try {
+            c.send(m);
+            client = c;
+        } catch (RemoteException ignored) {}
     }
 
     @Override
@@ -166,6 +181,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
             Messenger c = client;
             if (c != null) {
                 Message m = Message.obtain();
+                m.what = MSG_STOP;
                 m.obj = name;
                 try {
                     c.send(m);
