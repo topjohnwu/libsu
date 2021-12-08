@@ -152,6 +152,10 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
             stopService(name, true);
+            // If no client is connected yet, broadcast anyways
+            if (client == null) {
+                broadcast();
+            }
         });
     }
 

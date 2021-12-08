@@ -54,10 +54,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callback {
@@ -124,8 +124,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
 
     private IRootServiceManager manager;
     private IBinder mRemote;
-    private List<BindRequest> pendingTasks;
+    private List<Runnable> pendingTasks;
+    private String mAction;
 
+    private final ExecutorService serialExecutor = new SerialExecutorService();
     private final Map<ComponentName, RemoteService> services;
     private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections;
 
@@ -139,35 +141,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         }
     }
 
-    private void startRootProcess(Context context, ComponentName name) {
-        Bundle connectArgs = new Bundle();
-
-        // Receive RSM service stop signal
-        Handler h = new Handler(Looper.getMainLooper(), this);
-        Messenger m = new Messenger(h);
-        connectArgs.putBinder(BUNDLE_BINDER_KEY, m.getBinder());
-
-        String debugParams = "";
-        // Only support debugging on SDK > 27
-        if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
-            connectArgs.putBoolean(BUNDLE_DEBUG_KEY, true);
-
-            // Also debug the remote root server
-            // Reference of the params to start jdwp:
-            // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
-            switch (Build.VERSION.SDK_INT) {
-                case 27:
-                    debugParams = "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y -Xcompiler-option --debuggable";
-                    break;
-                case 28:
-                    debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y -Xcompiler-option --debuggable";
-                    break;
-                default:
-                    debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y";
-                    break;
-            }
-        }
-
+    private void startRootProcess(Context context, String args) {
         // Dump main.jar as trampoline
         final File mainJar;
         try {
@@ -176,42 +150,80 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             return;
         }
 
-        // Execute main.jar through root shell
-        String action = UUID.randomUUID().toString();
-        String cmd = String.format(Locale.US,
-                "%s=%s CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root %s %s %s",
-                ACTION_ENV, action, mainJar, Process.myPid(), debugParams, context.getPackageName(),
-                MAIN_CLASSNAME, name.flattenToString(), CMDLINE_START_SERVICE);
-        // Make sure cmd is properly formatted in shell
-        cmd = cmd.replace("$", "\\$");
-        if (Utils.vLog())
-            cmd = LOGGING_ENV + "=1 " + cmd;
+        Bundle b = null;
+        if (mAction == null) {
+            mAction = UUID.randomUUID().toString();
+            Bundle connectArgs = new Bundle();
+            b = connectArgs;
 
-        // Register receiver to receive binder from root process
-        IntentFilter filter = new IntentFilter(action);
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                context.unregisterReceiver(this);
-                Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
-                if (bundle == null)
-                    return;
-                IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
-                if (binder == null)
-                    return;
-                IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
-                try {
-                    binder.linkToDeath(RootServiceManager.this, 0);
-                    m.connect(connectArgs);
-                    mRemote = binder;
-                } catch (RemoteException e) {
-                    Utils.err(TAG, e);
+            // Receive ACK and service stop signal
+            Handler h = new Handler(Looper.getMainLooper(), this);
+            Messenger m = new Messenger(h);
+            connectArgs.putBinder(BUNDLE_BINDER_KEY, m.getBinder());
+
+            // Register receiver to receive binder from root process
+            IntentFilter filter = new IntentFilter(mAction);
+            BroadcastReceiver receiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    // Receive new binder, treat as if the previous one died
+                    binderDied();
+
+                    Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
+                    if (bundle == null)
+                        return;
+                    IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
+                    if (binder == null)
+                        return;
+                    IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
+                    try {
+                        binder.linkToDeath(RootServiceManager.this, 0);
+                        m.connect(connectArgs);
+                        mRemote = binder;
+                    } catch (RemoteException e) {
+                        Utils.err(TAG, e);
+                    }
                 }
-            }
-        };
-        context.registerReceiver(receiver, filter);
+            };
+            context.registerReceiver(receiver, filter);
+        }
 
-        Shell.su("(" + cmd + ")&").exec();
+        StringBuilder sb = new StringBuilder();
+        sb.append('(');
+
+        if (Utils.vLog()) {
+            sb.append(LOGGING_ENV);
+            sb.append("=1 ");
+        }
+
+        sb.append(ACTION_ENV);
+        sb.append('=');
+        sb.append(mAction);
+        sb.append(" CLASSPATH=");
+        sb.append(mainJar);
+        sb.append(" /proc/");
+        sb.append(Process.myPid());
+        sb.append("/exe");
+
+        // Only support debugging on SDK >= 27
+        if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
+            if (b != null) {
+                b.putBoolean(BUNDLE_DEBUG_KEY, true);
+            }
+            // Reference of the params to start jdwp:
+            // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
+            if (Build.VERSION.SDK_INT == 27) {
+                sb.append(" -Xrunjdwp:transport=dt_android_adb,suspend=n,server=y -Xcompiler-option --debuggable");
+            } else {
+                sb.append(" -XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y -Xcompiler-option --debuggable");
+            }
+        }
+
+        sb.append(" /system/bin ");
+        sb.append(args);
+        sb.append(")&");
+
+        Shell.su(sb.toString()).exec();
     }
 
     public void bind(Intent intent, Executor executor, ServiceConnection conn) {
@@ -233,9 +245,15 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
                 pendingTasks = new ArrayList<>();
                 launch = true;
             }
-            pendingTasks.add(new BindRequest(intent, executor, conn));
+            pendingTasks.add(() -> bind(intent, executor, conn));
             if (launch) {
-                Shell.EXECUTOR.execute(() -> startRootProcess(Utils.getContext(), name));
+                serialExecutor.execute(() -> {
+                    Context context = Utils.getContext();
+                    String args = String.format("--nice-name=%s:root %s %s %s",
+                            context.getPackageName(), MAIN_CLASSNAME,
+                            name.flattenToString().replace("$", "\\$"), CMDLINE_START_SERVICE);
+                    startRootProcess(context, args);
+                });
             }
         } else {
             try {
@@ -300,24 +318,11 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         ComponentName name = enforceIntent(intent);
         if (manager == null) {
             // Start a new root process
-
-            // Dump main.jar as trampoline
-            final File mainJar;
-            try {
-                mainJar = dumpMainJar(Utils.getContext());
-            } catch (IOException e) {
-                return;
-            }
-
-            // Execute main.jar through root shell
-            String cmd = String.format(Locale.US,
-                    "CLASSPATH=%s /proc/%d/exe /system/bin %s %s %s",
-                    mainJar, Process.myPid(), MAIN_CLASSNAME,
-                    name.flattenToString(), CMDLINE_STOP_SERVICE);
-            // Make sure cmd is properly formatted in shell
-            cmd = cmd.replace("$", "\\$");
-
-            Shell.su("(" + cmd + ")&").exec();
+            serialExecutor.execute(() -> {
+                String args = String.format("%s %s %s", MAIN_CLASSNAME,
+                        name.flattenToString().replace("$", "\\$"), CMDLINE_STOP_SERVICE);
+                startRootProcess(Utils.getContext(), args);
+            });
             return;
         }
 
@@ -355,10 +360,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         switch (msg.what) {
             case MSG_ACK:
                 manager = IRootServiceManager.Stub.asInterface(mRemote);
-                List<BindRequest> requests = pendingTasks;
+                List<Runnable> tasks = pendingTasks;
                 pendingTasks = null;
-                for (BindRequest r : requests) {
-                    bind(r.intent, r.executor, r.conn);
+                for (Runnable r : tasks) {
+                    r.run();
                 }
                 break;
             case MSG_STOP:
@@ -367,18 +372,6 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
                 break;
         }
         return false;
-    }
-
-    static class BindRequest {
-        final Intent intent;
-        final Executor executor;
-        final ServiceConnection conn;
-
-        BindRequest(Intent intent, Executor executor, ServiceConnection conn) {
-            this.intent = intent;
-            this.executor = executor;
-            this.conn = conn;
-        }
     }
 
     static class RemoteService {
