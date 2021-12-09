@@ -42,10 +42,10 @@ val javadoc = tasks.replace("javadoc", Javadoc::class).apply {
     title = "libsu API"
     exclude("**/internal/**")
     (options as StandardJavadocDocletOptions).apply {
-        links = listOf("https://docs.oracle.com/javase/8/docs/api/")
         linksOffline = listOf(JavadocOfflineLink(
             "https://developer.android.com/reference/", rootProject.buildDir.path))
         isNoDeprecated = true
+        addBooleanOption("-ignore-source-errors").value = true
     }
     setDestinationDir(File(rootProject.buildDir, "javadoc"))
 }
