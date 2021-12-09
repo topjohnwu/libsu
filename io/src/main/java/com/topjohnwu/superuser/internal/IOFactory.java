@@ -59,10 +59,6 @@ public final class IOFactory {
         return new FifoInputStream(file);
     }
 
-    public static CopyInputStream copyIn(SuFile file) throws FileNotFoundException {
-        return new CopyInputStream(file);
-    }
-
     public static ShellOutputStream shellOut(SuFile file, boolean append)
             throws FileNotFoundException {
         return new ShellOutputStream(file, append);

@@ -22,38 +22,9 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
-class CopyInputStream extends BaseSuInputStream {
-
-    private final File tmp;
-
-    CopyInputStream(SuFile file) throws FileNotFoundException {
-        super(file);
-
-        Context c = Utils.getDeContext(Utils.getContext());
-        FileNotFoundException copyError = new FileNotFoundException("Cannot copy file to cache");
-        try {
-            tmp = File.createTempFile("input", null, c.getCacheDir());
-            tmp.deleteOnExit();
-        } catch (IOException e) {
-            throw (FileNotFoundException) copyError.initCause(e);
-        }
-        if (!Shell.su("cat " + file + " > " + tmp).to(null).exec().isSuccess())
-            throw copyError;
-
-        in = new FileInputStream(tmp);
-    }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-        tmp.delete();
-    }
-}
 
 class CopyOutputStream extends BaseSuOutputStream {
 
@@ -83,7 +54,7 @@ class CopyOutputStream extends BaseSuOutputStream {
             if (!Shell.su("cat " + tmp + op() + outFile).to(null).exec().isSuccess())
                 throw new IOException("Cannot write to target file");
         } finally {
-          tmp.delete();
+            tmp.delete();
         }
     }
 }

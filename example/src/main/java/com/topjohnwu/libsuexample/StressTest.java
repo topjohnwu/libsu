@@ -16,6 +16,8 @@
 
 package com.topjohnwu.libsuexample;
 
+import static com.topjohnwu.libsuexample.MainActivity.TAG;
+
 import android.os.Build;
 import android.util.Log;
 
@@ -29,8 +31,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Random;
-
-import static com.topjohnwu.libsuexample.MainActivity.TAG;
 
 public class StressTest {
 
@@ -105,14 +105,6 @@ public class StressTest {
             // /dev/null is writable without root
             out = new FileOutputStream("/dev/null");
         }
-
-        // Make sure CopyInputStream works fine
-        callback = file -> {
-            try (InputStream in = IOFactory.copyIn(file)) {
-                pump(in);
-            }
-        };
-        traverse(root);
 
         // Make sure ShellInputStream works fine
         callback = file -> {

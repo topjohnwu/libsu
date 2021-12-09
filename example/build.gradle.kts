@@ -29,6 +29,10 @@ android {
             path = file("src/main/cpp/CMakeLists.txt")
         }
     }
+
+    lint {
+        isAbortOnError = false
+    }
 }
 
 dependencies {
