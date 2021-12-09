@@ -14,7 +14,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.3")
+        classpath("com.android.tools.build:gradle:7.0.4")
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -54,11 +54,6 @@ val javadocJar by tasks.registering(Jar::class) {
     dependsOn(javadoc)
     archiveClassifier.set("javadoc")
     from(javadoc.destinationDir)
-}
-
-/* Force JitPack to build javadocJar and publish */
-tasks.register("install") {
-    dependsOn(tasks["publishToMavenLocal"])
 }
 
 publishing {
@@ -107,6 +102,8 @@ subprojects {
         }
 
         if (plugins.hasPlugin("com.android.library")) {
+            apply(plugin = "maven-publish")
+
             android {
                 buildFeatures.apply {
                     buildConfig = false
@@ -125,8 +122,17 @@ subprojects {
                     from(sources)
                 }
 
-                artifacts {
-                    add("archives", sourcesJar)
+                afterEvaluate {
+                    publishing {
+                        publications {
+                            create<MavenPublication>("maven") {
+                                from(components["release"])
+                                groupId = "com.github.topjohnwu"
+                                artifactId = project.name
+                                artifact(sourcesJar)
+                            }
+                        }
+                    }
                 }
             }
         }
