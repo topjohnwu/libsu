@@ -117,7 +117,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             throw new IllegalArgumentException("The intent does not have a component set");
         }
         if (!name.getPackageName().equals(Utils.getContext().getPackageName())) {
-            throw new IllegalArgumentException("RootService shall be in the app's package");
+            throw new IllegalArgumentException("RootServices outside of the app are not supported");
         }
         return name;
     }

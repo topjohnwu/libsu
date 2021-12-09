@@ -26,6 +26,7 @@ import android.os.IBinder;
 import android.os.Messenger;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.internal.RootServiceManager;
@@ -36,6 +37,10 @@ import java.util.concurrent.Executor;
 
 /**
  * A remote root service using native Android Binder IPC.
+ * <p>
+ * Pro tip: while developing an app with RootServices, modify the run/debug configuration and check
+ * the "Always install with package manager" option if testing on Android 11+, or else the code
+ * changes will not be reflected after Android Studio's deployment.
  * <p>
  * This class is almost a complete recreation of a bound service running in a root process.
  * Instead of using the original {@code Context.bindService(...)} methods to start and bind
@@ -79,6 +84,7 @@ public abstract class RootService extends ContextWrapper {
      * @param conn receives information as the service is started and stopped.
      * @see Context#bindService(Intent, int, Executor, ServiceConnection)
      */
+    @MainThread
     public static void bind(
             @NonNull Intent intent,
             @NonNull Executor executor,
@@ -92,6 +98,7 @@ public abstract class RootService extends ContextWrapper {
      * @param conn receives information as the service is started and stopped.
      * @see Context#bindService(Intent, ServiceConnection, int)
      */
+    @MainThread
     public static void bind(@NonNull Intent intent, @NonNull ServiceConnection conn) {
         bind(intent, UiThreadHandler.executor, conn);
     }
@@ -101,6 +108,7 @@ public abstract class RootService extends ContextWrapper {
      * @param conn the connection interface previously supplied to {@link #bind(Intent, ServiceConnection)}
      * @see Context#unbindService(ServiceConnection)
      */
+    @MainThread
     public static void unbind(@NonNull ServiceConnection conn) {
         RootServiceManager.getInstance().unbind(conn);
     }
@@ -115,6 +123,7 @@ public abstract class RootService extends ContextWrapper {
      * an additional root process to make sure daemon services are stopped.
      * @param intent identifies the service to stop.
      */
+    @MainThread
     public static void stop(@NonNull Intent intent) {
         RootServiceManager.getInstance().stop(intent);
     }
