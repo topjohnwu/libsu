@@ -1,9 +1,12 @@
+## 3.2.0
+- [service] All `RootService`s of a single app now run in the same root process. Each root service no longer runs in its own separate process.
+- [service] The `BroadcastReceiver` used internally for receiving the `IBinder` reference now uses random UUID as action, effectively making it private and unique per-session. This prevents malicious external apps from injecting its own services into your app.
+- [busybox] Update the prebuilt BusyBox executable to 1.34.1
+
 ## 3.1.2
-#### Bug fixes
 - Properly escape file names in FIFO I/O streams
 
 ## 3.1.1
-#### Bug fixes
 - Fix typo in `SuFile.length()`
 - Escape filenames of the `File` argument in `SuFile.renameTo(File)`
 
@@ -172,7 +175,6 @@ If you only use the shell implementation, you just need `com.github.topjohnwu.li
 - Add `Shell.Config.setTimeout(long)`. Use it to set the maximum time for waiting a new shell construction. The default value is 20 seconds.
 
 ## 2.0.3
-
 ### Improvements
 - `Shell.isAlive()` method is updated to get process status directly via reflection rather than the traditional `Process.exitValue()` exception handling. This optimization significantly reduces the overhead when switching between Shell tasks.
 
@@ -181,12 +183,10 @@ If you only use the shell implementation, you just need `com.github.topjohnwu.li
 - Retrolambda is removed, you should start using AGP 3.0.0+ which comes with official Java 8 desugaring
 
 ## 2.0.2
-
 ### Fixes
 - Return proper list in `Shell.Result.getErr()`
 
 ## 2.0.1
-
 ### Fixes / Improvements
 - Calling `submit` in `PendingJob` used to end up calling the overridden `exec` instead of `exec` in `JobImpl`. Proxy through a private method in `JobImpl` to prevent changed behavior of `JobImpl` subclasses.
 - Even though the parameters of `Shell.Job.add(...)` is labeled `@NonNull`, it is still possible that developers still pass in `null` and cause NPE. Check `null` before proceed any further.
