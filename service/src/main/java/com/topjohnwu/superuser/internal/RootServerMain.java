@@ -16,8 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.IRootServiceManager.Stub.TRANSACTION_broadcast;
-import static com.topjohnwu.superuser.internal.IRootServiceManager.Stub.TRANSACTION_stop;
+import static com.topjohnwu.superuser.internal.RootServiceManager.ACTION_ENV;
 
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
@@ -25,27 +24,29 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
-/**
- * Trampoline to start a root service.
- * <p>
- * This is the only class included in main.jar as raw resources.
- * The client code will execute this main method in a root shell.
- * <p>
- * This class will get the system context by calling into Android private APIs with reflection, and
- * uses that to create our client package context. The client context will have the full APK loaded,
- * just like it was launched in a non-root environment.
- * <p>
- * Expected command-line args:
- * args[0]: client service component name
- * args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
- */
+/*
+Trampoline to start a root service.
+
+This is the only class included in main.jar as a raw asset.
+The client will execute the main method in a root shell.
+
+This class will get the system context by calling into Android private APIs with reflection, and
+uses that to create our client package context. The client context will have the full APK loaded,
+just like it was launched in a non-root environment.
+
+Expected command-line args:
+args[0]: client service component name
+args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
+
+Expected environment variables:
+LIBSU_BROADCAST_ACTION: the action used for broadcasts
+*/
 class RootServerMain {
 
     static final String CMDLINE_STOP_SERVICE = "stop";
@@ -72,11 +73,6 @@ class RootServerMain {
     @SuppressLint("PrivateApi")
     static Context getSystemContext() {
         try {
-            synchronized (Looper.class) {
-                if (Looper.getMainLooper() == null)
-                    Looper.prepareMainLooper();
-            }
-
             Class<?> atClazz = Class.forName("android.app.ActivityThread");
             Method systemMain = atClazz.getMethod("systemMain");
             Object activityThread = systemMain.invoke(null);
@@ -99,38 +95,31 @@ class RootServerMain {
         if (args.length < 2)
             System.exit(0);
 
+        Looper.prepareMainLooper();
+        ComponentName name = ComponentName.unflattenFromString(args[0]);
         try {
-            ComponentName name = ComponentName.unflattenFromString(args[0]);
-
             // Get existing daemon process
-            IBinder binder = (IBinder) getService.invoke(null, getServiceName(name.getPackageName()));
+            Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
+            IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
 
             if (args[1].equals(CMDLINE_STOP_SERVICE)) {
-                if (binder != null) {
-                    Parcel p = Parcel.obtain();
+                if (m != null) {
                     try {
-                        p.writeInterfaceToken(IRootServiceManager.DESCRIPTOR);
-                        p.writeString(name.getClassName());
-                        binder.transact(TRANSACTION_stop, p, null, IBinder.FLAG_ONEWAY);
-                    } catch (RemoteException ignored) {
-                    } finally {
-                        p.recycle();
-                    }
+                        m.setAction(System.getenv(ACTION_ENV));
+                        m.stop(name);
+                    } catch (RemoteException ignored) {}
                 }
                 System.exit(0);
             }
 
-            if (binder != null) {
-                Parcel p = Parcel.obtain();
+            if (m != null) {
                 try {
-                    p.writeInterfaceToken(IRootServiceManager.DESCRIPTOR);
-                    binder.transact(TRANSACTION_broadcast, p, null, IBinder.FLAG_ONEWAY);
-                    // Terminate process if broadcast transaction went through
+                    m.setAction(System.getenv(ACTION_ENV));
+                    m.broadcast();
+                    // Terminate process if broadcast went through
                     System.exit(0);
                 } catch (RemoteException ignored) {
-                    // Something went wrong, restart RSM anyways
-                } finally {
-                    p.recycle();
+                    // Daemon process dead, continue
                 }
             }
 

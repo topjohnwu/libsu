@@ -68,13 +68,13 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     static final String BUNDLE_DEBUG_KEY = "debug";
     static final String BUNDLE_BINDER_KEY = "binder";
     static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
+    static final String ACTION_ENV = "LIBSU_BROADCAST_ACTION";
 
     static final int MSG_ACK = 1;
     static final int MSG_STOP = 2;
 
     private static final String MAIN_CLASSNAME = "com.topjohnwu.superuser.internal.RootServerMain";
-    private static final String INTENT_EXTRA_KEY = "binder_bundle";
-    private static final String ACTION_ENV = "LIBSU_BROADCAST_ACTION";
+    private static final String INTENT_EXTRA_KEY = "extra.bundle";
 
     public static RootServiceManager getInstance() {
         if (mInstance == null) {
@@ -84,12 +84,12 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     }
 
     @SuppressLint("WrongConstant")
-    static Intent getBroadcastIntent(Context context, IBinder binder) {
+    static Intent getBroadcastIntent(Context context, String action, IBinder binder) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
         return new Intent()
                 .setPackage(context.getPackageName())
-                .setAction(System.getenv(ACTION_ENV))
+                .setAction(action)
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
                 .putExtra(INTENT_EXTRA_KEY, bundle);
     }
@@ -362,8 +362,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
                 manager = IRootServiceManager.Stub.asInterface(mRemote);
                 List<Runnable> tasks = pendingTasks;
                 pendingTasks = null;
-                for (Runnable r : tasks) {
-                    r.run();
+                if (tasks != null) {
+                    for (Runnable r : tasks) {
+                        r.run();
+                    }
                 }
                 break;
             case MSG_STOP:

@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.internal.RootServerMain.attachBaseContext;
 import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
+import static com.topjohnwu.superuser.internal.RootServiceManager.ACTION_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_DEBUG_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
@@ -68,9 +69,11 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     private final Map<ComponentName, ServiceContainer> activeServices;
     private Messenger client;
     private boolean isDaemon = false;
+    private String mAction;
 
     private RootServiceServer(Context context) {
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
+        mAction = System.getenv(ACTION_ENV);
         Utils.context = context;
         if (Build.VERSION.SDK_INT >= 19) {
             activeServices = new ArrayMap<>();
@@ -122,7 +125,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
 
     @Override
     public void broadcast() {
-        Intent intent = RootServiceManager.getBroadcastIntent(context, this);
+        Intent intent = RootServiceManager.getBroadcastIntent(context, mAction, this);
         context.sendBroadcast(intent);
     }
 
@@ -159,6 +162,23 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         });
     }
 
+    @Override
+    public void setAction(String action) {
+        mAction = action;
+    }
+
+    @Override
+    public void binderDied() {
+        Messenger c = client;
+        client = null;
+        if (c != null)
+            c.getBinder().unlinkToDeath(this, 0);
+        UiThreadHandler.run(() -> {
+            Utils.log(TAG, "Client process terminated");
+            stopAllService(false);
+        });
+    }
+
     public void selfStop(ComponentName name) {
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " selfStop");
@@ -174,18 +194,6 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
                     Utils.err(TAG, e);
                 }
             }
-        });
-    }
-
-    @Override
-    public void binderDied() {
-        Messenger c = client;
-        client = null;
-        if (c != null)
-            c.getBinder().unlinkToDeath(this, 0);
-        UiThreadHandler.run(() -> {
-            Utils.log(TAG, "Client process terminated");
-            stopAllService(false);
         });
     }
 
