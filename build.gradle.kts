@@ -1,4 +1,5 @@
 import com.android.build.gradle.BaseExtension
+import java.io.ByteArrayOutputStream
 import java.net.URL
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
@@ -26,17 +27,25 @@ val dlPackageList by tasks.registering {
     doLast {
         // Merge framework packages with AndroidX packages into the same list
         // so links to Android classes can work properly in Javadoc
+
+        val bos = ByteArrayOutputStream()
+        URL("https://developer.android.com/reference/package-list")
+                .openStream().use { src -> src.copyTo(bos) }
+        URL("https://developer.android.com/reference/androidx/package-list")
+                .openStream().use { src -> src.copyTo(bos) }
+
+        // Strip out empty lines
+        val packageList = bos.toString("UTF-8").replace("\n+".toRegex(), "\n")
+
         rootProject.buildDir.mkdirs()
-        File(rootProject.buildDir, "package-list").outputStream().use { out ->
-            URL("https://developer.android.com/reference/package-list")
-                .openStream().use { src -> src.copyTo(out) }
-            URL("https://developer.android.com/reference/androidx/package-list")
-                .openStream().use { src -> src.copyTo(out) }
+        File(rootProject.buildDir, "package-list").outputStream().use {
+            it.writer().write(packageList)
+            it.write("\n".toByteArray())
         }
     }
 }
 
-val javadoc = tasks.replace("javadoc", Javadoc::class).apply {
+val javadoc = (tasks["javadoc"] as Javadoc).apply {
     dependsOn(dlPackageList)
     isFailOnError = false
     title = "libsu API"
@@ -111,7 +120,7 @@ subprojects {
 
                 val sources = sourceSets.getByName("main").java.getSourceFiles()
 
-                (rootProject.tasks["javadoc"] as Javadoc).apply {
+                javadoc.apply {
                     source += sources
                     classpath += project.files(bootClasspath)
                     classpath += configurations.getByName("javadocDeps")
