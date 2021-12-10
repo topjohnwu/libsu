@@ -29,8 +29,6 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
-import androidx.annotation.RestrictTo;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
@@ -48,8 +46,7 @@ import java.lang.reflect.Method;
  * args[0]: client service component name
  * args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
  */
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public class RootServerMain {
+class RootServerMain {
 
     static final String CMDLINE_STOP_SERVICE = "stop";
     static final String CMDLINE_START_SERVICE = "start";

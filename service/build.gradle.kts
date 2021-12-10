@@ -1,7 +1,7 @@
-import org.gradle.internal.os.OperatingSystem
-import java.io.OutputStream
+import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
+import com.android.tools.r8.R8
 
 plugins {
     id("com.android.library")
@@ -18,29 +18,34 @@ android {
 android.libraryVariants.all {
     val jarTask = tasks.register("create${name.capitalize()}MainJar") {
         doLast {
-            val d8Command = if (OperatingSystem.current().isWindows) "d8.bat" else "d8"
-            val d8 = Paths.get(android.sdkDirectory.path,
-                "build-tools", android.buildToolsVersion, d8Command)
             val classFile = Paths.get(buildDir.path, "intermediates",
                 "javac", this@all.name, "classes",
                 "com", "topjohnwu", "superuser", "internal", "RootServerMain.class")
+
+            val androidJar = Paths.get(android.sdkDirectory.path, "platforms",
+                    android.compileSdkVersion, "android.jar")
+
             val output = Paths.get(
-                android.sourceSets.getByName("main").assets.srcDirs.first().path,
-                "main.jar")
+                android.sourceSets.getByName("main").assets.srcDirs.first().path, "main.jar")
 
             if (Files.notExists(output.parent))
                 Files.createDirectories(output.parent)
 
-            val dummy = object : OutputStream() {
-                override fun write(b: Int) {}
-                override fun write(bytes: ByteArray, off: Int, len: Int) {}
+            val pgConf = File(buildDir, "mainJar.pro")
+
+            PrintStream(pgConf.outputStream()).use {
+                it.println("-keep class com.topjohnwu.superuser.internal.RootServerMain")
+                it.println("{ public static void main(java.lang.String[]); }")
             }
 
-            exec {
-                commandLine(d8, "--release", "--output", output, classFile)
-                standardOutput = dummy
-                errorOutput = dummy
-            }
+            val args = listOf<Any>(
+                "--release", "--output", output,
+                "--pg-conf", pgConf,
+                "--classpath", androidJar,
+                classFile
+            )
+
+            R8.main(args.map { it.toString() }.toTypedArray())
         }
     }
     javaCompileProvider {
