@@ -28,7 +28,9 @@ import android.os.Messenger;
 import androidx.annotation.CallSuper;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
+import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.RootServiceManager;
 import com.topjohnwu.superuser.internal.RootServiceServer;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -78,7 +80,7 @@ import java.util.concurrent.Executor;
 public abstract class RootService extends ContextWrapper {
 
     /**
-     * Connect to a root service, creating if needed.
+     * Connect to a root service, creating it if needed.
      * @param intent identifies the service to connect to.
      * @param executor callbacks on ServiceConnection will be called on this executor.
      * @param conn receives information as the service is started and stopped.
@@ -89,11 +91,14 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
-        RootServiceManager.getInstance().bind(intent, executor, conn);
+        Runnable r = createBindTask(intent, executor, conn);
+        if (r != null) {
+            Shell.EXECUTOR.execute(r);
+        }
     }
 
     /**
-     * Connect to a root service, creating if needed.
+     * Connect to a root service, creating it if needed.
      * @param intent identifies the service to connect to.
      * @param conn receives information as the service is started and stopped.
      * @see Context#bindService(Intent, ServiceConnection, int)
@@ -101,6 +106,27 @@ public abstract class RootService extends ContextWrapper {
     @MainThread
     public static void bind(@NonNull Intent intent, @NonNull ServiceConnection conn) {
         bind(intent, UiThreadHandler.executor, conn);
+    }
+
+    /**
+     * Connect to a root service, creating it if needed.
+     * <p>
+     * This method is useful if you want to precisely manage which background thread and the
+     * timing to do I/O operations and execute root commands for creating a new root process.
+     * <p>
+     * Binding will NOT happen if the developer does not run the returned {@link Runnable}.
+     * @return a {@link Runnable} instance on which a new root process will be launched upon
+     * calling {@link Runnable#run()}. If there is no need for creating a new root process,
+     * {@code null} is returned.
+     * @see #bind(Intent, Executor, ServiceConnection)
+     */
+    @MainThread
+    @Nullable
+    public static Runnable createBindTask(
+            @NonNull Intent intent,
+            @NonNull Executor executor,
+            @NonNull ServiceConnection conn) {
+        return RootServiceManager.getInstance().createBindTask(intent, executor, conn);
     }
 
     /**

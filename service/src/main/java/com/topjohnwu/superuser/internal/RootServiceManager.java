@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callback {
@@ -87,21 +86,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     static Intent getBroadcastIntent(Context context, String action, IBinder binder) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
-        return new Intent()
+        return new Intent(action)
                 .setPackage(context.getPackageName())
-                .setAction(action)
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
                 .putExtra(INTENT_EXTRA_KEY, bundle);
-    }
-
-    private static File dumpMainJar(Context context) throws IOException {
-        Context de = Utils.getDeContext(context);
-        File mainJar = new File(de.getCacheDir(), "main.jar");
-        try (InputStream in = context.getResources().getAssets().open("main.jar");
-             OutputStream out = new FileOutputStream(mainJar)) {
-            Utils.pump(in, out);
-        }
-        return mainJar;
     }
 
     private static void enforceMainThread() {
@@ -127,7 +115,6 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     private List<Runnable> pendingTasks;
     private String mAction;
 
-    private final ExecutorService serialExecutor = new SerialExecutorService();
     private final Map<ComponentName, RemoteService> services;
     private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections;
 
@@ -141,15 +128,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         }
     }
 
-    private void startRootProcess(Context context, String args) {
-        // Dump main.jar as trampoline
-        final File mainJar;
-        try {
-            mainJar = dumpMainJar(context);
-        } catch (IOException e) {
-            return;
-        }
-
+    private Runnable createStartRootProcessTask(Context context, String args) {
         Bundle b = null;
         if (mAction == null) {
             mAction = UUID.randomUUID().toString();
@@ -188,6 +167,9 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             context.registerReceiver(receiver, filter);
         }
 
+        Context de = Utils.getDeContext(context);
+        File mainJar = new File(de.getCacheDir(), "main.jar");
+
         StringBuilder sb = new StringBuilder();
         sb.append('(');
 
@@ -223,10 +205,21 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         sb.append(args);
         sb.append(")&");
 
-        Shell.su(sb.toString()).exec();
+        return () -> {
+            try {
+                // Dump main.jar as trampoline
+                try (InputStream in = context.getResources().getAssets().open("main.jar");
+                     OutputStream out = new FileOutputStream(mainJar)) {
+                    Utils.pump(in, out);
+                }
+                Shell.su(sb.toString()).exec();
+            } catch (IOException e) {
+                Utils.err(TAG, e);
+            }
+        };
     }
 
-    public void bind(Intent intent, Executor executor, ServiceConnection conn) {
+    private boolean bind(Intent intent, Executor executor, ServiceConnection conn) {
         enforceMainThread();
 
         // Local cache
@@ -236,10 +229,33 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             connections.put(conn, new Pair<>(s, executor));
             s.refCount++;
             executor.execute(() -> conn.onServiceConnected(name, s.binder));
-            return;
+            return true;
         }
 
-        if (manager == null) {
+        if (manager == null)
+            return false;
+
+        try {
+            IBinder binder = manager.bind(intent);
+            if (binder != null) {
+                RemoteService r = new RemoteService(name, binder);
+                connections.put(conn, new Pair<>(r, executor));
+                services.put(name, r);
+                executor.execute(() -> conn.onServiceConnected(name, binder));
+            } else if (Build.VERSION.SDK_INT >= 28) {
+                executor.execute(() -> conn.onNullBinding(name));
+            }
+        } catch (RemoteException e) {
+            Utils.err(TAG, e);
+            manager = null;
+            return false;
+        }
+
+        return true;
+    }
+
+    public Runnable createBindTask(Intent intent, Executor executor, ServiceConnection conn) {
+        if (!bind(intent, executor, conn)) {
             boolean launch = false;
             if (pendingTasks == null) {
                 pendingTasks = new ArrayList<>();
@@ -247,29 +263,15 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             }
             pendingTasks.add(() -> bind(intent, executor, conn));
             if (launch) {
-                serialExecutor.execute(() -> {
-                    Context context = Utils.getContext();
-                    String args = String.format("--nice-name=%s:root %s %s %s",
-                            context.getPackageName(), MAIN_CLASSNAME,
-                            name.flattenToString().replace("$", "\\$"), CMDLINE_START_SERVICE);
-                    startRootProcess(context, args);
-                });
-            }
-        } else {
-            try {
-                IBinder binder = manager.bind(intent);
-                if (binder != null) {
-                    RemoteService r = new RemoteService(name, binder);
-                    connections.put(conn, new Pair<>(r, executor));
-                    services.put(name, r);
-                    executor.execute(() -> conn.onServiceConnected(name, binder));
-                } else if (Build.VERSION.SDK_INT >= 28) {
-                    executor.execute(() -> conn.onNullBinding(name));
-                }
-            } catch (RemoteException e) {
-                Utils.err(TAG, e);
+                Context context = Utils.getContext();
+                String args = String.format("--nice-name=%s:root %s %s %s",
+                        context.getPackageName(), MAIN_CLASSNAME,
+                        intent.getComponent().flattenToString().replace("$", "\\$"),
+                        CMDLINE_START_SERVICE);
+                return createStartRootProcessTask(context, args);
             }
         }
+        return null;
     }
 
     public void unbind(@NonNull ServiceConnection conn) {
@@ -318,11 +320,10 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         ComponentName name = enforceIntent(intent);
         if (manager == null) {
             // Start a new root process
-            serialExecutor.execute(() -> {
-                String args = String.format("%s %s %s", MAIN_CLASSNAME,
-                        name.flattenToString().replace("$", "\\$"), CMDLINE_STOP_SERVICE);
-                startRootProcess(Utils.getContext(), args);
-            });
+            String args = String.format("%s %s %s", MAIN_CLASSNAME,
+                    name.flattenToString().replace("$", "\\$"), CMDLINE_STOP_SERVICE);
+            Runnable r = createStartRootProcessTask(Utils.getContext(), args);
+            Shell.EXECUTOR.execute(r);
             return;
         }
 
