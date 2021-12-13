@@ -1,3 +1,6 @@
+## 3.2.1
+- [service] Add new API `RootService.createBindTask(...)`. Check Javadoc for more details.
+
 ## 3.2.0
 - [service] All `RootService`s of a single app now run in the same root process. Each root service no longer runs in its own separate process.
 - [service] The `BroadcastReceiver` used internally for receiving the `IBinder` reference now uses random UUID as action, effectively making it private and unique per-session. This prevents malicious external apps from injecting its own services into your app.
