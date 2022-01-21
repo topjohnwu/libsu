@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern
 
 /**
  * Some handy utility methods that are used in {@code libsu}.
@@ -37,6 +38,8 @@ import java.util.List;
  */
 public final class ShellUtils {
 
+    private static final Pattern SHELL_UNSAFE = Pattern.compile("[^\\w@%+=:,./-]");
+    
     private ShellUtils() {}
 
     /**
@@ -120,17 +123,13 @@ public final class ShellUtils {
      * @return the formatted string.
      */
     public static String escapedString(String s) {
-        StringBuilder sb = new StringBuilder();
-        sb.append('"');
-        int len = s.length();
-        for (int i = 0; i < len; ++i) {
-            char c = s.charAt(i);
-            if ("$`\"\\".indexOf(c) >= 0)
-                sb.append('\\');
-            sb.append(c);
+        if (s.isEmpty()) {
+            return "''";
         }
-        sb.append('"');
-        return sb.toString();
+        if (!SHELL_UNSAFE.matcher(s).find()) {
+            return s;
+        }
+        return "'" + s.replace("'",  "'\"'\"'") + "'";
     }
 
     /**
