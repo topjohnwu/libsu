@@ -307,7 +307,8 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
         while (it.hasNext()) {
             Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
             if (e.getValue().first.equals(s)) {
-                e.getValue().second.execute(() -> e.getKey().onServiceDisconnected(name));
+                ServiceConnection connection = e.getKey();
+                e.getValue().second.execute(() -> connection.onServiceDisconnected(name));
                 it.remove();
             }
         }
