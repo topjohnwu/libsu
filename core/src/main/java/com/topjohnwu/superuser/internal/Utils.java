@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.internal;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.os.Build;
 import android.util.Log;
 
@@ -89,6 +90,13 @@ public final class Utils {
 
     public static Context getDeContext(Context context) {
         return Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
+    }
+
+    public static Context getContextImpl(Context context) {
+        while (context instanceof ContextWrapper) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return context;
     }
 
     public static boolean isSynchronized(Collection<?> collection) {

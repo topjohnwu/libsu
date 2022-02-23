@@ -16,14 +16,14 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServiceManager.ACTION_ENV;
-
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -42,12 +42,11 @@ just like it was launched in a non-root environment.
 
 Expected command-line args:
 args[0]: client service component name
-args[1]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
-
-Expected environment variables:
-LIBSU_BROADCAST_ACTION: the action used for broadcasts
+args[1]: client UID
+args[2]: client broadcast receiver intent filter
+args[3]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
 */
-class RootServerMain {
+class RootServerMain extends ContextWrapper implements Handler.Callback {
 
     static final String CMDLINE_STOP_SERVICE = "stop";
     static final String CMDLINE_START_SERVICE = "start";
@@ -92,56 +91,78 @@ class RootServerMain {
         // Close STDOUT/STDERR since it belongs to the parent shell
         System.out.close();
         System.err.close();
-        if (args.length < 2)
+        if (args.length < 4)
             System.exit(0);
 
         Looper.prepareMainLooper();
-        ComponentName name = ComponentName.unflattenFromString(args[0]);
+
         try {
-            // Get existing daemon process
-            Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
-            IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
-
-            if (args[1].equals(CMDLINE_STOP_SERVICE)) {
-                if (m != null) {
-                    try {
-                        m.setAction(System.getenv(ACTION_ENV));
-                        m.stop(name);
-                    } catch (RemoteException ignored) {}
-                }
-                System.exit(0);
-            }
-
-            if (m != null) {
-                try {
-                    m.setAction(System.getenv(ACTION_ENV));
-                    m.broadcast();
-                    // Terminate process if broadcast went through
-                    System.exit(0);
-                } catch (RemoteException ignored) {
-                    // Daemon process dead, continue
-                }
-            }
-
-            Context systemContext = getSystemContext();
-            Context context = systemContext.createPackageContext(name.getPackageName(),
-                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
-
-            // Use classloader from the package context to run everything
-            ClassLoader cl = context.getClassLoader();
-            Class<?> clz = cl.loadClass(name.getClassName());
-            Constructor<?> ctor = clz.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            attachBaseContext.invoke(ctor.newInstance(), context);
-
-            // Main thread event loop
-            Looper.loop();
-
-            // Shall never return
-            System.exit(0);
+            new RootServerMain(args);
         } catch (Exception e) {
             Log.e("IPC", "Error in IPCMain", e);
             System.exit(1);
         }
+
+        // Main thread event loop
+        Looper.loop();
+        System.exit(0);
+    }
+
+    private final int uid;
+    private final String filter;
+
+    public RootServerMain(String[] args) throws Exception {
+        super(null);
+
+        ComponentName name = ComponentName.unflattenFromString(args[0]);
+        uid = Integer.parseInt(args[1]);
+        filter = args[2];
+        String action = args[3];
+
+        // Get existing daemon process
+        Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
+        IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
+
+        if (action.equals(CMDLINE_STOP_SERVICE)) {
+            if (m != null) {
+                try {
+                    m.stop(name);
+                    // If the process wasn't killed yet, send another broadcast
+                    m.broadcast(uid, filter);
+                } catch (RemoteException ignored) {}
+            }
+            System.exit(0);
+        }
+
+        if (m != null) {
+            try {
+                m.broadcast(uid, filter);
+                // Terminate process if broadcast went through
+                System.exit(0);
+            } catch (RemoteException ignored) {
+                // Daemon process dead, continue
+            }
+        }
+
+        Context systemContext = getSystemContext();
+        Context context = systemContext.createPackageContext(name.getPackageName(),
+                Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+        attachBaseContext(context);
+
+        // Use classloader from the package context to run everything
+        ClassLoader cl = context.getClassLoader();
+        Class<?> clz = cl.loadClass(name.getClassName());
+        Constructor<?> ctor = clz.getDeclaredConstructor();
+        ctor.setAccessible(true);
+        attachBaseContext.invoke(ctor.newInstance(), this);
+    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) msg.obj);
+        try {
+            m.broadcast(uid, filter);
+        } catch (Exception ignored) {}
+        return true;
     }
 }

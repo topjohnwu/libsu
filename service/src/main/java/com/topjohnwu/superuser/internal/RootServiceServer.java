@@ -18,7 +18,6 @@ package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.internal.RootServerMain.attachBaseContext;
 import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
-import static com.topjohnwu.superuser.internal.RootServiceManager.ACTION_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_DEBUG_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
@@ -27,6 +26,7 @@ import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -34,10 +34,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.util.ArrayMap;
 
 import androidx.annotation.Nullable;
@@ -60,6 +62,16 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     public static RootServiceServer getInstance(Context context) {
         if (mInstance == null) {
             mInstance = new RootServiceServer(context);
+            if (context instanceof Handler.Callback) {
+                Handler.Callback c = (Handler.Callback) context;
+                Message m = Message.obtain();
+                try {
+                    m.obj = mInstance;
+                    c.handleMessage(m);
+                } finally {
+                    m.recycle();
+                }
+            }
         }
         return mInstance;
     }
@@ -69,20 +81,16 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
     private final Map<ComponentName, ServiceContainer> activeServices;
     private Messenger client;
     private boolean isDaemon = false;
-    private String mAction;
 
     private RootServiceServer(Context context) {
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
-        mAction = System.getenv(ACTION_ENV);
-        Utils.context = context;
+        Utils.context = Utils.getContextImpl(context);
         if (Build.VERSION.SDK_INT >= 19) {
             activeServices = new ArrayMap<>();
         } else {
             activeServices = new HashMap<>();
         }
         observer = new AppObserver(new File(context.getPackageCodePath()));
-
-        broadcast();
         observer.startWatching();
     }
 
@@ -120,13 +128,21 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         try {
             c.send(m);
             client = c;
-        } catch (RemoteException ignored) {}
+        } catch (RemoteException ignored) {
+        } finally {
+            m.recycle();
+        }
     }
 
-    @Override
-    public void broadcast() {
-        Intent intent = RootServiceManager.getBroadcastIntent(context, mAction, this);
-        context.sendBroadcast(intent);
+    @SuppressLint("MissingPermission")
+    public void broadcast(int uid, String action) {
+        Intent intent = RootServiceManager.getBroadcastIntent(context, action, this);
+        if (Build.VERSION.SDK_INT >= 24) {
+            UserHandle h = UserHandle.getUserHandleForUid(uid);
+            context.sendBroadcastAsUser(intent, h);
+        } else {
+            context.sendBroadcast(intent);
+        }
     }
 
     @Override
@@ -155,16 +171,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
             stopService(name, true);
-            // If no client is connected yet, broadcast anyways
-            if (client == null) {
-                broadcast();
-            }
         });
-    }
-
-    @Override
-    public void setAction(String action) {
-        mAction = action;
     }
 
     @Override
@@ -192,6 +199,8 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
                     c.send(m);
                 } catch (RemoteException e) {
                     Utils.err(TAG, e);
+                } finally {
+                    m.recycle();
                 }
             }
         });

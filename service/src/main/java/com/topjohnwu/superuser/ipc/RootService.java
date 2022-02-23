@@ -34,6 +34,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.RootServiceManager;
 import com.topjohnwu.superuser.internal.RootServiceServer;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.util.concurrent.Executor;
 
@@ -161,7 +162,7 @@ public abstract class RootService extends ContextWrapper {
     @Override
     @CallSuper
     protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
+        super.attachBaseContext(Utils.getContextImpl(base));
         RootServiceServer.getInstance(base).register(this);
         onCreate();
     }
