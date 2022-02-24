@@ -20,15 +20,15 @@ import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
+import android.util.Pair;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.concurrent.Callable;
 
 /*
 Trampoline to start a root service.
@@ -46,7 +46,7 @@ args[1]: client UID
 args[2]: client broadcast receiver intent filter
 args[3]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
 */
-class RootServerMain extends ContextWrapper implements Handler.Callback {
+class RootServerMain extends ContextWrapper implements Callable<Pair<Integer, String>> {
 
     static final String CMDLINE_STOP_SERVICE = "stop";
     static final String CMDLINE_START_SERVICE = "start";
@@ -111,6 +111,11 @@ class RootServerMain extends ContextWrapper implements Handler.Callback {
     private final int uid;
     private final String filter;
 
+    @Override
+    public Pair<Integer, String> call() {
+        return new Pair<>(uid, filter);
+    }
+
     public RootServerMain(String[] args) throws Exception {
         super(null);
 
@@ -155,14 +160,5 @@ class RootServerMain extends ContextWrapper implements Handler.Callback {
         Constructor<?> ctor = clz.getDeclaredConstructor();
         ctor.setAccessible(true);
         attachBaseContext.invoke(ctor.newInstance(), this);
-    }
-
-    @Override
-    public boolean handleMessage(Message msg) {
-        IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) msg.obj);
-        try {
-            m.broadcast(uid, filter);
-        } catch (Exception ignored) {}
-        return true;
     }
 }

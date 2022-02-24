@@ -34,13 +34,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.util.ArrayMap;
+import android.util.Pair;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
@@ -53,24 +53,22 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceServer extends IRootServiceManager.Stub implements IBinder.DeathRecipient {
 
     private static RootServiceServer mInstance;
 
+    @SuppressWarnings("rawtypes")
     public static RootServiceServer getInstance(Context context) {
         if (mInstance == null) {
             mInstance = new RootServiceServer(context);
-            if (context instanceof Handler.Callback) {
-                Handler.Callback c = (Handler.Callback) context;
-                Message m = Message.obtain();
+            if (context instanceof Callable) {
                 try {
-                    m.obj = mInstance;
-                    c.handleMessage(m);
-                } finally {
-                    m.recycle();
-                }
+                    Pair p = (Pair) ((Callable) context).call();
+                    mInstance.broadcast((int) p.first, (String) p.second);
+                } catch (Exception ignored) {}
             }
         }
         return mInstance;
