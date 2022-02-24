@@ -123,6 +123,9 @@ public class RootServiceServer extends IRootServiceManager.Stub implements IBind
 
         Message m = Message.obtain();
         m.what = MSG_ACK;
+        bundle = new Bundle();
+        bundle.putBinder(BUNDLE_BINDER_KEY, this);
+        m.obj = bundle;
         try {
             c.send(m);
             client = c;

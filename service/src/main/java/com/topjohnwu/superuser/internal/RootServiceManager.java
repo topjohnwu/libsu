@@ -110,7 +110,6 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     }
 
     private IRootServiceManager mRM;
-    private IBinder mRemote;
     private List<Runnable> pendingTasks;
     private String filterAction;
 
@@ -145,9 +144,6 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
             BroadcastReceiver receiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    // Receive new binder, treat as if the previous one died
-                    binderDied();
-
                     Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
                     if (bundle == null)
                         return;
@@ -156,9 +152,7 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
                         return;
                     IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
                     try {
-                        binder.linkToDeath(RootServiceManager.this, 0);
                         m.connect(connectArgs);
-                        mRemote = binder;
                     } catch (RemoteException e) {
                         Utils.err(TAG, e);
                     }
@@ -327,9 +321,8 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     @Override
     public void binderDied() {
         UiThreadHandler.run(() -> {
-            if (mRemote != null) {
-                mRemote.unlinkToDeath(this, 0);
-                mRemote = null;
+            if (mRM != null) {
+                mRM.asBinder().unlinkToDeath(this, 0);
                 mRM = null;
             }
 
@@ -348,7 +341,15 @@ public class RootServiceManager implements IBinder.DeathRecipient, Handler.Callb
     public boolean handleMessage(@NonNull Message msg) {
         switch (msg.what) {
             case MSG_ACK:
-                mRM = IRootServiceManager.Stub.asInterface(mRemote);
+                IBinder b = ((Bundle) msg.obj).getBinder(BUNDLE_BINDER_KEY);
+                if (b == null)
+                    return false;
+                try {
+                    b.linkToDeath(this, 0);
+                } catch (RemoteException e) {
+                    return false;
+                }
+                mRM = IRootServiceManager.Stub.asInterface(b);
                 List<Runnable> tasks = pendingTasks;
                 pendingTasks = null;
                 if (tasks != null) {
