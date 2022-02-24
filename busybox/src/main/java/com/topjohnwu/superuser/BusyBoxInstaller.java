@@ -73,7 +73,7 @@ public class BusyBoxInstaller extends Shell.Initializer {
         job.add("export ASH_STANDALONE=1");
 
         File lib = new File(context.getApplicationInfo().nativeLibraryDir, "libbusybox.so");
-        if (shell.isRoot() && !fastCmdResult(shell, lib + " true")) {
+        if (shell.isRoot() && !fastCmdResult(shell, lib + " sh -c \"" + lib + " true\"")) {
             // This happens ONLY on some older Samsung devices
             if (fastCmdResult(shell, "[ -x $(magisk --path)/busybox/busybox ]")) {
                 // Modern Magisk installed, use that instead
