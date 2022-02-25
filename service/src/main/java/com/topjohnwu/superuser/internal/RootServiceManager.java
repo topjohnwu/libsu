@@ -320,7 +320,7 @@ public class RootServiceManager implements Handler.Callback {
     public boolean handleMessage(@NonNull Message msg) {
         switch (msg.what) {
             case MSG_ACK:
-                IBinder b = ((Bundle) msg.obj).getBinder(BUNDLE_BINDER_KEY);
+                IBinder b = msg.getData().getBinder(BUNDLE_BINDER_KEY);
                 if (b == null)
                     return false;
                 RemoteProcess p;

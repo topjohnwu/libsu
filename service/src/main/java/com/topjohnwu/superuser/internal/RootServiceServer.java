@@ -127,7 +127,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         Message m = Message.obtain();
         m.what = MSG_ACK;
         m.arg1 = isDaemon ? 1 : 0;
-        m.obj = bundle;
+        m.setData(bundle);
         try {
             c.m.send(m);
             clients.put(c.uid, c);
