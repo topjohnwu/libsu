@@ -5,8 +5,8 @@ package com.topjohnwu.superuser.internal;
 
 interface IRootServiceManager {
     oneway void broadcast(int uid, String action);
-    oneway void stop(in ComponentName name);
-    oneway void connect(in Bundle bundle);
+    oneway void stop(in ComponentName name, int uid, String action);
+    oneway void connect(in IBinder binder, boolean debug);
     IBinder bind(in Intent intent);
     oneway void unbind(in ComponentName name);
 }

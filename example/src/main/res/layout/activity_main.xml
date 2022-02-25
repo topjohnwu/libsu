@@ -72,23 +72,23 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/test_svc"
+            android:id="@+id/aidl_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test SVC" />
+            android:text="Bind AIDL" />
 
         <Button
-            android:id="@+id/unbind_svc"
+            android:id="@+id/msg_svc"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Unbind" />
+            android:text="Bind MSG" />
 
         <Button
-            android:id="@+id/stop_svc"
+            android:id="@+id/self_stop"
             style="?android:borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -118,7 +118,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Test Daemon" />
+            android:text="Bind Daemon" />
 
         <Button
             android:id="@+id/stop_daemon"

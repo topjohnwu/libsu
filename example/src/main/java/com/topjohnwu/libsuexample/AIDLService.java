@@ -16,6 +16,8 @@
 
 package com.topjohnwu.libsuexample;
 
+import static com.topjohnwu.libsuexample.MainActivity.TAG;
+
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.Process;
@@ -25,10 +27,11 @@ import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.ipc.RootService;
 
-import static com.topjohnwu.libsuexample.MainActivity.TAG;
+import java.util.UUID;
 
 // Demonstrate RootService using AIDL (daemon mode)
 class AIDLService extends RootService {
+
     static {
         // Only load the library when this class is loaded in a root process.
         // The classloader will load this class (and call this static block) in the non-root
@@ -40,7 +43,6 @@ class AIDLService extends RootService {
 
     // Demonstrate we can also run native code via JNI with RootServices
     native int nativeGetUid();
-    native String nativeReadFile(String file);
 
     class TestIPC extends ITestService.Stub {
         @Override
@@ -54,10 +56,17 @@ class AIDLService extends RootService {
         }
 
         @Override
-        public String readCmdline() {
-            // Normally we cannot read /proc/cmdline without root
-            return nativeReadFile("/proc/cmdline");
+        public String getUUID() {
+            return uuid;
         }
+    }
+
+    private String uuid;
+
+    @Override
+    public void onCreate() {
+        uuid = UUID.randomUUID().toString();
+        Log.d(TAG, "AIDLService: onCreate, " + uuid);
     }
 
     @Override
@@ -75,7 +84,7 @@ class AIDLService extends RootService {
     @Override
     public boolean onUnbind(@NonNull Intent intent) {
         Log.d(TAG, "AIDLService: onUnbind, client process unbound");
-        // We return true here to tell libsu that we want this service to run as a daemon
+        // Return true here so onRebindg will be called
         return true;
     }
 }

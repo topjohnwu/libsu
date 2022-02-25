@@ -81,6 +81,16 @@ import java.util.concurrent.Executor;
 public abstract class RootService extends ContextWrapper {
 
     /**
+     * Launch the service in "Daemon Mode".
+     * <p>
+     * Add this category in the intents passed to {@link #bind(Intent, ServiceConnection)},
+     * {@link #bind(Intent, Executor, ServiceConnection)}, or
+     * {@link #createBindTask(Intent, Executor, ServiceConnection)}
+     * to have the service launched in "Daemon Mode".
+     */
+    public static final String CATEGORY_DAEMON_MODE = "com.topjohnwu.superuser.DAEMON_MODE";
+
+    /**
      * Connect to a root service, creating it if needed.
      * @param intent identifies the service to connect to.
      * @param executor callbacks on ServiceConnection will be called on this executor.

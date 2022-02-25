@@ -20,6 +20,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
+import android.util.ArrayMap;
+import android.util.ArraySet;
 import android.util.Log;
 
 import androidx.annotation.RestrictTo;
@@ -34,6 +36,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Utils {
@@ -116,5 +122,21 @@ public final class Utils {
             total += read;
         }
         return total;
+    }
+
+    static <K, V> Map<K, V> newArrayMap() {
+        if (Build.VERSION.SDK_INT >= 19) {
+            return new ArrayMap<>();
+        } else {
+            return new HashMap<>();
+        }
+    }
+
+    static <E> Set<E> newArraySet() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            return new ArraySet<>();
+        } else {
+            return new HashSet<>();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 John "topjohnwu" Wu
+ * Copyright 2022 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,25 @@
  * limitations under the License.
  */
 
-#include <jni.h>
-#include <unistd.h>
+package com.topjohnwu.superuser.internal;
 
-extern "C" JNIEXPORT JNICALL
-jint Java_com_topjohnwu_libsuexample_AIDLService_nativeGetUid(
-		JNIEnv *env, jobject instance) {
-	return getuid();
+import android.os.IBinder;
+import android.os.RemoteException;
+
+abstract class BinderHolder implements IBinder.DeathRecipient {
+
+    private final IBinder binder;
+
+    BinderHolder(IBinder b) throws RemoteException {
+        binder = b;
+        binder.linkToDeath(this, 0);
+    }
+
+    @Override
+    public final void binderDied() {
+        binder.unlinkToDeath(this, 0);
+        UiThreadHandler.run(this::onBinderDied);
+    }
+
+    protected abstract void onBinderDied();
 }

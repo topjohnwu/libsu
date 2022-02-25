@@ -24,7 +24,6 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.util.Log;
-import android.util.Pair;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -44,12 +43,13 @@ Expected command-line args:
 args[0]: client service component name
 args[1]: client UID
 args[2]: client broadcast receiver intent filter
-args[3]: {@link #CMDLINE_START_SERVICE} or {@link #CMDLINE_STOP_SERVICE}
+args[3]: CMDLINE_START_SERVICE, CMDLINE_START_DAEMON, or CMDLINE_STOP_SERVICE
 */
-class RootServerMain extends ContextWrapper implements Callable<Pair<Integer, String>> {
+class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
-    static final String CMDLINE_STOP_SERVICE = "stop";
     static final String CMDLINE_START_SERVICE = "start";
+    static final String CMDLINE_START_DAEMON = "daemon";
+    static final String CMDLINE_STOP_SERVICE = "stop";
 
     static final Method getService;
     static final Method addService;
@@ -110,10 +110,15 @@ class RootServerMain extends ContextWrapper implements Callable<Pair<Integer, St
 
     private final int uid;
     private final String filter;
+    private final boolean isDaemon;
 
     @Override
-    public Pair<Integer, String> call() {
-        return new Pair<>(uid, filter);
+    public Object[] call() {
+        Object[] objs = new Object[3];
+        objs[0] = uid;
+        objs[1] = filter;
+        objs[2] = isDaemon;
+        return objs;
     }
 
     public RootServerMain(String[] args) throws Exception {
@@ -123,30 +128,38 @@ class RootServerMain extends ContextWrapper implements Callable<Pair<Integer, St
         uid = Integer.parseInt(args[1]);
         filter = args[2];
         String action = args[3];
+        boolean stop = false;
 
-        // Get existing daemon process
-        Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
-        IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
-
-        if (action.equals(CMDLINE_STOP_SERVICE)) {
-            if (m != null) {
-                try {
-                    m.stop(name);
-                    // If the process wasn't killed yet, send another broadcast
-                    m.broadcast(uid, filter);
-                } catch (RemoteException ignored) {}
-            }
-            System.exit(0);
+        switch (action) {
+            case CMDLINE_STOP_SERVICE:
+                stop = true;
+                // fallthrough
+            case CMDLINE_START_DAEMON:
+                isDaemon = true;
+                break;
+            default:
+                isDaemon = false;
+                break;
         }
 
-        if (m != null) {
-            try {
+        if (isDaemon) daemon: try {
+            // Get existing daemon process
+            Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
+            IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
+            if (m == null)
+                break daemon;
+
+            if (stop) {
+                m.stop(name, uid, filter);
+            } else {
                 m.broadcast(uid, filter);
-                // Terminate process if broadcast went through
+                // Terminate process if broadcast went through without exception
                 System.exit(0);
-            } catch (RemoteException ignored) {
-                // Daemon process dead, continue
             }
+        } catch (RemoteException ignored) {
+        } finally {
+            if (stop)
+                System.exit(0);
         }
 
         Context systemContext = getSystemContext();
