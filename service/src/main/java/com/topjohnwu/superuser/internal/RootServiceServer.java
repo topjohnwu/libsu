@@ -237,7 +237,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
         ServiceContainer s = activeServices.get(name);
         if (s == null) {
-            Class<?> clz = Class.forName(name.getClassName());
+            Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
             attachBaseContext.invoke(ctor.newInstance(), context);
