@@ -19,7 +19,6 @@ package com.topjohnwu.superuser.internal;
 import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_DAEMON;
 import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_SERVICE;
 import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_STOP_SERVICE;
-import static com.topjohnwu.superuser.internal.Utils.newArrayMap;
 import static com.topjohnwu.superuser.ipc.RootService.CATEGORY_DAEMON_MODE;
 
 import android.annotation.SuppressLint;
@@ -39,6 +38,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.util.ArrayMap;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -126,8 +126,8 @@ public class RootServiceManager implements Handler.Callback {
     private int flags = 0;
 
     private final List<BindTask> pendingTasks = new ArrayList<>();
-    private final Map<Pair<ComponentName, Boolean>, RemoteService> services = newArrayMap();
-    private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections = newArrayMap();
+    private final Map<Pair<ComponentName, Boolean>, RemoteService> services = new ArrayMap<>();
+    private final Map<ServiceConnection, Pair<RemoteService, Executor>> connections = new ArrayMap<>();
 
     private RootServiceManager() {}
 

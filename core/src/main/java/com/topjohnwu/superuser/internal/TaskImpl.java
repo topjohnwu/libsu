@@ -16,6 +16,9 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.Shell.EXECUTOR;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
@@ -28,9 +31,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
-import static com.topjohnwu.superuser.Shell.EXECUTOR;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 class TaskImpl implements Shell.Task {
 

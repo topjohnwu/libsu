@@ -16,6 +16,9 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.content.Context;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -35,9 +38,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 @RequiresApi(21)
 class FifoOutputStream extends BaseSuOutputStream {

@@ -20,7 +20,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
-import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -32,13 +31,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -46,8 +41,6 @@ public final class Utils {
 
     @SuppressLint("StaticFieldLeak")
     public static Context context;
-    public static final Charset UTF_8 =
-            Build.VERSION.SDK_INT >= 19 ? StandardCharsets.UTF_8 : Charset.forName("UTF-8");
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
 
@@ -122,14 +115,6 @@ public final class Utils {
             total += read;
         }
         return total;
-    }
-
-    static <K, V> Map<K, V> newArrayMap() {
-        if (Build.VERSION.SDK_INT >= 19) {
-            return new ArrayMap<>();
-        } else {
-            return new HashMap<>();
-        }
     }
 
     static <E> Set<E> newArraySet() {

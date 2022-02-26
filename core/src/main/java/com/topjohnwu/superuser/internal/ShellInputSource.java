@@ -16,12 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 interface ShellInputSource extends Closeable {
     String TAG = "SHELL_IN";

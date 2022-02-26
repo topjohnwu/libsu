@@ -24,7 +24,6 @@ import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_ACK;
 import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
-import static com.topjohnwu.superuser.internal.Utils.newArrayMap;
 import static com.topjohnwu.superuser.internal.Utils.newArraySet;
 
 import android.annotation.SuppressLint;
@@ -40,6 +39,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.util.ArrayMap;
 import android.util.SparseArray;
 
 import androidx.annotation.Nullable;
@@ -69,7 +69,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
     @SuppressWarnings("FieldCanBeLocal")
     private final FileObserver observer;  /* A strong reference is required */
-    private final Map<ComponentName, ServiceContainer> activeServices = newArrayMap();
+    private final Map<ComponentName, ServiceContainer> activeServices = new ArrayMap<>();
     private final SparseArray<ClientProcess> clients = new SparseArray<>();
     private final boolean isDaemon;
 

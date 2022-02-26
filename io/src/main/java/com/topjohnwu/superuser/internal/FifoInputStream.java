@@ -16,6 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.FifoOutputStream.END_CMD;
+import static com.topjohnwu.superuser.internal.FifoOutputStream.FIFO_TIMEOUT;
+import static com.topjohnwu.superuser.internal.FifoOutputStream.TAG;
+import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.content.Context;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -35,12 +41,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.topjohnwu.superuser.internal.FifoOutputStream.FIFO_TIMEOUT;
-import static com.topjohnwu.superuser.internal.FifoOutputStream.TAG;
-import static com.topjohnwu.superuser.internal.FifoOutputStream.END_CMD;
-import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 @RequiresApi(21)
 class FifoInputStream extends BaseSuInputStream {

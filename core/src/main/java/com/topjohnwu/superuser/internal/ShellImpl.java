@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -36,8 +38,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 class ShellTerminatedException extends IOException {
 

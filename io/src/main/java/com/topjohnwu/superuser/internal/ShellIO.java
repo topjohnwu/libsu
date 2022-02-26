@@ -17,7 +17,7 @@
 package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import androidx.annotation.NonNull;
 

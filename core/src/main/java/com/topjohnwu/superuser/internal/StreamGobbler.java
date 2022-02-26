@@ -16,16 +16,16 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.TaskImpl.END_UUID;
+import static com.topjohnwu.superuser.internal.TaskImpl.UUID_LEN;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import static com.topjohnwu.superuser.internal.TaskImpl.END_UUID;
-import static com.topjohnwu.superuser.internal.TaskImpl.UUID_LEN;
-import static com.topjohnwu.superuser.internal.Utils.UTF_8;
 
 abstract class StreamGobbler<T> implements Callable<T> {
 

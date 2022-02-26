@@ -10,12 +10,6 @@ plugins {
 
 group="com.github.topjohnwu.libsu"
 
-android {
-    defaultConfig {
-        minSdk = 18
-    }
-}
-
 android.libraryVariants.all {
     val jarTask = tasks.register("create${name.capitalize()}MainJar") {
         doLast {
