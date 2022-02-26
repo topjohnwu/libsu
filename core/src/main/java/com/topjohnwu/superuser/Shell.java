@@ -373,10 +373,6 @@ public abstract class Shell implements Closeable {
      */
     public abstract static class Builder {
 
-        protected int flags = 0;
-        protected long timeout = 20;
-        protected Class<? extends Shell.Initializer>[] initClasses = null;
-
         /**
          * Create a new {@link Builder}.
          * @return a new Builder object.
@@ -392,12 +388,9 @@ public abstract class Shell implements Closeable {
          * @param classes the classes of desired initializers.
          * @return this Builder object for chaining of calls.
          */
-        @SafeVarargs
+        @SuppressWarnings("unchecked")
         @NonNull
-        public final Builder setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            initClasses = classes;
-            return this;
-        }
+        public abstract Builder setInitializers(@NonNull Class<? extends Initializer>... classes);
 
         /**
          * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
@@ -409,10 +402,7 @@ public abstract class Shell implements Closeable {
          * @return this Builder object for chaining of calls.
          */
         @NonNull
-        public final Builder setFlags(int flags) {
-            this.flags = flags;
-            return this;
-        }
+        public abstract Builder setFlags(int flags);
 
         /**
          * Set the maximum time to wait for a new shell construction.
@@ -424,10 +414,7 @@ public abstract class Shell implements Closeable {
          * @return this Builder object for chaining of calls.
          */
         @NonNull
-        public final Builder setTimeout(long timeout) {
-            this.timeout = timeout;
-            return this;
-        }
+        public abstract Builder setTimeout(long timeout);
 
         /**
          * Combine all of the options that have been set and build a new {@code Shell} instance
@@ -449,7 +436,7 @@ public abstract class Shell implements Closeable {
          * {@link #getStatus()} since it may be constructed with any of the 3 possible methods.
          * @return the created {@code Shell} instance.
          * @throws NoShellException impossible to construct a {@link Shell} instance, or
-         * initialization failed when using the configured {@link Initializer}.
+         * initialization failed when using the configured {@link Initializer}s.
          */
         @NonNull
         public abstract Shell build();
@@ -461,7 +448,7 @@ public abstract class Shell implements Closeable {
          *                 a new {@link Process}.
          * @return the built {@code Shell} instance.
          * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
-         * initialization failed when using the configured {@link Initializer}.
+         * initialization failed when using the configured {@link Initializer}s.
          */
         @NonNull
         public abstract Shell build(String... commands);
@@ -471,8 +458,8 @@ public abstract class Shell implements Closeable {
          * with the provided process.
          * @param process a shell {@link Process} that has already been created.
          * @return the built {@code Shell} instance.
-         * @throws NoShellException the provided command cannot create a {@link Shell} instance, or
-         * initialization failed when using the configured {@link Initializer}.
+         * @throws NoShellException the provided process is not a valid shell, or
+         * initialization failed when using the configured {@link Initializer}s.
          */
         @NonNull
         public abstract Shell build(Process process);

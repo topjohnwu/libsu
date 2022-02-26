@@ -51,7 +51,7 @@ class ShellImpl extends Shell {
 
     final ExecutorService executor;
     final boolean redirect;
-    private final Process process;
+    private final Process proc;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
     private final NoCloseInputStream STDERR;
@@ -91,20 +91,20 @@ class ShellImpl extends Shell {
         }
     }
 
-    ShellImpl(long timeout, boolean redirect, Process process) throws IOException {
+    ShellImpl(BuilderImpl builder, Process process) throws IOException {
         status = UNKNOWN;
-        this.redirect = redirect;
-        this.process = process;
-        STDIN = new NoCloseOutputStream(this.process.getOutputStream());
-        STDOUT = new NoCloseInputStream(this.process.getInputStream());
-        STDERR = new NoCloseInputStream(this.process.getErrorStream());
+        redirect = builder.hasFlags(FLAG_REDIRECT_STDERR);
+        proc = process;
+        STDIN = new NoCloseOutputStream(process.getOutputStream());
+        STDOUT = new NoCloseInputStream(process.getInputStream());
+        STDERR = new NoCloseInputStream(process.getErrorStream());
         executor = new SerialExecutorService();
 
         // Shell checks might get stuck indefinitely
-        Future<Void> check = executor.submit(this::shellCheck);
+        Future<Integer> check = executor.submit(this::shellCheck);
         try {
             try {
-                check.get(timeout, TimeUnit.SECONDS);
+                status = check.get(builder.timeout, TimeUnit.SECONDS);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof IOException) {
@@ -113,9 +113,9 @@ class ShellImpl extends Shell {
                     throw new IOException("Unknown ExecutionException", cause);
                 }
             } catch (TimeoutException e) {
-                throw new IOException("Shell timeout", e);
+                throw new IOException("Shell check timeout", e);
             } catch (InterruptedException e) {
-                throw new IOException("Shell initialization interrupted", e);
+                throw new IOException("Shell check interrupted", e);
             }
         } catch (IOException e) {
             executor.shutdownNow();
@@ -124,11 +124,12 @@ class ShellImpl extends Shell {
         }
     }
 
-    private Void shellCheck() throws IOException {
+    private Integer shellCheck() throws IOException {
         // Clean up potential garbage from InputStreams
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
 
+        int status = NON_ROOT_SHELL;
         try (BufferedReader br = new BufferedReader(new InputStreamReader(STDOUT))) {
 
             STDIN.write(("echo SHELL_TEST\n").getBytes(UTF_8));
@@ -136,7 +137,6 @@ class ShellImpl extends Shell {
             String s = br.readLine();
             if (TextUtils.isEmpty(s) || !s.contains("SHELL_TEST"))
                 throw new IOException("Created process is not a shell");
-            int status = NON_ROOT_SHELL;
 
             STDIN.write(("id\n").getBytes(UTF_8));
             STDIN.flush();
@@ -154,10 +154,8 @@ class ShellImpl extends Shell {
                 if (!TextUtils.isEmpty(s) && !TextUtils.isEmpty(s2) && TextUtils.equals(s, s2))
                     status = ROOT_MOUNT_MASTER;
             }
-
-            this.status = status;
         }
-        return null;
+        return status;
     }
 
     private void release() {
@@ -165,7 +163,7 @@ class ShellImpl extends Shell {
         try { STDIN.close0(); } catch (IOException ignored) {}
         try { STDERR.close0(); } catch (IOException ignored) {}
         try { STDOUT.close0(); } catch (IOException ignored) {}
-        process.destroy();
+        proc.destroy();
     }
 
     @Override
@@ -202,7 +200,7 @@ class ShellImpl extends Shell {
             return false;
 
         try {
-            process.exitValue();
+            proc.exitValue();
             // Process is dead, shell is not alive
             return false;
         } catch (IllegalThreadStateException e) {
