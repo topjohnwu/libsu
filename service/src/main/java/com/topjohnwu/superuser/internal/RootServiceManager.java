@@ -112,9 +112,11 @@ public class RootServiceManager implements Handler.Callback {
         return new Pair<>(name, intent.hasCategory(CATEGORY_DAEMON_MODE));
     }
 
-    private static void disconnect(Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e) {
-        e.getValue().second.execute(() ->
-                e.getKey().onServiceDisconnected(e.getValue().first.key.first));
+    private static void notifyDisconnection(
+            Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e) {
+        ServiceConnection c = e.getKey();
+        ComponentName name = e.getValue().first.key.first;
+        e.getValue().second.execute(() -> c.onServiceDisconnected(name));
     }
 
     private RemoteProcess mRemote;
@@ -288,7 +290,7 @@ public class RootServiceManager implements Handler.Callback {
         while (it.hasNext()) {
             Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
             if (e.getValue().first.equals(s)) {
-                disconnect(e);
+                notifyDisconnection(e);
                 it.remove();
             }
         }
@@ -377,7 +379,7 @@ public class RootServiceManager implements Handler.Callback {
             while (it.hasNext()) {
                 Map.Entry<ServiceConnection, Pair<RemoteService, Executor>> e = it.next();
                 if (e.getValue().first.host == this) {
-                    disconnect(e);
+                    notifyDisconnection(e);
                     it.remove();
                 }
             }
