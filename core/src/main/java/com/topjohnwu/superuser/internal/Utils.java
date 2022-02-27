@@ -30,7 +30,6 @@ import com.topjohnwu.superuser.Shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -71,18 +70,18 @@ public final class Utils {
     }
 
     @SuppressLint("PrivateApi")
-    public static synchronized Context getContext() {
+    public static Context getContext() {
         if (context == null) {
-            UiThreadHandler.runAndWait(() -> {
-                try {
-                    Method currentApplication = Class.forName("android.app.ActivityThread")
-                            .getMethod("currentApplication");
-                    context = (Context) currentApplication.invoke(null);
-                } catch (Exception e) {
-                    // Shall never happen
-                    Utils.err(e);
-                }
-            });
+            // Fetching ActivityThread on the main thread is no longer required on API 18+
+            // See: https://cs.android.com/android/platform/frameworks/base/+/66a017b63461a22842b3678c9520f803d5ddadfc
+            try {
+                context = (Context) Class.forName("android.app.ActivityThread")
+                        .getMethod("currentApplication")
+                        .invoke(null);
+            } catch (Exception e) {
+                // Shall never happen
+                Utils.err(e);
+            }
         }
         return context;
     }
