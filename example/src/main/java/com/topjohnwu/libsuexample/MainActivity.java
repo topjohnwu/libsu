@@ -240,11 +240,11 @@ public class MainActivity extends Activity implements Handler.Callback {
 
         // test_sync is defined in R.raw.bashrc, pre-loaded in ExampleInitializer
         binding.testSync.setOnClickListener(v ->
-                Shell.sh("test_sync").to(consoleList).exec());
+                Shell.cmd("test_sync").to(consoleList).exec());
 
         // test_async is defined in R.raw.bashrc, pre-loaded in ExampleInitializer
         binding.testAsync.setOnClickListener(v ->
-                Shell.sh("test_async").to(consoleList).submit());
+                Shell.cmd("test_async").to(consoleList).submit());
 
         binding.clear.setOnClickListener(v -> binding.console.setText(""));
 

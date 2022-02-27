@@ -41,22 +41,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A class providing APIs to an interactive (root) shell.
+ * A class providing APIs to an interactive Unix shell.
  * <p>
  * Similar to threads where there is a special "main thread", {@code libsu} also has the
  * concept of the "main shell". For each process, there is a single globally shared
  * "main shell" that is constructed on-demand and cached.
  * <p>
  * To obtain/create the main shell, use the static {@code Shell.getShell(...)} methods.
- * However in most cases, developers do not need to directly access a {@code Shell} instance.
- * Use these high level APIs instead:
+ * Developers can use these high level APIs to access the main shell:
  * <ul>
- *     <li>{@link #sh(String...)}</li>
- *     <li>{@link #su(String...)}</li>
- *     <li>{@link #sh(InputStream)}</li>
- *     <li>{@link #su(InputStream)}</li>
+ *     <li>{@link #cmd(String...)}</li>
+ *     <li>{@link #cmd(InputStream)}</li>
  * </ul>
- * These methods not only use the main shell but also are more convenient to use.
  */
 public abstract class Shell implements Closeable {
 
@@ -110,10 +106,8 @@ public abstract class Shell implements Closeable {
      * <p>
      * Note: This flag only affects the following methods:
      * <ul>
-     *     <li>{@link #sh(String...)}</li>
-     *     <li>{@link #su(String...)}</li>
-     *     <li>{@link #sh(InputStream)}</li>
-     *     <li>{@link #su(InputStream)}</li>
+     *     <li>{@link #cmd(String...)}</li>
+     *     <li>{@link #cmd(InputStream)}</li>
      *     <li>{@link Job#to(List)}</li>
      * </ul>
      * Check the descriptions of each method above for more details.
@@ -230,16 +224,7 @@ public abstract class Shell implements Closeable {
      * ************/
 
     /**
-     * Equivalent to {@link #sh(String...)}, with the only difference being in the case
-     * when the main shell does not have root access, the returned Job will do nothing.
-     */
-    @NonNull
-    public static Job su(@NonNull String... commands) {
-        return MainShell.newJob(true, commands);
-    }
-
-    /**
-     * Create a pending {@link Job} with commands.
+     * Create a pending {@link Job} of the main shell with commands.
      * <p>
      * This method can be treated as functionally equivalent to
      * {@code Shell.getShell().newJob().add(commands).to(new ArrayList<>())}, but the internal
@@ -254,21 +239,12 @@ public abstract class Shell implements Closeable {
      * @see Job#add(String...)
      */
     @NonNull
-    public static Job sh(@NonNull String... commands) {
+    public static Job cmd(@NonNull String... commands) {
         return MainShell.newJob(false, commands);
     }
 
     /**
-     * Equivalent to {@link #sh(InputStream)}, with the only difference being in the case
-     * when the main shell does not have root access, the returned Job will do nothing.
-     */
-    @NonNull
-    public static Job su(@NonNull InputStream in) {
-        return MainShell.newJob(true, in);
-    }
-
-    /**
-     * Create a pending {@link Job} with an {@link InputStream}.
+     * Create a pending {@link Job} of the main shell with an {@link InputStream}.
      * <p>
      * This method can be treated as functionally equivalent to
      * {@code Shell.getShell().newJob().add(in).to(new ArrayList<>())}, but the internal
@@ -282,7 +258,7 @@ public abstract class Shell implements Closeable {
      * @see Job#add(InputStream)
      */
     @NonNull
-    public static Job sh(@NonNull InputStream in) {
+    public static Job cmd(@NonNull InputStream in) {
         return MainShell.newJob(false, in);
     }
 
@@ -314,9 +290,9 @@ public abstract class Shell implements Closeable {
     /**
      * Construct a new {@link Job} that uses the shell for execution.
      * <p>
-     * Unlike {@code Shell.su(...)/Shell.sh(...)}, <strong>NO</strong> output will
-     * be collected if the developer did not set the output destination with {@link Job#to(List)}
-     * or {@link Job#to(List, List)}.
+     * Unlike {@link #cmd(String...)} and {@link #cmd(InputStream)}, <strong>NO</strong>
+     * output will be collected if the developer did not set the output destination with
+     * {@link Job#to(List)} or {@link Job#to(List, List)}.
      * @return a job that the developer can execute or submit later.
      */
     @NonNull
@@ -376,13 +352,13 @@ public abstract class Shell implements Closeable {
      * ***************/
 
     /**
-     * Builder class for {@link Shell} objects.
+     * Builder class for {@link Shell} instances.
      * <p>
      * Set the default builder for the main shell instance with
      * {@link #setDefaultBuilder(Builder)}, or directly use a builder object to create new
-     * {@link Shell} objects.
+     * {@link Shell} instances.
      * <p>
-     * Do not subclass this class, use {@link #create()} to get a new Builder object.
+     * Do not subclass this class! Use {@link #create()} to get a new Builder object.
      */
     public abstract static class Builder {
 
@@ -421,9 +397,9 @@ public abstract class Shell implements Closeable {
         public abstract Builder setFlags(@ConfigFlags int flags);
 
         /**
-         * Set the maximum time to wait for a new shell construction.
+         * Set the maximum time to wait for shell verification.
          * <p>
-         * If after the timeout occurs and the new shell still has no response,
+         * After the timeout occurs and the shell still has no response,
          * the shell process will be force-closed and throw {@link NoShellException}.
          * @param timeout the maximum time to wait in seconds.
          *                The default timeout is 20 seconds.
@@ -636,8 +612,8 @@ public abstract class Shell implements Closeable {
     }
 
     /* **********
-    * Interfaces
-    * ***********/
+     * Interfaces
+     * **********/
 
     /**
      * A task that can be executed by a shell with the method {@link #execTask(Task)}.
@@ -675,5 +651,45 @@ public abstract class Shell implements Closeable {
          */
         @MainThread
         void onResult(@NonNull Result out);
+    }
+
+    /* ***********
+     * Deprecated
+     * ***********/
+
+    /**
+     * @deprecated use {@link #cmd(String...)}
+     */
+    @Deprecated
+    @NonNull
+    public static Job su(@NonNull String... commands) {
+        return MainShell.newJob(true, commands);
+    }
+
+    /**
+     * @deprecated use {@link #cmd(String...)}
+     */
+    @Deprecated
+    @NonNull
+    public static Job sh(@NonNull String... commands) {
+        return MainShell.newJob(false, commands);
+    }
+
+    /**
+     * @deprecated use {@link #cmd(InputStream)}
+     */
+    @Deprecated
+    @NonNull
+    public static Job su(@NonNull InputStream in) {
+        return MainShell.newJob(true, in);
+    }
+
+    /**
+     * @deprecated use {@link #cmd(InputStream)}
+     */
+    @Deprecated
+    @NonNull
+    public static Job sh(@NonNull InputStream in) {
+        return MainShell.newJob(false, in);
     }
 }
