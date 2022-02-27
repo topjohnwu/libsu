@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.io.SuFile;
@@ -50,28 +49,12 @@ public final class IOFactory {
         return new RAFWrapper(file, mode);
     }
 
-    public static ShellInputStream shellIn(SuFile file) throws FileNotFoundException {
-        return new ShellInputStream(file);
-    }
-
-    @RequiresApi(21)
     public static FifoInputStream fifoIn(SuFile file) throws FileNotFoundException {
         return new FifoInputStream(file);
     }
 
-    public static ShellOutputStream shellOut(SuFile file, boolean append)
-            throws FileNotFoundException {
-        return new ShellOutputStream(file, append);
-    }
-
-    @RequiresApi(21)
     public static FifoOutputStream fifoOut(SuFile file, boolean append)
             throws FileNotFoundException {
         return new FifoOutputStream(file, append);
-    }
-
-    public static CopyOutputStream copyOut(SuFile file, boolean append)
-            throws FileNotFoundException {
-        return new CopyOutputStream(file, append);
     }
 }

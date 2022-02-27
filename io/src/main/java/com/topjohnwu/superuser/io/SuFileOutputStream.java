@@ -16,8 +16,6 @@
 
 package com.topjohnwu.superuser.io;
 
-import android.os.Build;
-
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
@@ -66,23 +64,12 @@ public class SuFileOutputStream extends BufferedOutputStream {
      * <p>
      * Unless {@code file} is an {@link SuFile}, this method will always try to directly
      * open a {@link FileOutputStream}, and fallback to using root access when it fails.
-     * <p>
-     * <strong>Root Access Streams:</strong><br>
-     * On Android 5.0 and higher (API 21+), internally a named pipe (FIFO) is created
-     * to bridge all I/O operations across process boundary, providing 100% native
-     * {@link FileOutputStream} performance.
-     * A single root command is issued through the main shell at stream construction.
-     * <br>
-     * On Android 4.4 and lower, all write operations will be applied to a temporary file in
-     * the application cache folder. When the stream is closed, the temporary file
-     * will be copied over to the provided {@code file} by using a single {@code cat}
-     * command with the main shell, then deleted.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
     @NonNull
     public static OutputStream open(@NonNull File file, boolean append) throws FileNotFoundException {
         if (file instanceof SuFile) {
-            return fifo((SuFile) file, append);
+            return IOFactory.fifoOut((SuFile) file, append);
         } else {
             try {
                 // Try normal FileInputStream
@@ -90,120 +77,50 @@ public class SuFileOutputStream extends BufferedOutputStream {
             } catch (FileNotFoundException e) {
                 if (!Shell.rootAccess())
                     throw e;
-                return fifo(new SuFile(file), append);
+                return IOFactory.fifoOut(new SuFile(file), append);
             }
         }
-    }
-
-    /**
-     * {@code SuFileOutputStream.openNoCopy(new File(path), false)}
-     */
-    @NonNull
-    public static OutputStream openNoCopy(@NonNull String path) throws FileNotFoundException {
-        return openNoCopy(new File(path), false);
-    }
-
-    /**
-     * {@code SuFileOutputStream.openNoCopy(new File(path), append)}
-     */
-    @NonNull
-    public static OutputStream openNoCopy(@NonNull String path, boolean append) throws FileNotFoundException {
-        return openNoCopy(new File(path), append);
-    }
-
-    /**
-     * {@code SuFileOutputStream.openNoCopy(file, false)}
-     */
-    @NonNull
-    public static OutputStream openNoCopy(@NonNull File file) throws FileNotFoundException {
-        return openNoCopy(file, false);
-    }
-
-    /**
-     * Open an {@link OutputStream} with root access (no internal copying).
-     * <p>
-     * <strong>If your minSdkVersion is 21 or higher, this method is irrelevant.</strong>
-     * <p>
-     * Unless {@code file} is an {@link SuFile}, this method will always try to directly
-     * open a {@link FileOutputStream}, and fallback to using root access when it fails.
-     * <p>
-     * <strong>Root Access Streams:</strong><br>
-     * On Android 5.0 and higher (API 21+), this is equivalent to {@link #open(File, boolean)}.
-     * <br>
-     * On Android 4.4 and lower, the returned stream will do every write operation with a
-     * {@code dd} command via the main root shell. <strong>Writing to files through shell
-     * commands is proven to be error prone. YOU HAVE BEEN WARNED!</strong>
-     * @see FileOutputStream#FileOutputStream(File, boolean)
-     */
-    @NonNull
-    public static OutputStream openNoCopy(@NonNull File file, boolean append) throws FileNotFoundException {
-        if (file instanceof SuFile) {
-            return shell((SuFile) file, append);
-        } else {
-            try {
-                // Try normal FileInputStream
-                return new FileOutputStream(file, append);
-            } catch (FileNotFoundException e) {
-                if (!Shell.rootAccess())
-                    throw e;
-                return shell(new SuFile(file), append);
-            }
-        }
-    }
-
-    private static OutputStream fifo(SuFile file, boolean append) throws FileNotFoundException {
-        if (Build.VERSION.SDK_INT >= 21)
-            return IOFactory.fifoOut(file, append);
-        else
-            return IOFactory.copyOut(file, append);
-    }
-
-    private static OutputStream shell(SuFile file, boolean append) throws FileNotFoundException {
-        if (Build.VERSION.SDK_INT >= 21)
-            return IOFactory.fifoOut(file, append);
-        else
-            return IOFactory.shellOut(file, append);
     }
 
     // Deprecated APIs
 
     /**
-     * Same as {@link #openNoCopy(String)}, but guaranteed to be buffered internally to
+     * Same as {@link #open(String)}, but guaranteed to be buffered to
      * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(String)}
      */
     @Deprecated
     public SuFileOutputStream(String path) throws FileNotFoundException {
-        super(openNoCopy(path, false));
+        super(open(path, false));
     }
 
     /**
-     * Same as {@link #openNoCopy(String, boolean)}, but guaranteed to be buffered internally to
+     * Same as {@link #open(String, boolean)}, but guaranteed to be buffered to
      * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(String, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        super(openNoCopy(path, append));
+        super(open(path, append));
     }
 
     /**
-     * Same as {@link #openNoCopy(File)}, but guaranteed to be buffered internally to
+     * Same as {@link #open(File)}, but guaranteed to be buffered to
      * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(File, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(File file) throws FileNotFoundException {
-        super(openNoCopy(file, false));
+        super(open(file, false));
     }
 
     /**
-     * Same as {@link #openNoCopy(File, boolean)}, but guaranteed to be buffered internally to
+     * Same as {@link #open(File, boolean)}, but guaranteed to be buffered to
      * match backwards compatibility behavior.
      * @deprecated please switch to {@link #open(File, boolean)}
      */
     @Deprecated
     public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
-        super(openNoCopy(file, append));
+        super(open(file, append));
     }
 }

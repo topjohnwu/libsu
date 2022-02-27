@@ -23,14 +23,13 @@ import android.content.Context;
 import android.system.ErrnoException;
 import android.system.Os;
 
-import androidx.annotation.RequiresApi;
-
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
@@ -39,8 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@RequiresApi(21)
-class FifoOutputStream extends BaseSuOutputStream {
+class FifoOutputStream extends FilterOutputStream {
 
     // Set a reasonable timeout here. It is possible that `cat` failed, and the
     // FIFO cannot be opened on our side without blocking forever.
@@ -49,9 +47,13 @@ class FifoOutputStream extends BaseSuOutputStream {
     static final byte[] END_CMD = "echo\n".getBytes(UTF_8);
 
     private final File fifo;
+    private boolean append;
 
     FifoOutputStream(SuFile file, boolean append) throws FileNotFoundException {
-        super(file, append);
+        super(null);
+        this.append = append;
+        if (!checkFile(file))
+            throw new FileNotFoundException("No such file or directory");
 
         Context c = Utils.getDeContext(Utils.getContext());
         fifo = new File(c.getCacheDir(), UUID.randomUUID().toString());
@@ -70,6 +72,18 @@ class FifoOutputStream extends BaseSuOutputStream {
             fifo.delete();
             throw e;
         }
+    }
+
+    private boolean checkFile(SuFile file) {
+        if (file.isDirectory())
+            return false;
+        if (file.isBlock() || file.isCharacter()) {
+            append = false;
+            return true;
+        }
+        if (append)
+            return file.canWrite() || file.createNewFile();
+        return file.clear();
     }
 
     private void openStream(SuFile file) throws FileNotFoundException {
@@ -102,6 +116,15 @@ class FifoOutputStream extends BaseSuOutputStream {
                 throw (FileNotFoundException)
                         new FileNotFoundException("Cannot open fifo").initCause(e);
         }
+    }
+
+    private String op() {
+        return append ? " >> " : " > ";
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
     }
 
     @Override

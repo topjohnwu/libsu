@@ -67,12 +67,6 @@ class ShellBlockIO extends ShellIO {
     }
 
     @Override
-    void streamWrite(byte[] b, int off, int len) throws IOException {
-        // Block devices cannot use append
-        write(b, off, len);
-    }
-
-    @Override
     public long length() {
         return blockSize;
     }

@@ -18,15 +18,12 @@ package com.topjohnwu.libsuexample;
 
 import static com.topjohnwu.libsuexample.MainActivity.TAG;
 
-import android.os.Build;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -35,7 +32,6 @@ import java.util.Random;
 public class StressTest {
 
     private static List<String> console;
-    private static OutputStream out;
     private static FileCallback callback;
     private static final byte[] buf = new byte[64 * 1024];
 
@@ -60,10 +56,6 @@ public class StressTest {
         // These shall force tons of exceptions and cancel the thread :)
         console = null;
         callback = null;
-        if (out != null) {
-            try { out.close(); } catch (IOException ignored) {}
-            out = null;
-        }
     }
 
     private static void run() throws Exception {
@@ -80,39 +72,27 @@ public class StressTest {
         };
         traverse(root);
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            // Stress test FifoOutputStream
-            out = IOFactory.fifoOut(new SuFile("/dev/null"), false);
-
-            // Make sure FifoInputStream works fine
-            callback = file -> {
-                try (InputStream in = IOFactory.fifoIn(file)) {
-                    pump(in);
-                }
-            };
-            traverse(root);
-        } else {
-            // Unfortunately, ShellOutputStream will crash BusyBox ASH :(
-            // This means pre API 21, we cannot properly test root
-            // outputs as CopyOutputStream does not actually pump data
-            // directly to the target file.
-
-            // In my personal environments, removing the BusyBoxInstaller
-            // from shell initializers allows ShellOutputStream to operate
-            // without issues, however due to these reasons, shell I/O
-            // is strongly advised against.
-
-            // /dev/null is writable without root
-            out = new FileOutputStream("/dev/null");
-        }
-
-        // Make sure ShellInputStream works fine
+        // Stress test fifo IOStreams
+        OutputStream out = IOFactory.fifoOut(new SuFile("/dev/null"), false);
+        Random r = new Random();
         callback = file -> {
-            try (InputStream in = IOFactory.shellIn(file)) {
-                pump(in);
+            try (InputStream in = IOFactory.fifoIn(file)) {
+                for (;;) {
+                    // Randomize read/write length to test unaligned I/O
+                    int len = r.nextInt(buf.length);
+                    int read = in.read(buf, 0, len);
+                    if (read <= 0)
+                        break;
+                    out.write(buf, 0, read);
+                }
+                out.flush();
             }
         };
-        traverse(root);
+        try {
+            traverse(root);
+        } finally {
+            out.close();
+        }
     }
 
     private static void traverse(SuFile base) throws Exception {
@@ -129,16 +109,4 @@ public class StressTest {
         }
     }
 
-    public static void pump(InputStream in) throws IOException {
-        Random r = new Random();
-        for (;;) {
-            // Randomize read/write length to test unaligned I/O
-            int len = r.nextInt(buf.length);
-            int read = in.read(buf, 0, len);
-            if (read <= 0)
-                break;
-            out.write(buf, 0, read);
-        }
-        out.flush();
-    }
 }

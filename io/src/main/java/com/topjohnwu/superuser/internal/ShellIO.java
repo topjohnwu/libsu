@@ -114,22 +114,6 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         fileOff += len;
     }
 
-    // Optimized for internal appending streams
-    void streamWrite(byte[] b, int off, int len) throws IOException {
-        Shell.getShell().execTask((in, out, err) -> {
-            String cmd = String.format(Locale.ROOT,
-                    "dd bs=%d count=1 >> %s 2>/dev/null; echo\n", len, file.getEscapedPath());
-            Utils.log(TAG, cmd);
-            in.write(cmd.getBytes(UTF_8));
-            in.flush();
-            in.write(b, off, len);
-            in.flush();
-            // Wait till the operation is done
-            out.read(JUNK);
-        });
-        fileOff += len;
-    }
-
     @Override
     public int read() throws IOException {
         return DataInputImpl.super.read();
@@ -173,17 +157,6 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
         }
         fileOff += len;
         return len == 0 ? -1 : len;
-    }
-
-    // assert fileOff % b.length == 0
-    // Optimized for internal aligned buffered streams
-    int streamRead(byte[] b) throws IOException {
-        int len = alignedRead(b, 0, 1, (int) (fileOff / b.length), b.length);
-        if (len > 0) {
-            fileOff += len;
-            return len;
-        }
-        return -1;
     }
 
     // return actual bytes read, always >= 0

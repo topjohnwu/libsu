@@ -4,6 +4,7 @@ plugins {
 
 android {
     defaultConfig {
+        minSdk = 21
         applicationId = "com.topjohnwu.libsuexample"
         versionCode = 1
         versionName ="1.0"
