@@ -51,16 +51,14 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
     static final String CMDLINE_START_DAEMON = "daemon";
     static final String CMDLINE_STOP_SERVICE = "stop";
 
-    static final Method getService;
-    static final Method addService;
-    static final Method attachBaseContext;
+    private static final Method getService;
+    private static final Method attachBaseContext;
 
     static {
         try {
             @SuppressLint("PrivateApi")
             Class<?> sm = Class.forName("android.os.ServiceManager");
             getService = sm.getDeclaredMethod("getService", String.class);
-            addService = sm.getDeclaredMethod("addService", String.class, IBinder.class);
             attachBaseContext = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
             attachBaseContext.setAccessible(true);
         } catch (Exception e) {

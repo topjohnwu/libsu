@@ -16,7 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServerMain.attachBaseContext;
 import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
 import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_BINDER_KEY;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
@@ -213,7 +212,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
             Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
-            attachBaseContext.invoke(ctor.newInstance(), context);
+            HiddenAPIs.attachBaseContext(ctor.newInstance(), context);
 
             // RootService should be registered after attachBaseContext
             s = activeServices.get(name);
