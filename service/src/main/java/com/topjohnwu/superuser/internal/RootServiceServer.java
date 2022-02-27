@@ -171,7 +171,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         int uid = getCallingUid();
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " unbind");
-            stopService(uid, name, false);
+            unbindService(uid, name);
         });
     }
 
@@ -181,7 +181,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         int clientUid = getCallingUid() == 0 ? uid : getCallingUid();
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
-            stopService(clientUid, name, true);
+            unbindService(-1, name);
             if (action != null) {
                 // If we aren't killed yet, send another broadcast
                 broadcast(clientUid, action);
@@ -191,41 +191,14 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
     public void selfStop(ComponentName name) {
         UiThreadHandler.run(() -> {
-            ServiceContainer s = activeServices.get(name);
-            if (s == null)
-                return;
-
             Utils.log(TAG, name.getClassName() + " selfStop");
-
-            // Backup all users as we need to notify them
-            Integer[] users = s.users.toArray(new Integer[0]);
-            s.users.clear();
-            stopService(-1, name, true);
-
-            // Notify all users
-            for (int uid : users) {
-                ClientProcess c = clients.get(uid);
-                if (c == null)
-                    continue;
-                Message msg = Message.obtain();
-                msg.what = MSG_STOP;
-                msg.arg1 = isDaemon ? 1 : 0;
-                msg.obj = name;
-                try {
-                    c.m.send(msg);
-                } catch (RemoteException e) {
-                    Utils.err(TAG, e);
-                } finally {
-                    msg.recycle();
-                }
-            }
+            unbindService(-1, name);
         });
     }
 
     public void register(RootService service) {
-        ServiceContainer c = new ServiceContainer();
-        c.service = service;
-        activeServices.put(service.getComponentName(), c);
+        ServiceContainer s = new ServiceContainer(service);
+        activeServices.put(service.getComponentName(), s);
     }
 
     private IBinder bindInternal(int uid, Intent intent) throws Exception {
@@ -263,15 +236,33 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         return s.binder;
     }
 
-    private void stopService(int uid, ComponentName name, boolean destroy) {
-        ServiceContainer s = activeServices.get(name);
-        if (s != null) {
-            s.users.remove(uid);
-            if (s.users.isEmpty()) {
+    private void unbindInternal(ServiceContainer s, int uid, Runnable onDestroy) {
+        boolean hadUsers = !s.users.isEmpty();
+        s.users.remove(uid);
+        if (uid < 0 || s.users.isEmpty()) {
+            if (hadUsers) {
                 s.rebind = s.service.onUnbind(s.intent);
-                if (destroy || !isDaemon) {
-                    s.service.onDestroy();
-                    activeServices.remove(name);
+            }
+            if (uid < 0 || !isDaemon) {
+                s.service.onDestroy();
+                onDestroy.run();
+
+                // Notify all other users
+                for (int user : s.users) {
+                    ClientProcess c = clients.get(user);
+                    if (c == null)
+                        continue;
+                    Message msg = Message.obtain();
+                    msg.what = MSG_STOP;
+                    msg.arg1 = isDaemon ? 1 : 0;
+                    msg.obj = s.intent.getComponent();
+                    try {
+                        c.m.send(msg);
+                    } catch (RemoteException e) {
+                        Utils.err(TAG, e);
+                    } finally {
+                        msg.recycle();
+                    }
                 }
             }
         }
@@ -281,27 +272,24 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         }
     }
 
-    private void stopServices(int uid) {
+    private void unbindService(int uid, ComponentName name) {
+        ServiceContainer s = activeServices.get(name);
+        if (s == null)
+            return;
+        unbindInternal(s, uid, () -> activeServices.remove(name));
+    }
+
+    private void unbindServices(int uid) {
         Iterator<Map.Entry<ComponentName, ServiceContainer>> it =
                 activeServices.entrySet().iterator();
         while (it.hasNext()) {
             ServiceContainer s = it.next().getValue();
-            if (uid < 0)
+            if (uid < 0) {
+                // App is updated/deleted, all clients will get killed anyways,
+                // no need to notify anyone.
                 s.users.clear();
-            else
-                s.users.remove(uid);
-
-            if (s.users.isEmpty()) {
-                s.rebind = s.service.onUnbind(s.intent);
-                if (uid < 0 || !isDaemon) {
-                    s.service.onDestroy();
-                    it.remove();
-                }
             }
-        }
-        if (activeServices.isEmpty()) {
-            // Terminate root process
-            System.exit(0);
+            unbindInternal(s, uid, it::remove);
         }
     }
 
@@ -321,7 +309,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
             if (event == DELETE_SELF || name.equals(path)) {
                 UiThreadHandler.run(() -> {
                     Utils.log(TAG, "App updated, terminate");
-                    stopServices(-1);
+                    unbindServices(-1);
                     System.exit(0);
                 });
             }
@@ -341,17 +329,22 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
         @Override
         protected void onBinderDied() {
-            Utils.log(TAG, "Client process terminated");
+            Utils.log(TAG, "Client process terminated, uid=" + uid);
             clients.remove(uid);
-            stopServices(uid);
+            unbindServices(uid);
         }
     }
 
     static class ServiceContainer {
-        RootService service;
+        final RootService service;
+        final Set<Integer> users = newArraySet();
+
         Intent intent;
         IBinder binder;
         boolean rebind;
-        final Set<Integer> users = newArraySet();
+
+        ServiceContainer(RootService s) {
+            service = s;
+        }
     }
 }

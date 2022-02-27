@@ -84,7 +84,12 @@ class AIDLService extends RootService {
     @Override
     public boolean onUnbind(@NonNull Intent intent) {
         Log.d(TAG, "AIDLService: onUnbind, client process unbound");
-        // Return true here so onRebindg will be called
+        // Return true here so onRebind will be called
         return true;
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "AIDLService: onDestroy");
     }
 }
