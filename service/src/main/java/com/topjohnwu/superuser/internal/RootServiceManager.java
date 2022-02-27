@@ -49,9 +49,9 @@ import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -73,6 +73,12 @@ public class RootServiceManager implements Handler.Callback {
     static final int MSG_STOP = 2;
 
     private static final String INTENT_EXTRA_KEY = "extra.bundle";
+    private static final String API_27_DEBUG =
+            "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y " +
+            "-Xcompiler-option --debuggable";
+    private static final String API_28_DEBUG =
+            "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y " +
+            "-Xcompiler-option --debuggable";
 
     private static final int REMOTE_EN_ROUTE = 1 << 0;
     private static final int DAEMON_EN_ROUTE = 1 << 1;
@@ -131,7 +137,7 @@ public class RootServiceManager implements Handler.Callback {
 
     private RootServiceManager() {}
 
-    private Runnable createStartRootProcessTask(ComponentName name, String action) {
+    private Shell.Task startRootProcess(ComponentName name, String action) {
         Context context = Utils.getContext();
         boolean[] debug = new boolean[1];
         if (filterAction == null) {
@@ -179,32 +185,36 @@ public class RootServiceManager implements Handler.Callback {
             // Reference of the params to start jdwp:
             // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
             if (Build.VERSION.SDK_INT == 27) {
-                debugParams = "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y -Xcompiler-option --debuggable";
+                debugParams = API_27_DEBUG;
             } else {
-                debugParams = "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y -Xcompiler-option --debuggable";
+                debugParams = API_28_DEBUG;
             }
         }
 
         String cmd = String.format(Locale.ROOT,
                 "(%s CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root " +
-                "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s)&",
+                "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s >/dev/null 2>&1)&",
                 logParams, mainJar, Process.myPid(), debugParams, context.getPackageName(),
                 name.flattenToString().replace("$", "\\$"), // args[0]
                 Process.myUid(),                            // args[1]
                 filterAction,                               // args[2]
                 action);                                    // args[3]
 
-        return () -> {
-            try {
-                // Dump main.jar as trampoline
-                try (InputStream in = context.getResources().getAssets().open("main.jar");
-                     OutputStream out = new FileOutputStream(mainJar)) {
-                    Utils.pump(in, out);
-                }
-                Shell.su(cmd).exec();
-            } catch (IOException e) {
-                Utils.err(TAG, e);
+        return (stdin, stdout, stderr) -> {
+            // Dump main.jar as trampoline
+            try (InputStream in = context.getResources().getAssets().open("main.jar");
+                 OutputStream out = new FileOutputStream(mainJar)) {
+                Utils.pump(in, out);
             }
+            Utils.log(TAG, cmd);
+            // Write command to stdin
+            byte[] bytes = cmd.getBytes(StandardCharsets.UTF_8);
+            stdin.write(bytes);
+            stdin.write('\n');
+            stdin.flush();
+            // Since all output for the command is redirected to /dev/null and
+            // the command runs in the background, we don't need to wait and
+            // can just return.
         };
     }
 
@@ -246,7 +256,7 @@ public class RootServiceManager implements Handler.Callback {
         return null;
     }
 
-    public Runnable createBindTask(Intent intent, Executor executor, ServiceConnection conn) {
+    public Shell.Task createBindTask(Intent intent, Executor executor, ServiceConnection conn) {
         Pair<ComponentName, Boolean> key = bindInternal(intent, executor, conn);
         if (key != null) {
             pendingTasks.add(() -> bindInternal(intent, executor, conn) == null);
@@ -254,7 +264,7 @@ public class RootServiceManager implements Handler.Callback {
             String action = key.second ? CMDLINE_START_DAEMON : CMDLINE_START_SERVICE;
             if ((flags & mask) == 0) {
                 flags |= mask;
-                return createStartRootProcessTask(key.first, action);
+                return startRootProcess(key.first, action);
             }
         }
         return null;
@@ -296,7 +306,7 @@ public class RootServiceManager implements Handler.Callback {
         }
     }
 
-    public void stop(Intent intent) {
+    public Shell.Task createStopTask(Intent intent) {
         enforceMainThread();
 
         Pair<ComponentName, Boolean> key = enforceIntent(intent);
@@ -304,10 +314,9 @@ public class RootServiceManager implements Handler.Callback {
         if (p == null) {
             if (key.second) {
                 // Start a new root process to stop daemon
-                Runnable r = createStartRootProcessTask(key.first, CMDLINE_STOP_SERVICE);
-                Shell.EXECUTOR.execute(r);
+                return startRootProcess(key.first, CMDLINE_STOP_SERVICE);
             }
-            return;
+            return null;
         }
 
         stopInternal(key);
@@ -316,6 +325,7 @@ public class RootServiceManager implements Handler.Callback {
         } catch (RemoteException e) {
             Utils.err(TAG, e);
         }
+        return null;
     }
 
     @Override

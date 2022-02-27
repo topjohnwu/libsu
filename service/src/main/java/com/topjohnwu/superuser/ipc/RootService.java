@@ -36,6 +36,7 @@ import com.topjohnwu.superuser.internal.RootServiceServer;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
 
+import java.io.IOException;
 import java.util.concurrent.Executor;
 
 /**
@@ -85,13 +86,13 @@ public abstract class RootService extends ContextWrapper {
      * <p>
      * Add this category in the intents passed to {@link #bind(Intent, ServiceConnection)},
      * {@link #bind(Intent, Executor, ServiceConnection)}, or
-     * {@link #createBindTask(Intent, Executor, ServiceConnection)}
+     * {@link #bindOrTask(Intent, Executor, ServiceConnection)}
      * to have the service launched in "Daemon Mode".
      */
     public static final String CATEGORY_DAEMON_MODE = "com.topjohnwu.superuser.DAEMON_MODE";
 
     /**
-     * Connect to a root service, creating it if needed.
+     * Bind to a root service, launching a new root process if needed.
      * @param intent identifies the service to connect to.
      * @param executor callbacks on ServiceConnection will be called on this executor.
      * @param conn receives information as the service is started and stopped.
@@ -102,14 +103,14 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
-        Runnable r = createBindTask(intent, executor, conn);
-        if (r != null) {
-            Shell.EXECUTOR.execute(r);
+        Shell.Task task = bindOrTask(intent, executor, conn);
+        if (task != null) {
+            Shell.EXECUTOR.execute(asRunnable(task));
         }
     }
 
     /**
-     * Connect to a root service, creating it if needed.
+     * Bind to a root service, launching a new root process if needed.
      * @param intent identifies the service to connect to.
      * @param conn receives information as the service is started and stopped.
      * @see Context#bindService(Intent, ServiceConnection, int)
@@ -120,20 +121,19 @@ public abstract class RootService extends ContextWrapper {
     }
 
     /**
-     * Connect to a root service, creating it if needed.
+     * Bind to a root service, creating a task to launch a new root process if needed.
      * <p>
-     * This method is useful if you want to precisely manage which background thread and the
-     * timing to do I/O operations and execute root commands for creating a new root process.
-     * <p>
-     * Binding will NOT happen if the developer does not run the returned {@link Runnable}.
-     * @return a {@link Runnable} instance on which a new root process will be launched upon
-     * calling {@link Runnable#run()}. If there is no need for creating a new root process,
-     * {@code null} is returned.
+     * If the application is already connected to a root process, binding will happen immediately
+     * and this method will return {@code null}. Or else this method returns a {@link Shell.Task}
+     * that has to be executed to launch the root process. Binding will only happen after the
+     * developer has executed the returned task with {@link Shell#execTask(Shell.Task)}.
+     * @return the task to launch a root process. If there is no need to launch a new root
+     * process, {@code null} is returned.
      * @see #bind(Intent, Executor, ServiceConnection)
      */
     @MainThread
     @Nullable
-    public static Runnable createBindTask(
+    public static Shell.Task bindOrTask(
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
@@ -141,8 +141,9 @@ public abstract class RootService extends ContextWrapper {
     }
 
     /**
-     * Disconnect from a root service.
-     * @param conn the connection interface previously supplied to {@link #bind(Intent, ServiceConnection)}
+     * Unbind from a root service.
+     * @param conn the connection interface previously supplied to
+     * {@link #bind(Intent, ServiceConnection)}
      * @see Context#unbindService(ServiceConnection)
      */
     @MainThread
@@ -151,18 +152,43 @@ public abstract class RootService extends ContextWrapper {
     }
 
     /**
-     * Force stop a root service.
+     * Force stop a root service, launching a new root process if needed.
      * <p>
-     * Since root services are bound only, unlike {@link Context#stopService(Intent)}, this
-     * method is used to immediately stop a root service regardless of its state.
-     * Only use this method to stop a daemon root service; for normal root services please use
-     * {@link #unbind(ServiceConnection)} instead as this method could potentially end up starting
-     * an additional root process to make sure daemon services are stopped.
+     * This method is used to immediately stop a root service regardless of its state.
+     * ONLY use this method to stop a daemon root service; for normal root services, please use
+     * {@link #unbind(ServiceConnection)} instead as this method has to potentially launch
+     * an additional root process to ensure daemon services are stopped.
      * @param intent identifies the service to stop.
      */
     @MainThread
     public static void stop(@NonNull Intent intent) {
-        RootServiceManager.getInstance().stop(intent);
+        Shell.Task task = stopOrTask(intent);
+        if (task != null) {
+            Shell.EXECUTOR.execute(asRunnable(task));
+        }
+    }
+
+    /**
+     * Force stop a root service, creating a task to launch a new root process if needed.
+     * <p>
+     * This method returns a {@link Shell.Task} that has to be executed to launch a
+     * root process if necessary, or else {@code null} will be returned.
+     * @see #stop(Intent)
+     */
+    @MainThread
+    @Nullable
+    public static Shell.Task stopOrTask(@NonNull Intent intent) {
+        return RootServiceManager.getInstance().createStopTask(intent);
+    }
+
+    private static Runnable asRunnable(Shell.Task task) {
+        return () -> {
+            try {
+                Shell.getShell().execTask(task);
+            } catch (IOException e) {
+                Utils.err(e);
+            }
+        };
     }
 
     public RootService() {
@@ -180,7 +206,7 @@ public abstract class RootService extends ContextWrapper {
     /**
      * Return the component name that will be used for service lookup.
      * <p>
-     * Overriding this method is only for very unusual situations when a different
+     * Overriding this method is only for very unusual use cases when a different
      * component name other than the actual class name is desired.
      * @return the desired component name
      */
@@ -222,11 +248,25 @@ public abstract class RootService extends ContextWrapper {
     public void onDestroy() {}
 
     /**
-     * Force stop this root service process.
-     * <p>
-     * This is the same as calling {@link #stop(Intent)} for this particular service.
+     * Force stop this root service.
      */
     public final void stopSelf() {
         RootServiceServer.getInstance(this).selfStop(getComponentName());
+    }
+
+    // Deprecated APIs
+
+    /**
+     * @deprecated use {@link #bindOrTask(Intent, Executor, ServiceConnection)}
+     */
+    @MainThread
+    @Nullable
+    @Deprecated
+    public static Runnable createBindTask(
+            @NonNull Intent intent,
+            @NonNull Executor executor,
+            @NonNull ServiceConnection conn) {
+        Shell.Task task = bindOrTask(intent, executor, conn);
+        return task == null ? null : asRunnable(task);
     }
 }
