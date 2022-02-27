@@ -53,29 +53,31 @@ import java.util.concurrent.Executor;
  * {@link Messenger} or AIDL to define the IPC interface for communication. Please read the
  * official documentations for more details.
  * <p>
- * Even though a {@code RootService} is a {@link Context} of the app package, since we are running
- * in a root environment and the ContextImpl is not constructed in the "normal" way, the
- * functionality of this context is much more limited compared to normal non-root cases. Be aware
- * of this and do not assume all context methods will work, many will result in Exceptions.
+ * Even though a {@code RootService} is a {@link Context} of your application, the ContextImpl
+ * is not constructed in a normal way, so the functionality is much more limited compared
+ * to the normal case. Be aware of this and do not expect all context methods to work.
  * <p>
- * <strong>Daemon mode:</strong><br>
- * By default, the root service will be destroyed when no components are bound to it
- * (including when the non-root app process is terminated). However, if you'd like to have
- * the root service run independently of the app's lifecycle (aka "Daemon Mode"), override the
- * method {@link #onUnbind(Intent)} and return {@code true}. Subsequent bindings will call
- * the {@link #onRebind(Intent)} method.
+ * All RootServices launched from the same process will run in the same root process.
+ * A root service will be destroyed as soon as there are no clients bound to it.
+ * This means all services will be destroyed immediately when the client process is terminated.
+ * The library will NOT attempt to automatically restart and bind to a service after it was unbound.
  * <p>
- * All RootServices of an app will run in the same root process, as root processes are launched
- * per package. The root service process will terminate in the following conditions:
+ * <strong>Daemon Mode:</strong><br>
+ * If you want the service to run in the background independent from the application lifecycle,
+ * launch the service in "Daemon Mode". Check the description of {@link #CATEGORY_DAEMON_MODE}
+ * for instructions on how to do so.
+ * All services running in "Daemon Mode" will run in a daemon process created per-package that
+ * is separate from regular root services. This daemon process will be used across application
+ * re-launches, and even across different users on the device.
+ * A root service running in "Daemon Mode" will be destroyed when any client called
+ * {@link #stop(Intent)}, or the root service itself called {@link #stopSelf()}.
+ * <p>
+ * A root service process, including the daemon process, will terminate under these conditions:
  * <ul>
- *     <li>When the application is updated/deleted</li>
- *     <li>When all services are destroyed (after {@link #onDestroy()} is called)</li>
- *     <li>Non-daemon services will be automatically destroyed when all clients are
- *         unbounded or terminated</li>
- *     <li>Daemon services will only be destroyed when the client called {@link #stop(Intent)}
- *         or the root service called {@link #stopSelf()}</li>
+ *     <li>When the application is updated or deleted</li>
+ *     <li>When all services running in the process are destroyed
+ *         (after {@link #onDestroy()} is called)</li>
  * </ul>
- * The library will NOT attempt to automatically restart and bind to services under any circumstance.
  * @see <a href="https://developer.android.com/guide/components/bound-services">Bound services</a>
  * @see <a href="https://developer.android.com/guide/components/aidl">Android Interface Definition Language (AIDL)</a>
  */
@@ -84,10 +86,13 @@ public abstract class RootService extends ContextWrapper {
     /**
      * Launch the service in "Daemon Mode".
      * <p>
-     * Add this category in the intents passed to {@link #bind(Intent, ServiceConnection)},
+     * Add this category in the intent passed to {@link #bind(Intent, ServiceConnection)},
      * {@link #bind(Intent, Executor, ServiceConnection)}, or
      * {@link #bindOrTask(Intent, Executor, ServiceConnection)}
-     * to have the service launched in "Daemon Mode".
+     * to have the service launch in "Daemon Mode".
+     * This category also has to be added in the intent passed to {@link #stop(Intent)}
+     * and {@link #stopOrTask(Intent)} in order to refer to a daemon service instead of
+     * a regular root service.
      */
     public static final String CATEGORY_DAEMON_MODE = "com.topjohnwu.superuser.DAEMON_MODE";
 
