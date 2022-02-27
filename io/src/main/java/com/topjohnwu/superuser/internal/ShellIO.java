@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.io.SuRandomAccessFile;
@@ -92,7 +91,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
     }
 
     private void write0(@NonNull byte[] b, int off, int len) throws IOException {
-        Shell.getShell().execTask((in, out, err) -> {
+        file.getShell().execTask((in, out, err) -> {
             String cmd;
             if (fileOff == 0) {
                 cmd = String.format(Locale.ROOT,
@@ -166,7 +165,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
             return 0;
         int[] total = new int[1];
         int len = count * bs;
-        Shell.getShell().execTask((in, out, err) -> {
+        file.getShell().execTask((in, out, err) -> {
             int off = _off;
             String cmd = String.format(Locale.ROOT,
                     "dd if=%s ibs=%d skip=%d count=%d obs=%d 2>/dev/null; echo >&2\n",
@@ -248,7 +247,7 @@ class ShellIO extends SuRandomAccessFile implements DataInputImpl, DataOutputImp
                 throw new IOException("Cannot clear file");
             return;
         }
-        Shell.getShell().execTask((in, out, err) -> {
+        file.getShell().execTask((in, out, err) -> {
             String cmd = String.format(Locale.ROOT,
                     "dd of=%s bs=%d seek=1 count=0 2>/dev/null; echo\n",
                     file.getEscapedPath(), newLength);

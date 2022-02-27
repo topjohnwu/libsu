@@ -56,6 +56,7 @@ import java.util.Locale;
 public class SuFile extends File {
 
     private final String escapedPath;
+    private Shell mShell;
 
     public static File open(String pathname) {
         return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
@@ -96,12 +97,25 @@ public class SuFile extends File {
 
     private String cmd(String c) {
         // Use replace instead of format for performance
-        return ShellUtils.fastCmd(c.replace("@@", escapedPath));
+        return ShellUtils.fastCmd(getShell(), c.replace("@@", escapedPath));
     }
 
     private boolean cmdBool(String c) {
         // Use replace instead of format for performance
-        return ShellUtils.fastCmdResult(c.replace("@@", escapedPath));
+        return ShellUtils.fastCmdResult(getShell(), c.replace("@@", escapedPath));
+    }
+
+    /**
+     * Set the {@code Shell} instance to be used internally for all operations.
+     * This shell is also used in {@link SuFileInputStream}, {@link SuFileOutputStream}, and
+     * {@link SuRandomAccessFile}.
+     */
+    public void setShell(Shell shell) {
+        mShell = shell;
+    }
+
+    public Shell getShell() {
+        return mShell == null ? Shell.getShell() : mShell;
     }
 
     /**
@@ -363,7 +377,7 @@ public class SuFile extends File {
     @Override
     public boolean renameTo(File dest) {
         String cmd = "mv -f " + escapedPath + " " + ShellUtils.escapedString(dest.getAbsolutePath());
-        return ShellUtils.fastCmdResult(cmd);
+        return ShellUtils.fastCmdResult(getShell(), cmd);
     }
 
     private boolean setPerms(boolean set, boolean ownerOnly, int b) {
@@ -471,7 +485,8 @@ public class SuFile extends File {
         if (!isDirectory())
             return null;
         String cmd = "ls -a " + escapedPath;
-        List<String> out = Shell.su(cmd).to(new LinkedList<>(), null).exec().getOut();
+        List<String> out = getShell().newJob().add(cmd)
+                .to(new LinkedList<>(), null).exec().getOut();
         for (ListIterator<String> it = out.listIterator(); it.hasNext();) {
             String name = it.next();
             if (name.equals(".") || name.equals("..") ||

@@ -88,10 +88,11 @@ class FifoOutputStream extends FilterOutputStream {
 
     private void openStream(SuFile file) throws FileNotFoundException {
         try {
-            Shell.getShell().execTask((in, out, err) -> {
-                String cmd = "cat " + fifo + op() + file.getEscapedPath() + " 2>/dev/null &\n";
+            file.getShell().execTask((in, out, err) -> {
+                String cmd = "cat " + fifo + op() + file.getEscapedPath() + " 2>/dev/null &";
                 Utils.log(TAG, cmd);
                 in.write(cmd.getBytes(UTF_8));
+                in.write('\n');
                 in.flush();
                 in.write(END_CMD);
                 in.flush();
