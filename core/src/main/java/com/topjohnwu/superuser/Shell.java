@@ -388,9 +388,12 @@ public abstract class Shell implements Closeable {
          * @param classes the classes of desired initializers.
          * @return this Builder object for chaining of calls.
          */
-        @SuppressWarnings("unchecked")
+        @SafeVarargs
         @NonNull
-        public abstract Builder setInitializers(@NonNull Class<? extends Initializer>... classes);
+        public final Builder setInitializers(@NonNull Class<? extends Initializer>... classes) {
+            ((BuilderImpl) this).createInitializers(classes);
+            return this;
+        }
 
         /**
          * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be

@@ -58,10 +58,7 @@ public final class BuilderImpl extends Shell.Builder {
         return this;
     }
 
-    @SafeVarargs
-    @NonNull
-    @Override
-    public final Shell.Builder setInitializers(@NonNull Class<? extends Shell.Initializer>... clz) {
+    public void createInitializers(@NonNull Class<? extends Shell.Initializer>[] clz) {
         initializers = new Shell.Initializer[clz.length];
         for (int i = 0; i < clz.length; ++i) {
             try {
@@ -72,7 +69,6 @@ public final class BuilderImpl extends Shell.Builder {
                 Utils.err(e);
             }
         }
-        return this;
     }
 
     @NonNull
