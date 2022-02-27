@@ -16,6 +16,8 @@
 
 package com.topjohnwu.superuser.io;
 
+import static com.topjohnwu.superuser.ShellUtils.escapedString;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -76,7 +78,7 @@ public class SuFile extends File {
 
     SuFile(@NonNull File file) {
         super(file.getAbsolutePath());
-        escapedPath = ShellUtils.escapedString(getPath());
+        escapedPath = escapedString(getPath());
     }
 
     public SuFile(String pathname) {
@@ -376,7 +378,7 @@ public class SuFile extends File {
      */
     @Override
     public boolean renameTo(File dest) {
-        String cmd = "mv -f " + escapedPath + " " + ShellUtils.escapedString(dest.getAbsolutePath());
+        String cmd = "mv -f " + escapedPath + " " + escapedString(dest.getAbsolutePath());
         return ShellUtils.fastCmdResult(getShell(), cmd);
     }
 

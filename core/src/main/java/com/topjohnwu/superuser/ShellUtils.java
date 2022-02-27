@@ -114,6 +114,8 @@ public final class ShellUtils {
         } catch (IOException ignored) {}
     }
 
+    private static final char SINGLE_QUOTE = '\'';
+
     /**
      * Format string to quoted and escaped string suitable for shell commands.
      * @param s the string to be formatted.
@@ -121,15 +123,16 @@ public final class ShellUtils {
      */
     public static String escapedString(String s) {
         StringBuilder sb = new StringBuilder();
-        sb.append('"');
+        sb.append(SINGLE_QUOTE);
         int len = s.length();
         for (int i = 0; i < len; ++i) {
             char c = s.charAt(i);
-            if ("$`\"\\".indexOf(c) >= 0)
+            if (c == SINGLE_QUOTE) {
                 sb.append('\\');
+            }
             sb.append(c);
         }
-        sb.append('"');
+        sb.append(SINGLE_QUOTE);
         return sb.toString();
     }
 
