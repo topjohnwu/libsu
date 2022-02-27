@@ -1,1 +1,1 @@
-include(":core", ":example", ":busybox", ":io", ":service")
+include(":core", "core-ktx", ":example", ":busybox", ":io", ":service")

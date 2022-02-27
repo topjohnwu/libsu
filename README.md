@@ -27,6 +27,9 @@ dependencies {
 
     // The core module is used by all other components
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
+    
+    // Optional: Kotlin extensions to the core module
+    implementation "com.github.topjohnwu.libsu:core-ktx:${libsuVersion}"
 
     // Optional: APIs for creating root services
     implementation "com.github.topjohnwu.libsu:service:${libsuVersion}"
@@ -130,6 +133,17 @@ public class ExampleInitializer extends Shell.Initializer {
 }
 Shell.Builder builder = /* Create a shell builder */ ;
 builder.setInitializers(ExampleInitializer.class);
+```
+
+### Kotlin
+In case your app uses Kotlin with coroutines, you can use libsu with coroutine extensions. Add `com.github.topjohnwu.libsu:core-ktx` as a dependency to access coroutine extensions:
+
+```kt
+suspend fun doWork() {
+    //The .await() method returns Shell.Result, just like the .exec() method.
+    val result = retrieveShell().sh("getprop").await()
+    val props = result.out.joinToString("\n")
+}
 ```
 
 ### I/O
