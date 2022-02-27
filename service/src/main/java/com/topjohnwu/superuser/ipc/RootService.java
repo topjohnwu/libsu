@@ -25,7 +25,6 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.Messenger;
 
-import androidx.annotation.CallSuper;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -201,11 +200,20 @@ public abstract class RootService extends ContextWrapper {
     }
 
     @Override
-    @CallSuper
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(Utils.getContextImpl(base));
+    protected final void attachBaseContext(Context base) {
+        super.attachBaseContext(onAttach(Utils.getContextImpl(base)));
         RootServiceServer.getInstance(base).register(this);
         onCreate();
+    }
+
+    /**
+     * Called when the RootService is getting attached with a {@link Context}.
+     * @param base the context being attached.
+     * @return the passed in context by default.
+     */
+    @NonNull
+    protected Context onAttach(@NonNull Context base) {
+        return base;
     }
 
     /**
@@ -213,7 +221,7 @@ public abstract class RootService extends ContextWrapper {
      * <p>
      * Overriding this method is only for very unusual use cases when a different
      * component name other than the actual class name is desired.
-     * @return the desired component name
+     * @return the desired component name.
      */
     @NonNull
     public ComponentName getComponentName() {
@@ -222,7 +230,7 @@ public abstract class RootService extends ContextWrapper {
 
     @Override
     public final Context getApplicationContext() {
-        return getBaseContext();
+        return Utils.context;
     }
 
     /**
