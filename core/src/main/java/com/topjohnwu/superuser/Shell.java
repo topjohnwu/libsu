@@ -16,8 +16,11 @@
 
 package com.topjohnwu.superuser;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.content.Context;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +33,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.annotation.Retention;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +86,10 @@ public abstract class Shell implements Closeable {
      */
     public static final int ROOT_MOUNT_MASTER = 2;
 
+    @Retention(SOURCE)
+    @IntDef({UNKNOWN, NON_ROOT_SHELL, ROOT_SHELL, ROOT_MOUNT_MASTER})
+    @interface Status {}
+
     /**
      * If set, create a non-root shell.
      * <p>
@@ -115,6 +123,10 @@ public abstract class Shell implements Closeable {
     public static final int FLAG_REDIRECT_STDERR = (1 << 3);
 
     /* Preserve (1 << 4) due to historical reasons */
+
+    @Retention(SOURCE)
+    @IntDef(value = {FLAG_NON_ROOT_SHELL, FLAG_MOUNT_MASTER, FLAG_REDIRECT_STDERR}, flag = true)
+    @interface ConfigFlags {}
 
     /**
      * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
@@ -316,6 +328,7 @@ public abstract class Shell implements Closeable {
      *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL}, or
      *         {@link #ROOT_MOUNT_MASTER}
      */
+    @Status
     public abstract int getStatus();
 
     /**
@@ -405,7 +418,7 @@ public abstract class Shell implements Closeable {
          * @return this Builder object for chaining of calls.
          */
         @NonNull
-        public abstract Builder setFlags(int flags);
+        public abstract Builder setFlags(@ConfigFlags int flags);
 
         /**
          * Set the maximum time to wait for a new shell construction.
