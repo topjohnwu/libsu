@@ -21,7 +21,6 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,7 +32,7 @@ import java.io.InputStream;
  * Directly creating instances of this class is deprecated, please use the static helper
  * methods to open new InputStreams.
  */
-public class SuFileInputStream extends BufferedInputStream {
+public final class SuFileInputStream {
 
     /**
      * {@code SuFileInputStream.open(new File(path))}
@@ -66,25 +65,5 @@ public class SuFileInputStream extends BufferedInputStream {
         }
     }
 
-    // Deprecated APIs
-
-    /**
-     * Same as {@link #open(String)}, but guaranteed to be buffered to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(String)}
-     */
-    @Deprecated
-    public SuFileInputStream(String path) throws FileNotFoundException {
-        this(new File(path));
-    }
-
-    /**
-     * Same as {@link #open(File)}, but guaranteed to be buffered internally to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(File)}
-     */
-    @Deprecated
-    public SuFileInputStream(File file) throws FileNotFoundException {
-        super(open(file));
-    }
+    private SuFileInputStream() {}
 }

@@ -21,7 +21,6 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -33,7 +32,7 @@ import java.io.OutputStream;
  * Directly creating instances of this class is deprecated, please use the static helper
  * methods to open new OutputStreams.
  */
-public class SuFileOutputStream extends BufferedOutputStream {
+public final class SuFileOutputStream {
 
     /**
      * {@code SuFileOutputStream.open(new File(path), false)}
@@ -82,45 +81,5 @@ public class SuFileOutputStream extends BufferedOutputStream {
         }
     }
 
-    // Deprecated APIs
-
-    /**
-     * Same as {@link #open(String)}, but guaranteed to be buffered to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(String)}
-     */
-    @Deprecated
-    public SuFileOutputStream(String path) throws FileNotFoundException {
-        super(open(path, false));
-    }
-
-    /**
-     * Same as {@link #open(String, boolean)}, but guaranteed to be buffered to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(String, boolean)}
-     */
-    @Deprecated
-    public SuFileOutputStream(String path, boolean append) throws FileNotFoundException {
-        super(open(path, append));
-    }
-
-    /**
-     * Same as {@link #open(File)}, but guaranteed to be buffered to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(File, boolean)}
-     */
-    @Deprecated
-    public SuFileOutputStream(File file) throws FileNotFoundException {
-        super(open(file, false));
-    }
-
-    /**
-     * Same as {@link #open(File, boolean)}, but guaranteed to be buffered to
-     * match backwards compatibility behavior.
-     * @deprecated please switch to {@link #open(File, boolean)}
-     */
-    @Deprecated
-    public SuFileOutputStream(File file, boolean append) throws FileNotFoundException {
-        super(open(file, append));
-    }
+    private SuFileOutputStream() {}
 }
