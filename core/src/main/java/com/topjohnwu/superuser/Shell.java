@@ -21,7 +21,6 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import android.content.Context;
 
 import androidx.annotation.IntDef;
-import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -650,7 +649,6 @@ public abstract class Shell implements Closeable {
         /**
          * @param out the result of the job.
          */
-        @MainThread
         void onResult(@NonNull Result out);
     }
 
