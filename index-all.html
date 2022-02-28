@@ -115,16 +115,25 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dl>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(android.content.Intent,android.content.ServiceConnection)">bind(Intent, ServiceConnection)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">bind(Intent, Executor, ServiceConnection)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#bindOrTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">bindOrTask(Intent, Executor, ServiceConnection)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dd>
+<div class="block">Bind to a root service, creating a task to launch a new root process if needed.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#build()">build()</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
 <div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
  with the default methods.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#build(java.lang.Process)">build(Process)</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
+<dd>
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
+ with the provided process.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#build(java.lang.String...)">build(String...)</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
@@ -171,6 +180,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#canWrite()">canWrite()</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#CATEGORY_DAEMON_MODE">CATEGORY_DAEMON_MODE</a></span> - Static variable in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dd>
+<div class="block">Launch the service in "Daemon Mode".</div>
+</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ShellUtils.html#cleanInputStream(java.io.InputStream)">cleanInputStream(InputStream)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/ShellUtils.html" title="class in com.topjohnwu.superuser">ShellUtils</a></dt>
 <dd>
 <div class="block">Discard all data currently available in an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.</div>
@@ -178,6 +191,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#clear()">clear()</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>
 <div class="block">Clear the content of the file denoted by this abstract pathname.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#cmd(java.io.InputStream)">cmd(InputStream)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
+<dd>
+<div class="block">Create a pending <a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#cmd(java.lang.String...)">cmd(String...)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
+<dd>
+<div class="block">Create a pending <a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with commands.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/package-summary.html">com.topjohnwu.superuser</a> - package com.topjohnwu.superuser</dt>
 <dd>&nbsp;</dd>
@@ -188,10 +209,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#create()">create()</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
 <div class="block">Create a new <a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser"><code>Shell.Builder</code></a>.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#createBindTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">createBindTask(Intent, Executor, ServiceConnection)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
-<dd>
-<div class="block">Connect to a root service, creating it if needed.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#createNewFile()">createNewFile()</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
@@ -275,8 +292,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">If set, STDERR outputs will be redirected to STDOUT outputs.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#flags">flags</a></span> - Variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
-<dd>&nbsp;</dd>
 </dl>
 <a id="I:G">
 <!--   -->
@@ -336,6 +351,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#getParentFile()">getParentFile()</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#getShell()">getShell()</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#getShell()">getShell()</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
 <div class="block">Get the main shell instance.</div>
@@ -366,8 +383,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h2 class="title">I</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#initClasses">initClasses</a></span> - Variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Initializer.html#%3Cinit%3E()">Initializer()</a></span> - Constructor for class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#isAlive()">isAlive()</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
@@ -501,6 +516,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">The callback when a new element is added.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#onAttach(android.content.Context)">onAttach(Context)</a></span> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dd>
+<div class="block">Called when the RootService is getting attached with a <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a>.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#onBind(android.content.Intent)">onBind(Intent)</a></span> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#onCreate()">onCreate()</a></span> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
@@ -563,22 +582,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#open(java.net.URI)">open(URI)</a></span> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFileOutputStream.html#openNoCopy(java.io.File)">openNoCopy(File)</a></span> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFileOutputStream.html" title="class in com.topjohnwu.superuser.io">SuFileOutputStream</a></dt>
-<dd>
-<div class="block"><code>SuFileOutputStream.openNoCopy(file, false)</code></div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFileOutputStream.html#openNoCopy(java.io.File,boolean)">openNoCopy(File, boolean)</a></span> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFileOutputStream.html" title="class in com.topjohnwu.superuser.io">SuFileOutputStream</a></dt>
-<dd>
-<div class="block">Open an <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a> with root access (no internal copying).</div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFileOutputStream.html#openNoCopy(java.lang.String)">openNoCopy(String)</a></span> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFileOutputStream.html" title="class in com.topjohnwu.superuser.io">SuFileOutputStream</a></dt>
-<dd>
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), false)</code></div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFileOutputStream.html#openNoCopy(java.lang.String,boolean)">openNoCopy(String, boolean)</a></span> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFileOutputStream.html" title="class in com.topjohnwu.superuser.io">SuFileOutputStream</a></dt>
-<dd>
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), append)</code></div>
-</dd>
 </dl>
 <a id="I:R">
 <!--   -->
@@ -609,7 +612,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#rootAccess()">rootAccess()</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
-<div class="block"><code>Shell.getShell().isRoot()</code></div>
+<div class="block">Whether the application has access to root.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc"><span class="typeNameLink">RootService</span></a> - Class in <a href="com/topjohnwu/superuser/ipc/package-summary.html">com.topjohnwu.superuser.ipc</a></dt>
 <dd>
@@ -665,32 +668,28 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Marks the file or directory named by this abstract pathname so that
  only read operations are allowed.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#setShell(com.topjohnwu.superuser.Shell)">setShell(Shell)</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
+<dd>
+<div class="block">Set the <code>Shell</code> instance to be used internally for all operations.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#setTimeout(long)">setTimeout(long)</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
-<div class="block">Set the maximum time to wait for a new shell construction.</div>
+<div class="block">Set the maximum time to wait for shell verification.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/io/SuFile.html#setWritable(boolean,boolean)">setWritable(boolean, boolean)</a></span> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>
 <div class="block">Sets the owner's or everybody's write permission for this abstract
  pathname.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#sh(java.io.InputStream)">sh(InputStream)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
-<dd>
-<div class="block">Create a pending <a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#sh(java.lang.String...)">sh(String...)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
-<dd>
-<div class="block">Create a pending <a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with commands.</div>
-</dd>
 <dt><a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser"><span class="typeNameLink">Shell</span></a> - Class in <a href="com/topjohnwu/superuser/package-summary.html">com.topjohnwu.superuser</a></dt>
 <dd>
-<div class="block">A class providing APIs to an interactive (root) shell.</div>
+<div class="block">A class providing APIs to an interactive Unix shell.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#%3Cinit%3E()">Shell()</a></span> - Constructor for class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser"><span class="typeNameLink">Shell.Builder</span></a> - Class in <a href="com/topjohnwu/superuser/package-summary.html">com.topjohnwu.superuser</a></dt>
 <dd>
-<div class="block">Builder class for <a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> objects.</div>
+<div class="block">Builder class for <a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instances.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.GetShellCallback.html" title="interface in com.topjohnwu.superuser"><span class="typeNameLink">Shell.GetShellCallback</span></a> - Interface in <a href="com/topjohnwu/superuser/package-summary.html">com.topjohnwu.superuser</a></dt>
 <dd>
@@ -724,21 +723,15 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#stop(android.content.Intent)">stop(Intent)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Force stop a root service.</div>
+<div class="block">Force stop a root service, launching a new root process if needed.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#stopOrTask(android.content.Intent)">stopOrTask(Intent)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dd>
+<div class="block">Force stop a root service, creating a task to launch a new root process if needed.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#stopSelf()">stopSelf()</a></span> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Force stop this root service process.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#su(java.io.InputStream)">su(InputStream)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
-<dd>
-<div class="block">Equivalent to <a href="com/topjohnwu/superuser/Shell.html#sh(java.io.InputStream)"><code>Shell.sh(InputStream)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
-</dd>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#su(java.lang.String...)">su(String...)</a></span> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
-<dd>
-<div class="block">Equivalent to <a href="com/topjohnwu/superuser/Shell.html#sh(java.lang.String...)"><code>Shell.sh(String...)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
+<div class="block">Force stop this root service.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Job.html#submit()">submit()</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></dt>
 <dd>
@@ -784,8 +777,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h2 class="title">T</h2>
 <dl>
-<dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Builder.html#timeout">timeout</a></span> - Variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
-<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.Job.html#to(java.util.List)">to(List&lt;String&gt;)</a></span> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></dt>
 <dd>
 <div class="block">Store output to a specific list.</div>
@@ -802,7 +793,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dl>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/ipc/RootService.html#unbind(android.content.ServiceConnection)">unbind(ServiceConnection)</a></span> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Disconnect from a root service.</div>
+<div class="block">Unbind from a root service.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="com/topjohnwu/superuser/Shell.html#UNKNOWN">UNKNOWN</a></span> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>

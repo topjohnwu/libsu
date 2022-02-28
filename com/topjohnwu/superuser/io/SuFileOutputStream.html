@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":9,"i7":9};
+var data = {"i0":9,"i1":9,"i2":9,"i3":9};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -87,7 +87,7 @@ loadScripts(document, 'script');</script>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
 </ul>
@@ -121,35 +121,16 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li><a href="https://developer.android.com/reference/java/lang/Object.html?is-external=true" title="class or interface in java.lang" class="externalLink">java.lang.Object</a></li>
 <li>
 <ul class="inheritance">
-<li><a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">java.io.OutputStream</a></li>
-<li>
-<ul class="inheritance">
-<li><a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">java.io.FilterOutputStream</a></li>
-<li>
-<ul class="inheritance">
-<li><a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">java.io.BufferedOutputStream</a></li>
-<li>
-<ul class="inheritance">
 <li>com.topjohnwu.superuser.io.SuFileOutputStream</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
 <div class="description">
 <ul class="blockList">
 <li class="blockList">
-<dl>
-<dt>All Implemented Interfaces:</dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/Closeable.html?is-external=true" title="class or interface in java.io" class="externalLink">Closeable</a></code>, <code><a href="https://developer.android.com/reference/java/io/Flushable.html?is-external=true" title="class or interface in java.io" class="externalLink">Flushable</a></code>, <code><a href="https://developer.android.com/reference/java/lang/AutoCloseable.html?is-external=true" title="class or interface in java.lang" class="externalLink">AutoCloseable</a></code></dd>
-</dl>
 <hr>
-<pre>public class <span class="typeNameLabel">SuFileOutputStream</span>
-extends <a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">BufferedOutputStream</a></pre>
+<pre>public final class <span class="typeNameLabel">SuFileOutputStream</span>
+extends <a href="https://developer.android.com/reference/java/lang/Object.html?is-external=true" title="class or interface in java.lang" class="externalLink">Object</a></pre>
 <div class="block">Open <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a>s that read files with root access.
  <p>
  Directly creating instances of this class is deprecated, please use the static helper
@@ -160,30 +141,6 @@ extends <a href="https://developer.android.com/reference/java/io/BufferedOutputS
 <div class="summary">
 <ul class="blockList">
 <li class="blockList">
-<!-- =========== FIELD SUMMARY =========== -->
-<section role="region">
-<ul class="blockList">
-<li class="blockList"><a id="field.summary">
-<!--   -->
-</a>
-<h3>Field Summary</h3>
-<ul class="blockList">
-<li class="blockList"><a id="fields.inherited.from.class.java.io.BufferedOutputStream">
-<!--   -->
-</a>
-<h3>Fields inherited from class&nbsp;java.io.<a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">BufferedOutputStream</a></h3>
-<code><a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true#buf" title="class or interface in java.io" class="externalLink">buf</a>, <a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true#count" title="class or interface in java.io" class="externalLink">count</a></code></li>
-</ul>
-<ul class="blockList">
-<li class="blockList"><a id="fields.inherited.from.class.java.io.FilterOutputStream">
-<!--   -->
-</a>
-<h3>Fields inherited from class&nbsp;java.io.<a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">FilterOutputStream</a></h3>
-<code><a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true#out" title="class or interface in java.io" class="externalLink">out</a></code></li>
-</ul>
-</li>
-</ul>
-</section>
 <!-- ========== METHOD SUMMARY =========== -->
 <section role="region">
 <ul class="blockList">
@@ -228,58 +185,7 @@ extends <a href="https://developer.android.com/reference/java/io/BufferedOutputS
 <div class="block"><code>SuFileOutputStream.open(new File(path), append)</code></div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#openNoCopy(java.io.File)">openNoCopy</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;file)</code></th>
-<td class="colLast">
-<div class="block"><code>SuFileOutputStream.openNoCopy(file, false)</code></div>
-</td>
-</tr>
-<tr id="i5" class="rowColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#openNoCopy(java.io.File,boolean)">openNoCopy</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;file,
-          boolean&nbsp;append)</code></th>
-<td class="colLast">
-<div class="block">Open an <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a> with root access (no internal copying).</div>
-</td>
-</tr>
-<tr id="i6" class="altColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#openNoCopy(java.lang.String)">openNoCopy</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;path)</code></th>
-<td class="colLast">
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), false)</code></div>
-</td>
-</tr>
-<tr id="i7" class="rowColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#openNoCopy(java.lang.String,boolean)">openNoCopy</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;path,
-          boolean&nbsp;append)</code></th>
-<td class="colLast">
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), append)</code></div>
-</td>
-</tr>
 </table>
-<ul class="blockList">
-<li class="blockList"><a id="methods.inherited.from.class.java.io.BufferedOutputStream">
-<!--   -->
-</a>
-<h3>Methods inherited from class&nbsp;java.io.<a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">BufferedOutputStream</a></h3>
-<code><a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true#flush()" title="class or interface in java.io" class="externalLink">flush</a>, <a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true#write(byte%5B%5D,int,int)" title="class or interface in java.io" class="externalLink">write</a>, <a href="https://developer.android.com/reference/java/io/BufferedOutputStream.html?is-external=true#write(int)" title="class or interface in java.io" class="externalLink">write</a></code></li>
-</ul>
-<ul class="blockList">
-<li class="blockList"><a id="methods.inherited.from.class.java.io.FilterOutputStream">
-<!--   -->
-</a>
-<h3>Methods inherited from class&nbsp;java.io.<a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">FilterOutputStream</a></h3>
-<code><a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true#close()" title="class or interface in java.io" class="externalLink">close</a>, <a href="https://developer.android.com/reference/java/io/FilterOutputStream.html?is-external=true#write(byte%5B%5D)" title="class or interface in java.io" class="externalLink">write</a></code></li>
-</ul>
-<ul class="blockList">
-<li class="blockList"><a id="methods.inherited.from.class.java.io.OutputStream">
-<!--   -->
-</a>
-<h3>Methods inherited from class&nbsp;java.io.<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></h3>
-<code><a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true#nullOutputStream()" title="class or interface in java.io" class="externalLink">nullOutputStream</a></code></li>
-</ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
 <!--   -->
@@ -358,7 +264,7 @@ public static&nbsp;<a href="https://developer.android.com/reference/java/io/Outp
 <a id="open(java.io.File,boolean)">
 <!--   -->
 </a>
-<ul class="blockList">
+<ul class="blockListLast">
 <li class="blockList">
 <h4>open</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
@@ -369,102 +275,7 @@ public static&nbsp;<a href="https://developer.android.com/reference/java/io/Outp
 <div class="block">Open an <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a> with root access.
  <p>
  Unless <code>file</code> is an <a href="SuFile.html" title="class in com.topjohnwu.superuser.io"><code>SuFile</code></a>, this method will always try to directly
- open a <a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>FileOutputStream</code></a>, and fallback to using root access when it fails.
- <p>
- <strong>Root Access Streams:</strong><br>
- On Android 5.0 and higher (API 21+), internally a named pipe (FIFO) is created
- to bridge all I/O operations across process boundary, providing 100% native
- <a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>FileOutputStream</code></a> performance.
- A single root command is issued through the main shell at stream construction.
- <br>
- On Android 4.4 and lower, all write operations will be applied to a temporary file in
- the application cache folder. When the stream is closed, the temporary file
- will be copied over to the provided <code>file</code> by using a single <code>cat</code>
- command with the main shell, then deleted.</div>
-<dl>
-<dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></code></dd>
-<dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true#%3Cinit%3E(java.io.File,boolean)" title="class or interface in java.io" class="externalLink"><code>FileOutputStream(File, boolean)</code></a></dd>
-</dl>
-</li>
-</ul>
-<a id="openNoCopy(java.lang.String)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>openNoCopy</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a>&nbsp;openNoCopy&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;path)
-                               throws <a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></pre>
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), false)</code></div>
-<dl>
-<dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></code></dd>
-</dl>
-</li>
-</ul>
-<a id="openNoCopy(java.lang.String,boolean)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>openNoCopy</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a>&nbsp;openNoCopy&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;path,
-                                      boolean&nbsp;append)
-                               throws <a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></pre>
-<div class="block"><code>SuFileOutputStream.openNoCopy(new File(path), append)</code></div>
-<dl>
-<dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></code></dd>
-</dl>
-</li>
-</ul>
-<a id="openNoCopy(java.io.File)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>openNoCopy</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a>&nbsp;openNoCopy&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;file)
-                               throws <a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></pre>
-<div class="block"><code>SuFileOutputStream.openNoCopy(file, false)</code></div>
-<dl>
-<dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></code></dd>
-</dl>
-</li>
-</ul>
-<a id="openNoCopy(java.io.File,boolean)">
-<!--   -->
-</a>
-<ul class="blockListLast">
-<li class="blockList">
-<h4>openNoCopy</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a>&nbsp;openNoCopy&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;file,
-                                      boolean&nbsp;append)
-                               throws <a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></pre>
-<div class="block">Open an <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a> with root access (no internal copying).
- <p>
- <strong>If your minSdkVersion is 21 or higher, this method is irrelevant.</strong>
- <p>
- Unless <code>file</code> is an <a href="SuFile.html" title="class in com.topjohnwu.superuser.io"><code>SuFile</code></a>, this method will always try to directly
- open a <a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>FileOutputStream</code></a>, and fallback to using root access when it fails.
- <p>
- <strong>Root Access Streams:</strong><br>
- On Android 5.0 and higher (API 21+), this is equivalent to <a href="#open(java.io.File,boolean)"><code>open(File, boolean)</code></a>.
- <br>
- On Android 4.4 and lower, the returned stream will do every write operation with a
- <code>dd</code> command via the main root shell. <strong>Writing to files through shell
- commands is proven to be error prone. YOU HAVE BEEN WARNED!</strong></div>
+ open a <a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>FileOutputStream</code></a>, and fallback to using root access when it fails.</div>
 <dl>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code><a href="https://developer.android.com/reference/java/io/FileNotFoundException.html?is-external=true" title="class or interface in java.io" class="externalLink">FileNotFoundException</a></code></dd>
@@ -524,7 +335,7 @@ public static&nbsp;<a href="https://developer.android.com/reference/java/io/Outp
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
 </ul>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":9,"i2":9,"i3":9,"i4":10,"i5":10,"i6":6,"i7":10,"i8":10,"i9":10,"i10":10,"i11":9,"i12":10,"i13":9};
+var data = {"i0":10,"i1":9,"i2":9,"i3":9,"i4":10,"i5":10,"i6":10,"i7":6,"i8":10,"i9":10,"i10":10,"i11":10,"i12":9,"i13":9,"i14":10,"i15":9};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -93,7 +93,7 @@ loadScripts(document, 'script');</script>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>
@@ -154,29 +154,31 @@ extends <a href="https://developer.android.com/reference/android/content/Context
  <a href="https://developer.android.com/reference/android/os/Messenger.html?is-external=true" title="class or interface in android.os" class="externalLink"><code>Messenger</code></a> or AIDL to define the IPC interface for communication. Please read the
  official documentations for more details.
  <p>
- Even though a <code>RootService</code> is a <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a> of the app package, since we are running
- in a root environment and the ContextImpl is not constructed in the "normal" way, the
- functionality of this context is much more limited compared to normal non-root cases. Be aware
- of this and do not assume all context methods will work, many will result in Exceptions.
+ Even though a <code>RootService</code> is a <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a> of your application, the ContextImpl
+ is not constructed in a normal way, so the functionality is much more limited compared
+ to the normal case. Be aware of this and do not expect all context methods to work.
  <p>
- <strong>Daemon mode:</strong><br>
- By default, the root service will be destroyed when no components are bound to it
- (including when the non-root app process is terminated). However, if you'd like to have
- the root service run independently of the app's lifecycle (aka "Daemon Mode"), override the
- method <a href="#onUnbind(android.content.Intent)"><code>onUnbind(Intent)</code></a> and return <code>true</code>. Subsequent bindings will call
- the <a href="#onRebind(android.content.Intent)"><code>onRebind(Intent)</code></a> method.
+ All RootServices launched from the same process will run in the same root process.
+ A root service will be destroyed as soon as there are no clients bound to it.
+ This means all services will be destroyed immediately when the client process is terminated.
+ The library will NOT attempt to automatically restart and bind to a service after it was unbound.
  <p>
- All RootServices of an app will run in the same root process, as root processes are launched
- per package. The root service process will terminate in the following conditions:
+ <strong>Daemon Mode:</strong><br>
+ If you want the service to run in the background independent from the application lifecycle,
+ launch the service in "Daemon Mode". Check the description of <a href="#CATEGORY_DAEMON_MODE"><code>CATEGORY_DAEMON_MODE</code></a>
+ for instructions on how to do so.
+ All services running in "Daemon Mode" will run in a daemon process created per-package that
+ is separate from regular root services. This daemon process will be used across application
+ re-launches, and even across different users on the device.
+ A root service running in "Daemon Mode" will be destroyed when any client called
+ <a href="#stop(android.content.Intent)"><code>stop(Intent)</code></a>, or the root service itself called <a href="#stopSelf()"><code>stopSelf()</code></a>.
+ <p>
+ A root service process, including the daemon process, will terminate under these conditions:
  <ul>
-     <li>When the application is updated/deleted</li>
-     <li>When all services are destroyed (after <a href="#onDestroy()"><code>onDestroy()</code></a> is called)</li>
-     <li>Non-daemon services will be automatically destroyed when all clients are
-         unbounded or terminated</li>
-     <li>Daemon services will only be destroyed when the client called <a href="#stop(android.content.Intent)"><code>stop(Intent)</code></a>
-         or the root service called <a href="#stopSelf()"><code>stopSelf()</code></a></li>
- </ul>
- The library will NOT attempt to automatically restart and bind to services under any circumstance.</div>
+     <li>When the application is updated or deleted</li>
+     <li>When all services running in the process are destroyed
+         (after <a href="#onDestroy()"><code>onDestroy()</code></a> is called)</li>
+ </ul></div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/guide/components/bound-services">Bound services</a>, 
@@ -195,6 +197,21 @@ extends <a href="https://developer.android.com/reference/android/content/Context
 <!--   -->
 </a>
 <h3>Field Summary</h3>
+<table class="memberSummary">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colSecond" scope="col">Field</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#CATEGORY_DAEMON_MODE">CATEGORY_DAEMON_MODE</a></span></code></th>
+<td class="colLast">
+<div class="block">Launch the service in "Daemon Mode".</div>
+</td>
+</tr>
+</table>
 <ul class="blockList">
 <li class="blockList"><a id="fields.inherited.from.class.android.content.Context">
 <!--   -->
@@ -250,7 +267,7 @@ extends <a href="https://developer.android.com/reference/android/content/Context
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#bind(android.content.Intent,android.content.ServiceConnection)">bind</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
     <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</code></th>
 <td class="colLast">
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -259,16 +276,16 @@ extends <a href="https://developer.android.com/reference/android/content/Context
     <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
     <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</code></th>
 <td class="colLast">
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/lang/Runnable.html?is-external=true" title="class or interface in java.lang" class="externalLink">Runnable</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createBindTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">createBindTask</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
-              <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
-              <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</code></th>
+<td class="colFirst"><code>static <a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#bindOrTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">bindOrTask</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
+          <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
+          <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</code></th>
 <td class="colLast">
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, creating a task to launch a new root process if needed.</div>
 </td>
 </tr>
 <tr id="i4" class="altColor">
@@ -284,49 +301,63 @@ extends <a href="https://developer.android.com/reference/android/content/Context
 </td>
 </tr>
 <tr id="i6" class="altColor">
+<td class="colFirst"><code>protected <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onAttach(android.content.Context)">onAttach</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;base)</code></th>
+<td class="colLast">
+<div class="block">Called when the RootService is getting attached with a <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a>.</div>
+</td>
+</tr>
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>abstract <a href="https://developer.android.com/reference/android/os/IBinder.html?is-external=true" title="class or interface in android.os" class="externalLink">IBinder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onBind(android.content.Intent)">onBind</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onCreate()">onCreate</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onDestroy()">onDestroy</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onRebind(android.content.Intent)">onRebind</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onUnbind(android.content.Intent)">onUnbind</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#stop(android.content.Intent)">stop</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</code></th>
 <td class="colLast">
-<div class="block">Force stop a root service.</div>
-</td>
-</tr>
-<tr id="i12" class="altColor">
-<td class="colFirst"><code>void</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#stopSelf()">stopSelf</a></span>()</code></th>
-<td class="colLast">
-<div class="block">Force stop this root service process.</div>
+<div class="block">Force stop a root service, launching a new root process if needed.</div>
 </td>
 </tr>
 <tr id="i13" class="rowColor">
+<td class="colFirst"><code>static <a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#stopOrTask(android.content.Intent)">stopOrTask</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</code></th>
+<td class="colLast">
+<div class="block">Force stop a root service, creating a task to launch a new root process if needed.</div>
+</td>
+</tr>
+<tr id="i14" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#stopSelf()">stopSelf</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Force stop this root service.</div>
+</td>
+</tr>
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#unbind(android.content.ServiceConnection)">unbind</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</code></th>
 <td class="colLast">
-<div class="block">Disconnect from a root service.</div>
+<div class="block">Unbind from a root service.</div>
 </td>
 </tr>
 </table>
@@ -360,6 +391,38 @@ extends <a href="https://developer.android.com/reference/android/content/Context
 <div class="details">
 <ul class="blockList">
 <li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<section role="region">
+<ul class="blockList">
+<li class="blockList"><a id="field.detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a id="CATEGORY_DAEMON_MODE">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>CATEGORY_DAEMON_MODE</h4>
+<pre>public static final&nbsp;<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a> CATEGORY_DAEMON_MODE</pre>
+<div class="block">Launch the service in "Daemon Mode".
+ <p>
+ Add this category in the intent passed to <a href="#bind(android.content.Intent,android.content.ServiceConnection)"><code>bind(Intent, ServiceConnection)</code></a>,
+ <a href="#bind(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)"><code>bind(Intent, Executor, ServiceConnection)</code></a>, or
+ <a href="#bindOrTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)"><code>bindOrTask(Intent, Executor, ServiceConnection)</code></a>
+ to have the service launch in "Daemon Mode".
+ This category also has to be added in the intent passed to <a href="#stop(android.content.Intent)"><code>stop(Intent)</code></a>
+ and <a href="#stopOrTask(android.content.Intent)"><code>stopOrTask(Intent)</code></a> in order to refer to a daemon service instead of
+ a regular root service.</div>
+<dl>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../../../constant-values.html#com.topjohnwu.superuser.ipc.RootService.CATEGORY_DAEMON_MODE">Constant Field Values</a></dd>
+</dl>
+</li>
+</ul>
+</li>
+</ul>
+</section>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <section role="region">
 <ul class="blockList">
@@ -399,7 +462,7 @@ public static&nbsp;void&nbsp;bind&#8203;(<a href="https://developer.android.com/
                         <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
                         <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
                         <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</pre>
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>intent</code> - identifies the service to connect to.</dd>
@@ -421,7 +484,7 @@ public static&nbsp;void&nbsp;bind&#8203;(<a href="https://developer.android.com/
                         <a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
                         <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
                         <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</pre>
-<div class="block">Connect to a root service, creating it if needed.</div>
+<div class="block">Bind to a root service, launching a new root process if needed.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>intent</code> - identifies the service to connect to.</dd>
@@ -431,31 +494,30 @@ public static&nbsp;void&nbsp;bind&#8203;(<a href="https://developer.android.com/
 </dl>
 </li>
 </ul>
-<a id="createBindTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">
+<a id="bindOrTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>createBindTask</h4>
+<h4>bindOrTask</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/MainThread.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@MainThread</a>
 <a href="https://developer.android.com/reference/androidx/annotation/Nullable.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@Nullable</a>
-public static&nbsp;<a href="https://developer.android.com/reference/java/lang/Runnable.html?is-external=true" title="class or interface in java.lang" class="externalLink">Runnable</a>&nbsp;createBindTask&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
-                                      <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
-                                      <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                                      <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</pre>
-<div class="block">Connect to a root service, creating it if needed.
+public static&nbsp;<a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a>&nbsp;bindOrTask&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                                    <a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent,
+                                    <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                                    <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
+                                    <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                                    <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</pre>
+<div class="block">Bind to a root service, creating a task to launch a new root process if needed.
  <p>
- This method is useful if you want to precisely manage which background thread and the
- timing to do I/O operations and execute root commands for creating a new root process.
- <p>
- Binding will NOT happen if the developer does not run the returned <a href="https://developer.android.com/reference/java/lang/Runnable.html?is-external=true" title="class or interface in java.lang" class="externalLink"><code>Runnable</code></a>.</div>
+ If the application is already connected to a root process, binding will happen immediately
+ and this method will return <code>null</code>. Or else this method returns a <a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a>
+ that has to be executed to launch the root process. Binding will only happen after the
+ developer has executed the returned task with <a href="../Shell.html#execTask(com.topjohnwu.superuser.Shell.Task)"><code>Shell.execTask(Shell.Task)</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>a <a href="https://developer.android.com/reference/java/lang/Runnable.html?is-external=true" title="class or interface in java.lang" class="externalLink"><code>Runnable</code></a> instance on which a new root process will be launched upon
- calling <a href="https://developer.android.com/reference/java/lang/Runnable.html?is-external=true#run()" title="class or interface in java.lang" class="externalLink"><code>Runnable.run()</code></a>. If there is no need for creating a new root process,
- <code>null</code> is returned.</dd>
+<dd>the task to launch a root process. If there is no need to launch a new root
+ process, <code>null</code> is returned.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="#bind(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)"><code>bind(Intent, Executor, ServiceConnection)</code></a></dd>
 </dl>
@@ -470,10 +532,11 @@ public static&nbsp;<a href="https://developer.android.com/reference/java/lang/Ru
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/MainThread.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@MainThread</a>
 public static&nbsp;void&nbsp;unbind&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
                           <a href="https://developer.android.com/reference/android/content/ServiceConnection.html?is-external=true" title="class or interface in android.content" class="externalLink">ServiceConnection</a>&nbsp;conn)</pre>
-<div class="block">Disconnect from a root service.</div>
+<div class="block">Unbind from a root service.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>conn</code> - the connection interface previously supplied to <a href="#bind(android.content.Intent,android.content.ServiceConnection)"><code>bind(Intent, ServiceConnection)</code></a></dd>
+<dd><code>conn</code> - the connection interface previously supplied to
+ <a href="#bind(android.content.Intent,android.content.ServiceConnection)"><code>bind(Intent, ServiceConnection)</code></a></dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/reference/android/content/Context.html?is-external=true#unbindService(android.content.ServiceConnection)" title="class or interface in android.content" class="externalLink"><code>Context.unbindService(ServiceConnection)</code></a></dd>
 </dl>
@@ -488,16 +551,35 @@ public static&nbsp;void&nbsp;unbind&#8203;(<a href="https://developer.android.co
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/MainThread.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@MainThread</a>
 public static&nbsp;void&nbsp;stop&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
                         <a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</pre>
-<div class="block">Force stop a root service.
+<div class="block">Force stop a root service, launching a new root process if needed.
  <p>
- Since root services are bound only, unlike <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true#stopService(android.content.Intent)" title="class or interface in android.content" class="externalLink"><code>Context.stopService(Intent)</code></a>, this
- method is used to immediately stop a root service regardless of its state.
- Only use this method to stop a daemon root service; for normal root services please use
- <a href="#unbind(android.content.ServiceConnection)"><code>unbind(ServiceConnection)</code></a> instead as this method could potentially end up starting
- an additional root process to make sure daemon services are stopped.</div>
+ This method is used to immediately stop a root service regardless of its state.
+ ONLY use this method to stop a daemon root service; for normal root services, please use
+ <a href="#unbind(android.content.ServiceConnection)"><code>unbind(ServiceConnection)</code></a> instead as this method has to potentially launch
+ an additional root process to ensure daemon services are stopped.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>intent</code> - identifies the service to stop.</dd>
+</dl>
+</li>
+</ul>
+<a id="stopOrTask(android.content.Intent)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>stopOrTask</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/MainThread.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@MainThread</a>
+<a href="https://developer.android.com/reference/androidx/annotation/Nullable.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@Nullable</a>
+public static&nbsp;<a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a>&nbsp;stopOrTask&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                                    <a href="https://developer.android.com/reference/android/content/Intent.html?is-external=true" title="class or interface in android.content" class="externalLink">Intent</a>&nbsp;intent)</pre>
+<div class="block">Force stop a root service, creating a task to launch a new root process if needed.
+ <p>
+ This method returns a <a href="../Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a> that has to be executed to launch a
+ root process if necessary, or else <code>null</code> will be returned.</div>
+<dl>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="#stop(android.content.Intent)"><code>stop(Intent)</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -507,11 +589,28 @@ public static&nbsp;void&nbsp;stop&#8203;(<a href="https://developer.android.com/
 <ul class="blockList">
 <li class="blockList">
 <h4>attachBaseContext</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/CallSuper.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@CallSuper</a>
-protected&nbsp;void&nbsp;attachBaseContext&#8203;(<a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;base)</pre>
+<pre class="methodSignature">protected final&nbsp;void&nbsp;attachBaseContext&#8203;(<a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;base)</pre>
 <dl>
 <dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
 <dd><code><a href="https://developer.android.com/reference/android/content/ContextWrapper.html?is-external=true#attachBaseContext(android.content.Context)" title="class or interface in android.content" class="externalLink">attachBaseContext</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/android/content/ContextWrapper.html?is-external=true" title="class or interface in android.content" class="externalLink">ContextWrapper</a></code></dd>
+</dl>
+</li>
+</ul>
+<a id="onAttach(android.content.Context)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>onAttach</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+protected&nbsp;<a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;onAttach&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                           <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;base)</pre>
+<div class="block">Called when the RootService is getting attached with a <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>base</code> - the context being attached.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the passed in context by default.</dd>
 </dl>
 </li>
 </ul>
@@ -525,11 +624,11 @@ protected&nbsp;void&nbsp;attachBaseContext&#8203;(<a href="https://developer.and
 public&nbsp;<a href="https://developer.android.com/reference/android/content/ComponentName.html?is-external=true" title="class or interface in android.content" class="externalLink">ComponentName</a>&nbsp;getComponentName()</pre>
 <div class="block">Return the component name that will be used for service lookup.
  <p>
- Overriding this method is only for very unusual situations when a different
+ Overriding this method is only for very unusual use cases when a different
  component name other than the actual class name is desired.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>the desired component name</dd>
+<dd>the desired component name.</dd>
 </dl>
 </li>
 </ul>
@@ -621,9 +720,7 @@ public&nbsp;<a href="https://developer.android.com/reference/android/content/Com
 <li class="blockList">
 <h4>stopSelf</h4>
 <pre class="methodSignature">public final&nbsp;void&nbsp;stopSelf()</pre>
-<div class="block">Force stop this root service process.
- <p>
- This is the same as calling <a href="#stop(android.content.Intent)"><code>stop(Intent)</code></a> for this particular service.</div>
+<div class="block">Force stop this root service.</div>
 </li>
 </ul>
 </li>
@@ -683,7 +780,7 @@ public&nbsp;<a href="https://developer.android.com/reference/android/content/Com
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>

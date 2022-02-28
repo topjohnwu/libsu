@@ -146,12 +146,10 @@ extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser
  Register this class with <a href="Shell.Builder.html#setInitializers(java.lang.Class...)"><code>Shell.Builder.setInitializers(Class[])</code></a> to let <code>libsu</code>
  install and setup the shell to use the bundled BusyBox binary.
  <p>
- After the initializer is run, the shell will be using BusyBox's "Standalone Mode ASH".
- In this state, all commands will <b>always call the one in BusyBox regardless of PATH</b>.
- To specifically call a command elsewhere, use the full path (e.g. <code>/system/bin/ls -l</code>).
- This makes sure all commands are using the applets from BusyBox, providing predictable
- behavior so that developers can have less headache handling different implementation of the
- common shell utilities.</div>
+ After the initializer is run, the shell will be using BusyBox's "Standalone Mode ASH" mode.
+ Please refer to the
+ <a href="https://topjohnwu.github.io/Magisk/guides.html#busybox">Magisk Documentation</a>
+ for more details on how "Standalone Mode ASH" mode works.</div>
 </li>
 </ul>
 </div>

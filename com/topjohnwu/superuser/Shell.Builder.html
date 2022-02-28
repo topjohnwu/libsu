@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":9,"i3":10,"i4":10,"i5":10};
+var data = {"i0":6,"i1":6,"i2":6,"i3":9,"i4":6,"i5":10,"i6":6};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -87,13 +87,13 @@ loadScripts(document, 'script');</script>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>
@@ -135,52 +135,19 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <hr>
 <pre>public abstract static class <span class="typeNameLabel">Shell.Builder</span>
 extends <a href="https://developer.android.com/reference/java/lang/Object.html?is-external=true" title="class or interface in java.lang" class="externalLink">Object</a></pre>
-<div class="block">Builder class for <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> objects.
+<div class="block">Builder class for <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instances.
  <p>
  Set the default builder for the main shell instance with
  <a href="Shell.html#setDefaultBuilder(com.topjohnwu.superuser.Shell.Builder)"><code>Shell.setDefaultBuilder(Builder)</code></a>, or directly use a builder object to create new
- <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> objects.
+ <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instances.
  <p>
- Do not subclass this class, use <a href="#create()"><code>create()</code></a> to get a new Builder object.</div>
+ Do not subclass this class! Use <a href="#create()"><code>create()</code></a> to get a new Builder object.</div>
 </li>
 </ul>
 </div>
 <div class="summary">
 <ul class="blockList">
 <li class="blockList">
-<!-- =========== FIELD SUMMARY =========== -->
-<section role="region">
-<ul class="blockList">
-<li class="blockList"><a id="field.summary">
-<!--   -->
-</a>
-<h3>Field Summary</h3>
-<table class="memberSummary">
-<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
-<tr>
-<th class="colFirst" scope="col">Modifier and Type</th>
-<th class="colSecond" scope="col">Field</th>
-<th class="colLast" scope="col">Description</th>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><code>protected int</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#flags">flags</a></span></code></th>
-<td class="colLast">&nbsp;</td>
-</tr>
-<tr class="rowColor">
-<td class="colFirst"><code>protected <a href="https://developer.android.com/reference/java/lang/Class.html?is-external=true" title="class or interface in java.lang" class="externalLink">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;[]</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initClasses">initClasses</a></span></code></th>
-<td class="colLast">&nbsp;</td>
-</tr>
-<tr class="altColor">
-<td class="colFirst"><code>protected long</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#timeout">timeout</a></span></code></th>
-<td class="colLast">&nbsp;</td>
-</tr>
-</table>
-</li>
-</ul>
-</section>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <section role="region">
 <ul class="blockList">
@@ -226,39 +193,47 @@ extends <a href="https://developer.android.com/reference/java/lang/Object.html?i
 </tr>
 <tr id="i1" class="rowColor">
 <td class="colFirst"><code>abstract <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build(java.lang.Process)">build</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/Process.html?is-external=true" title="class or interface in java.lang" class="externalLink">Process</a>&nbsp;process)</code></th>
+<td class="colLast">
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
+ with the provided process.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>abstract <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build(java.lang.String...)">build</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</code></th>
 <td class="colLast">
 <div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
  with the provided commands.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>static <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create()">create</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Create a new <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser"><code>Shell.Builder</code></a>.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
-<td class="colFirst"><code><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setFlags(int)">setFlags</a></span>&#8203;(int&nbsp;flags)</code></th>
 <td class="colLast">
 <div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
  constructed.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setInitializers(java.lang.Class...)">setInitializers</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/Class.html?is-external=true" title="class or interface in java.lang" class="externalLink">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;...&nbsp;classes)</code></th>
 <td class="colLast">
 <div class="block">Set the desired <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
-<td class="colFirst"><code><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setTimeout(long)">setTimeout</a></span>&#8203;(long&nbsp;timeout)</code></th>
 <td class="colLast">
-<div class="block">Set the maximum time to wait for a new shell construction.</div>
+<div class="block">Set the maximum time to wait for shell verification.</div>
 </td>
 </tr>
 </table>
@@ -278,43 +253,6 @@ extends <a href="https://developer.android.com/reference/java/lang/Object.html?i
 <div class="details">
 <ul class="blockList">
 <li class="blockList">
-<!-- ============ FIELD DETAIL =========== -->
-<section role="region">
-<ul class="blockList">
-<li class="blockList"><a id="field.detail">
-<!--   -->
-</a>
-<h3>Field Detail</h3>
-<a id="flags">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>flags</h4>
-<pre>protected&nbsp;int flags</pre>
-</li>
-</ul>
-<a id="timeout">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>timeout</h4>
-<pre>protected&nbsp;long timeout</pre>
-</li>
-</ul>
-<a id="initClasses">
-<!--   -->
-</a>
-<ul class="blockListLast">
-<li class="blockList">
-<h4>initClasses</h4>
-<pre>protected&nbsp;<a href="https://developer.android.com/reference/java/lang/Class.html?is-external=true" title="class or interface in java.lang" class="externalLink">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;[] initClasses</pre>
-</li>
-</ul>
-</li>
-</ul>
-</section>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <section role="region">
 <ul class="blockList">
@@ -384,7 +322,7 @@ public final&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.sup
 <li class="blockList">
 <h4>setFlags</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public final&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;setFlags&#8203;(int&nbsp;flags)</pre>
+public abstract&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;setFlags&#8203;(int&nbsp;flags)</pre>
 <div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
  constructed.</div>
 <dl>
@@ -405,10 +343,10 @@ public final&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.sup
 <li class="blockList">
 <h4>setTimeout</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public final&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;setTimeout&#8203;(long&nbsp;timeout)</pre>
-<div class="block">Set the maximum time to wait for a new shell construction.
+public abstract&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;setTimeout&#8203;(long&nbsp;timeout)</pre>
+<div class="block">Set the maximum time to wait for shell verification.
  <p>
- If after the timeout occurs and the new shell still has no response,
+ After the timeout occurs and the shell still has no response,
  the shell process will be force-closed and throw <a href="NoShellException.html" title="class in com.topjohnwu.superuser"><code>NoShellException</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -449,14 +387,14 @@ public abstract&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuse
 <dd>the created <code>Shell</code> instance.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code><a href="NoShellException.html" title="class in com.topjohnwu.superuser">NoShellException</a></code> - impossible to construct a <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instance, or
- initialization failed when using the configured <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>.</dd>
+ initialization failed when using the configured <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</dd>
 </dl>
 </li>
 </ul>
 <a id="build(java.lang.String...)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>build</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
@@ -471,7 +409,28 @@ public abstract&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuse
 <dd>the built <code>Shell</code> instance.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code><a href="NoShellException.html" title="class in com.topjohnwu.superuser">NoShellException</a></code> - the provided command cannot create a <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instance, or
- initialization failed when using the configured <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>.</dd>
+ initialization failed when using the configured <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</dd>
+</dl>
+</li>
+</ul>
+<a id="build(java.lang.Process)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>build</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+public abstract&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a>&nbsp;build&#8203;(<a href="https://developer.android.com/reference/java/lang/Process.html?is-external=true" title="class or interface in java.lang" class="externalLink">Process</a>&nbsp;process)</pre>
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
+ with the provided process.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>process</code> - a shell <a href="https://developer.android.com/reference/java/lang/Process.html?is-external=true" title="class or interface in java.lang" class="externalLink"><code>Process</code></a> that has already been created.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the built <code>Shell</code> instance.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code><a href="NoShellException.html" title="class in com.topjohnwu.superuser">NoShellException</a></code> - the provided process is not a valid shell, or
+ initialization failed when using the configured <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</dd>
 </dl>
 </li>
 </ul>
@@ -526,13 +485,13 @@ public abstract&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuse
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>

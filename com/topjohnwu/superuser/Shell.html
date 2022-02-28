@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":9,"i2":9,"i3":9,"i4":9,"i5":6,"i6":6,"i7":10,"i8":6,"i9":9,"i10":9,"i11":9,"i12":9,"i13":9,"i14":9,"i15":10,"i16":6};
+var data = {"i0":9,"i1":9,"i2":6,"i3":9,"i4":9,"i5":9,"i6":9,"i7":6,"i8":6,"i9":10,"i10":6,"i11":9,"i12":9,"i13":10,"i14":6};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -136,22 +136,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre>public abstract class <span class="typeNameLabel">Shell</span>
 extends <a href="https://developer.android.com/reference/java/lang/Object.html?is-external=true" title="class or interface in java.lang" class="externalLink">Object</a>
 implements <a href="https://developer.android.com/reference/java/io/Closeable.html?is-external=true" title="class or interface in java.io" class="externalLink">Closeable</a></pre>
-<div class="block">A class providing APIs to an interactive (root) shell.
+<div class="block">A class providing APIs to an interactive Unix shell.
  <p>
  Similar to threads where there is a special "main thread", <code>libsu</code> also has the
  concept of the "main shell". For each process, there is a single globally shared
  "main shell" that is constructed on-demand and cached.
  <p>
  To obtain/create the main shell, use the static <code>Shell.getShell(...)</code> methods.
- However in most cases, developers do not need to directly access a <code>Shell</code> instance.
- Use these high level APIs instead:
+ Developers can use these high level APIs to access the main shell:
  <ul>
-     <li><a href="#sh(java.lang.String...)"><code>sh(String...)</code></a></li>
-     <li><a href="#su(java.lang.String...)"><code>su(String...)</code></a></li>
-     <li><a href="#sh(java.io.InputStream)"><code>sh(InputStream)</code></a></li>
-     <li><a href="#su(java.io.InputStream)"><code>su(InputStream)</code></a></li>
- </ul>
- These methods not only use the main shell but also are more convenient to use.</div>
+     <li><a href="#cmd(java.lang.String...)"><code>cmd(String...)</code></a></li>
+     <li><a href="#cmd(java.io.InputStream)"><code>cmd(InputStream)</code></a></li>
+ </ul></div>
 </li>
 </ul>
 </div>
@@ -176,7 +172,7 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <td class="colFirst"><code>static class&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></span></code></th>
 <td class="colLast">
-<div class="block">Builder class for <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> objects.</div>
+<div class="block">Builder class for <a href="Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instances.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -342,34 +338,48 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
+<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cmd(java.io.InputStream)">cmd</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</code></th>
+<td class="colLast">
+<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.</div>
+</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cmd(java.lang.String...)">cmd</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</code></th>
+<td class="colLast">
+<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with commands.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
 <td class="colFirst"><code>abstract void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#execTask(com.topjohnwu.superuser.Shell.Task)">execTask</a></span>&#8203;(<a href="Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a>&nbsp;task)</code></th>
 <td class="colLast">
 <div class="block">Execute a low-level <a href="Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a> using the shell.</div>
 </td>
 </tr>
-<tr id="i1" class="rowColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>static <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getCachedShell()">getCachedShell</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the cached main shell.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>static <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShell()">getShell</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the main shell instance.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShell(com.topjohnwu.superuser.Shell.GetShellCallback)">getShell</a></span>&#8203;(<a href="Shell.GetShellCallback.html" title="interface in com.topjohnwu.superuser">Shell.GetShellCallback</a>&nbsp;callback)</code></th>
 <td class="colLast">
 <div class="block">Get the main shell instance asynchronously via a callback.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShell(java.util.concurrent.Executor,com.topjohnwu.superuser.Shell.GetShellCallback)">getShell</a></span>&#8203;(<a href="https://developer.android.com/reference/java/util/concurrent/Executor.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">Executor</a>&nbsp;executor,
         <a href="Shell.GetShellCallback.html" title="interface in com.topjohnwu.superuser">Shell.GetShellCallback</a>&nbsp;callback)</code></th>
@@ -377,79 +387,49 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <div class="block">Get the main shell instance asynchronously via a callback.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>abstract int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getStatus()">getStatus</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the status of the shell.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>abstract boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isAlive()">isAlive</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Return whether the shell is still alive.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isRoot()">isRoot</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Return whether the shell has root access.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>abstract <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newJob()">newJob</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Construct a new <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> that uses the shell for execution.</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>static boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rootAccess()">rootAccess</a></span>()</code></th>
 <td class="colLast">
-<div class="block"><code>Shell.getShell().isRoot()</code></div>
+<div class="block">Whether the application has access to root.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setDefaultBuilder(com.topjohnwu.superuser.Shell.Builder)">setDefaultBuilder</a></span>&#8203;(<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;builder)</code></th>
 <td class="colLast">
 <div class="block">Override the default <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser"><code>Shell.Builder</code></a>.</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
-<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sh(java.io.InputStream)">sh</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</code></th>
-<td class="colLast">
-<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.</div>
-</td>
-</tr>
-<tr id="i12" class="altColor">
-<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sh(java.lang.String...)">sh</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</code></th>
-<td class="colLast">
-<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with commands.</div>
-</td>
-</tr>
 <tr id="i13" class="rowColor">
-<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#su(java.io.InputStream)">su</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</code></th>
-<td class="colLast">
-<div class="block">Equivalent to <a href="#sh(java.io.InputStream)"><code>sh(InputStream)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
-</td>
-</tr>
-<tr id="i14" class="altColor">
-<td class="colFirst"><code>static <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#su(java.lang.String...)">su</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</code></th>
-<td class="colLast">
-<div class="block">Equivalent to <a href="#sh(java.lang.String...)"><code>sh(String...)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
-</td>
-</tr>
-<tr id="i15" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#waitAndClose()">waitAndClose</a></span>()</code></th>
 <td class="colLast">
@@ -457,7 +437,7 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
  and release any system resources associated with the shell.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>abstract boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#waitAndClose(long,java.util.concurrent.TimeUnit)">waitAndClose</a></span>&#8203;(long&nbsp;timeout,
             <a href="https://developer.android.com/reference/java/util/concurrent/TimeUnit.html?is-external=true" title="class or interface in java.util.concurrent" class="externalLink">TimeUnit</a>&nbsp;unit)</code></th>
@@ -605,10 +585,8 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
  <p>
  Note: This flag only affects the following methods:
  <ul>
-     <li><a href="#sh(java.lang.String...)"><code>sh(String...)</code></a></li>
-     <li><a href="#su(java.lang.String...)"><code>su(String...)</code></a></li>
-     <li><a href="#sh(java.io.InputStream)"><code>sh(InputStream)</code></a></li>
-     <li><a href="#su(java.io.InputStream)"><code>su(InputStream)</code></a></li>
+     <li><a href="#cmd(java.lang.String...)"><code>cmd(String...)</code></a></li>
+     <li><a href="#cmd(java.io.InputStream)"><code>cmd(InputStream)</code></a></li>
      <li><a href="Shell.Job.html#to(java.util.List)"><code>Shell.Job.to(List)</code></a></li>
  </ul>
  Check the descriptions of each method above for more details.
@@ -780,34 +758,29 @@ public static&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuser"
 <li class="blockList">
 <h4>rootAccess</h4>
 <pre class="methodSignature">public static&nbsp;boolean&nbsp;rootAccess()</pre>
-<div class="block"><code>Shell.getShell().isRoot()</code>
+<div class="block">Whether the application has access to root.
  <p>
- Please refer to <a href="#getShell()"><code>getShell()</code></a> for info about concerns on blocking.</div>
+ This method would NEVER produce false negatives, but false positives can be returned before
+ actually constructing a root shell. A <code>false</code> returned is guaranteed to be
+ 100% accurate, while <code>true</code> may be returned if the device is rooted, but the user
+ did not grant root access to your application. However, after any root shell is constructed,
+ this method will accurately return <code>true</code>.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>whether the application has access to root.</dd>
+</dl>
 </li>
 </ul>
-<a id="su(java.lang.String...)">
+<a id="cmd(java.lang.String...)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>su</h4>
+<h4>cmd</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;su&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                           <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</pre>
-<div class="block">Equivalent to <a href="#sh(java.lang.String...)"><code>sh(String...)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
-</li>
-</ul>
-<a id="sh(java.lang.String...)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>sh</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;sh&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                           <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</pre>
-<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with commands.
+public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;cmd&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                            <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>...&nbsp;commands)</pre>
+<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with commands.
  <p>
  This method can be treated as functionally equivalent to
  <code>Shell.getShell().newJob().add(commands).to(new ArrayList&lt;&gt;())</code>, but the internal
@@ -826,29 +799,16 @@ public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superu
 </dl>
 </li>
 </ul>
-<a id="su(java.io.InputStream)">
+<a id="cmd(java.io.InputStream)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>su</h4>
+<h4>cmd</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;su&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                           <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</pre>
-<div class="block">Equivalent to <a href="#sh(java.io.InputStream)"><code>sh(InputStream)</code></a>, with the only difference being in the case
- when the main shell does not have root access, the returned Job will do nothing.</div>
-</li>
-</ul>
-<a id="sh(java.io.InputStream)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>sh</h4>
-<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;sh&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
-                           <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</pre>
-<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.
+public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;cmd&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                            <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;in)</pre>
+<div class="block">Create a pending <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> of the main shell with an <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>.
  <p>
  This method can be treated as functionally equivalent to
  <code>Shell.getShell().newJob().add(in).to(new ArrayList&lt;&gt;())</code>, but the internal
@@ -915,9 +875,9 @@ public static&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superu
 public abstract&nbsp;<a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a>&nbsp;newJob()</pre>
 <div class="block">Construct a new <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> that uses the shell for execution.
  <p>
- Unlike <code>Shell.su(...)/Shell.sh(...)</code>, <strong>NO</strong> output will
- be collected if the developer did not set the output destination with <a href="Shell.Job.html#to(java.util.List)"><code>Shell.Job.to(List)</code></a>
- or <a href="Shell.Job.html#to(java.util.List,java.util.List)"><code>Shell.Job.to(List, List)</code></a>.</div>
+ Unlike <a href="#cmd(java.lang.String...)"><code>cmd(String...)</code></a> and <a href="#cmd(java.io.InputStream)"><code>cmd(InputStream)</code></a>, <strong>NO</strong>
+ output will be collected if the developer did not set the output destination with
+ <a href="Shell.Job.html#to(java.util.List)"><code>Shell.Job.to(List)</code></a> or <a href="Shell.Job.html#to(java.util.List,java.util.List)"><code>Shell.Job.to(List, List)</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a job that the developer can execute or submit later.</dd>
