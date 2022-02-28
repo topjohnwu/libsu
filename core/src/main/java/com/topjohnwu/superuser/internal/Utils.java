@@ -39,11 +39,12 @@ import java.util.Set;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Utils {
 
-    @SuppressLint("StaticFieldLeak")
-    public static Context context;
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
-    static Boolean confirmedRootState = null;
+
+    @SuppressLint("StaticFieldLeak")
+    static Context context;
+    static Boolean confirmedRootState;
 
     public static void log(Object log) {
         log(TAG, log);

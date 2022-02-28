@@ -230,7 +230,7 @@ public abstract class RootService extends ContextWrapper {
 
     @Override
     public final Context getApplicationContext() {
-        return Utils.context;
+        return Utils.getContext();
     }
 
     /**
