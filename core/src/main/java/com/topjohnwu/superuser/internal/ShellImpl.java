@@ -141,8 +141,12 @@ class ShellImpl extends Shell {
             STDIN.write(("id\n").getBytes(UTF_8));
             STDIN.flush();
             s = br.readLine();
-            if (!TextUtils.isEmpty(s) && s.contains("uid=0"))
+            if (!TextUtils.isEmpty(s) && s.contains("uid=0")) {
                 status = ROOT_SHELL;
+                synchronized (Utils.class) {
+                    Utils.confirmedRootState = true;
+                }
+            }
 
             if (status == ROOT_SHELL) {
                 STDIN.write(("readlink /proc/self/ns/mnt\n").getBytes(UTF_8));

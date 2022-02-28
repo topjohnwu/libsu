@@ -20,6 +20,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
+import android.os.Process;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -42,6 +43,7 @@ public final class Utils {
     public static Context context;
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
+    static Boolean confirmedRootState = null;
 
     public static void log(Object log) {
         log(TAG, log);
@@ -121,6 +123,30 @@ public final class Utils {
             return new ArraySet<>();
         } else {
             return new HashSet<>();
+        }
+    }
+
+    public synchronized static boolean isAppGrantedRoot() {
+        if (confirmedRootState != null) {
+            // This confirmed root state will also be set in BuilderImpl
+            // and ShellImpl when new shells are getting constructed.
+            return confirmedRootState;
+        }
+        if (Process.myUid() == 0) {
+            // The current process is a root service
+            confirmedRootState = true;
+            return true;
+        }
+        try {
+            Runtime.getRuntime().exec("su --version");
+            // Even if the execution worked, we don't actually know whether the app has
+            // been granted root access. As a heuristic, let's return true here,
+            // but do NOT set the value as a confirmed state.
+            return true;
+        } catch (IOException e) {
+            // Cannot run program "su": error=2, No such file or directory
+            confirmedRootState = false;
+            return false;
         }
     }
 }

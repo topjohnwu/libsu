@@ -89,8 +89,12 @@ public final class BuilderImpl extends Shell.Builder {
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
                 shell = build("su");
-                if (shell.getStatus() != ROOT_SHELL)
+                if (shell.getStatus() != ROOT_SHELL) {
                     shell = null;
+                    synchronized (Utils.class) {
+                        Utils.confirmedRootState = false;
+                    }
+                }
             } catch (NoShellException ignore) {}
         }
 

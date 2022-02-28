@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 import com.topjohnwu.superuser.internal.BuilderImpl;
 import com.topjohnwu.superuser.internal.MainShell;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -206,17 +207,17 @@ public abstract class Shell implements Closeable {
     }
 
     /**
-     * {@code Shell.getShell().isRoot()}
+     * Whether the application has access to root.
      * <p>
-     * Please refer to {@link #getShell()} for info about concerns on blocking.
+     * This method would NEVER produce false negatives, but false positives can be returned before
+     * actually constructing a root shell. A {@code false} returned is guaranteed to be
+     * 100% accurate, while {@code true} may be returned if the device is rooted, but the user
+     * did not grant root access to your application. However, after any root shell is constructed,
+     * this method will accurately return {@code true}.
+     * @return whether the application has access to root.
      */
     public static boolean rootAccess() {
-        try {
-            return getShell().isRoot();
-        } catch (NoShellException e) {
-            return false;
-        }
-
+        return Utils.isAppGrantedRoot();
     }
 
     /* ************
