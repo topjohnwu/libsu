@@ -107,6 +107,8 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
+        if (!Shell.rootAccess())
+            return;
         Shell.Task task = bindOrTask(intent, executor, conn);
         if (task != null) {
             Shell.EXECUTOR.execute(asRunnable(task));
@@ -166,6 +168,8 @@ public abstract class RootService extends ContextWrapper {
      */
     @MainThread
     public static void stop(@NonNull Intent intent) {
+        if (!Shell.rootAccess())
+            return;
         Shell.Task task = stopOrTask(intent);
         if (task != null) {
             Shell.EXECUTOR.execute(asRunnable(task));
@@ -188,7 +192,10 @@ public abstract class RootService extends ContextWrapper {
     private static Runnable asRunnable(Shell.Task task) {
         return () -> {
             try {
-                Shell.getShell().execTask(task);
+                Shell shell = Shell.getShell();
+                if (shell.isRoot()) {
+                    shell.execTask(task);
+                }
             } catch (IOException e) {
                 Utils.err(e);
             }
