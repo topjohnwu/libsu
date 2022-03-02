@@ -48,7 +48,7 @@ class FifoInputStream extends FilterInputStream {
     FifoInputStream(SuFile file) throws FileNotFoundException {
         super(null);
         if (file.isDirectory() || !file.canRead())
-            throw new FileNotFoundException("No such file or directory");
+            throw new FileNotFoundException("No such file or directory: " + file.getAbsolutePath());
 
         Context c = Utils.getDeContext(Utils.getContext());
         fifo = new File(c.getCacheDir(), UUID.randomUUID().toString());
