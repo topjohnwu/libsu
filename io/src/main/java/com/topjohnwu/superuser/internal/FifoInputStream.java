@@ -105,7 +105,10 @@ class FifoInputStream extends FilterInputStream {
 
     @Override
     public void close() throws IOException {
-        super.close();
-        fifo.delete();
+        try {
+            super.close();
+        } finally {
+            fifo.delete();
+        }
     }
 }
