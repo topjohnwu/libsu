@@ -52,8 +52,7 @@ class FifoOutputStream extends FilterOutputStream {
     FifoOutputStream(SuFile file, boolean append) throws FileNotFoundException {
         super(null);
         this.append = append;
-        if (!checkFile(file))
-            throw new FileNotFoundException("No such file or directory");
+        checkFile(file);
 
         Context c = Utils.getDeContext(Utils.getContext());
         fifo = new File(c.getCacheDir(), UUID.randomUUID().toString());
@@ -74,16 +73,17 @@ class FifoOutputStream extends FilterOutputStream {
         }
     }
 
-    private boolean checkFile(SuFile file) {
+    private void checkFile(SuFile file) throws FileNotFoundException {
         if (file.isDirectory())
-            return false;
+            throw new FileNotFoundException(file.getAbsolutePath() + " is not a file but a directory");
         if (file.isBlock() || file.isCharacter()) {
             append = false;
-            return true;
         }
-        if (append)
-            return file.canWrite() || file.createNewFile();
-        return file.clear();
+        if (append && !file.canWrite() && !file.createNewFile()) {
+            throw new FileNotFoundException("Can write to file "+file.getAbsolutePath());
+        } else if (!file.clear()) {
+            throw new FileNotFoundException("Failed to clear file "+file.getAbsolutePath());
+        }
     }
 
     private void openStream(SuFile file) throws FileNotFoundException {
