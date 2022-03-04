@@ -45,6 +45,7 @@ public final class Utils {
     @SuppressLint("StaticFieldLeak")
     static Context context;
     static Boolean confirmedRootState;
+    static boolean useMagiskBin;
 
     public static void log(Object log) {
         log(TAG, log);
@@ -145,6 +146,13 @@ public final class Utils {
             // but do NOT set the value as a confirmed state.
             return true;
         } catch (IOException e) {
+            // Some Vivo devices block the execution of anything named "su"
+            // Try to execute "su" applet via "magisk" instead.
+            try {
+                Runtime.getRuntime().exec("magisk su --version");
+                useMagiskBin = true; // Should only happen on Vivo devices
+                return true;
+            } catch (IOException ignored) {}
             // Cannot run program "su": error=2, No such file or directory
             confirmedRootState = false;
             return false;

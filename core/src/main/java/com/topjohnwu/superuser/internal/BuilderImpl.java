@@ -76,10 +76,17 @@ public final class BuilderImpl extends Shell.Builder {
     public ShellImpl build() {
         ShellImpl shell = null;
 
+        // Init Utils.useMagiskBin if needed
+        if (!hasFlags(FLAG_NON_ROOT_SHELL)) {
+            Utils.isAppGrantedRoot();
+        }
+
         // Root mount master
         if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
             try {
-                shell = build("su", "--mount-master");
+                shell = Utils.useMagiskBin ?
+                        build("magisk", "su", "--mount-master") :
+                        build("su", "--mount-master");
                 if (shell.getStatus() != Shell.ROOT_MOUNT_MASTER)
                     shell = null;
             } catch (NoShellException ignore) {}
@@ -88,7 +95,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Normal root shell
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
-                shell = build("su");
+                shell = Utils.useMagiskBin ? build("magisk", "su") : build("su");
                 if (shell.getStatus() != ROOT_SHELL) {
                     shell = null;
                     synchronized (Utils.class) {
