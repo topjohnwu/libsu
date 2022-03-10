@@ -97,16 +97,17 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
     @Override
     public void connect(IBinder binder, boolean debug) {
-        UiThreadHandler.run(() -> connectInternal(binder, debug));
+        int uid = getCallingUid();
+        UiThreadHandler.run(() -> connectInternal(uid, binder, debug));
     }
 
-    private void connectInternal(IBinder binder, boolean debug) {
-        ClientProcess c = clients.get(getCallingUid());
+    private void connectInternal(int uid, IBinder binder, boolean debug) {
+        ClientProcess c = clients.get(uid);
         if (c != null)
             return;
 
         try {
-            c = new ClientProcess(binder);
+            c = new ClientProcess(binder, uid);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
             return;
@@ -133,7 +134,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         m.setData(bundle);
         try {
             c.m.send(m);
-            clients.put(c.uid, c);
+            clients.put(c.mUid, c);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
         } finally {
@@ -322,19 +323,19 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     class ClientProcess extends BinderHolder {
 
         final Messenger m;
-        final int uid;
+        final int mUid;
 
-        ClientProcess(IBinder b) throws RemoteException {
+        ClientProcess(IBinder b, int uid) throws RemoteException {
             super(b);
             m = new Messenger(b);
-            uid = getCallingUid();
+            mUid = uid;
         }
 
         @Override
         protected void onBinderDied() {
-            Utils.log(TAG, "Client process terminated, uid=" + uid);
-            clients.remove(uid);
-            unbindServices(uid);
+            Utils.log(TAG, "Client process terminated, uid=" + mUid);
+            clients.remove(mUid);
+            unbindServices(mUid);
         }
     }
 
