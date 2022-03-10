@@ -97,6 +97,10 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
     @Override
     public void connect(IBinder binder, boolean debug) {
+        UiThreadHandler.run(() -> connectInternal(binder, debug));
+    }
+
+    private void connectInternal(IBinder binder, boolean debug) {
         ClientProcess c = clients.get(getCallingUid());
         if (c != null)
             return;
