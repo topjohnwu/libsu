@@ -1,3 +1,11 @@
+## 4.0.1
+
+### Bug Fixes
+
+- [core] Fix possible incorrect root status reporting
+- [core] Workaround root shell mount namespace issues on older Magisk versions
+- [service] Prevent a possible race condition
+
 ## 4.0.0
 
 ### Improvements / Bug Fixes
