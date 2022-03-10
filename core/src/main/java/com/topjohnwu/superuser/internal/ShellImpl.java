@@ -146,6 +146,9 @@ class ShellImpl extends Shell {
                 synchronized (Utils.class) {
                     Utils.confirmedRootState = true;
                 }
+                String cwd = ShellUtils.escapedString(System.getProperty("user.dir"));
+                STDIN.write(("cd " + cwd + "\n").getBytes(UTF_8));
+                STDIN.flush();
             }
 
             if (status == ROOT_SHELL) {

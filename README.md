@@ -24,7 +24,7 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '4.0.0'
+    def libsuVersion = '4.0.2'
 
     // The core module is used by all other components
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"

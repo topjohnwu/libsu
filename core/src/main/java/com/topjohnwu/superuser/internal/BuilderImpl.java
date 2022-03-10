@@ -18,7 +18,6 @@ package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
 import static com.topjohnwu.superuser.Shell.FLAG_NON_ROOT_SHELL;
-import static com.topjohnwu.superuser.Shell.ROOT_SHELL;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -87,7 +86,7 @@ public final class BuilderImpl extends Shell.Builder {
                 shell = Utils.useMagiskBin ?
                         build("magisk", "su", "--mount-master") :
                         build("su", "--mount-master");
-                if (shell.getStatus() != Shell.ROOT_MOUNT_MASTER)
+                if (!shell.isRoot())
                     shell = null;
             } catch (NoShellException ignore) {}
         }
@@ -96,7 +95,7 @@ public final class BuilderImpl extends Shell.Builder {
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
                 shell = Utils.useMagiskBin ? build("magisk", "su") : build("su");
-                if (shell.getStatus() < ROOT_SHELL) {
+                if (!shell.isRoot()) {
                     shell = null;
                     synchronized (Utils.class) {
                         Utils.confirmedRootState = false;
