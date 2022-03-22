@@ -1,3 +1,11 @@
+## 4.0.3
+
+### Improvements
+
+- [core] Ensure exactly one main shell will be created
+- [core] Ensure the asynchronous `Shell.getShell(callback)` never blocks
+- [service] Reduce one IPC back and forth during the initial binding
+
 ## 4.0.2
 
 ### Bug Fixes
