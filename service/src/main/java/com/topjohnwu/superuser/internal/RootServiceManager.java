@@ -66,13 +66,14 @@ public class RootServiceManager implements Handler.Callback {
     private static RootServiceManager mInstance;
 
     static final String TAG = "IPC";
-    static final String BUNDLE_BINDER_KEY = "binder";
     static final String LOGGING_ENV = "LIBSU_VERBOSE_LOGGING";
+    static final String DEBUG_ENV = "LIBSU_DEBUGGER";
 
-    static final int MSG_ACK = 1;
-    static final int MSG_STOP = 2;
+    static final int MSG_STOP = 1;
 
-    private static final String INTENT_EXTRA_KEY = "extra.bundle";
+    private static final String BUNDLE_BINDER_KEY = "binder";
+    private static final String INTENT_BUNDLE_KEY = "extra.bundle";
+    private static final String INTENT_DAEMON_KEY = "extra.daemon";
     private static final String API_27_DEBUG =
             "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y " +
             "-Xcompiler-option --debuggable";
@@ -91,13 +92,14 @@ public class RootServiceManager implements Handler.Callback {
     }
 
     @SuppressLint("WrongConstant")
-    static Intent getBroadcastIntent(Context context, String action, IBinder binder) {
+    static Intent getBroadcastIntent(IBinder binder, boolean isDaemon) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
-        return new Intent(action)
-                .setPackage(context.getPackageName())
+        return new Intent()
+                .setPackage(Utils.context.getPackageName())
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
-                .putExtra(INTENT_EXTRA_KEY, bundle);
+                .putExtra(INTENT_DAEMON_KEY, isDaemon)
+                .putExtra(INTENT_BUNDLE_KEY, bundle);
     }
 
     private static void enforceMainThread() {
@@ -139,62 +141,39 @@ public class RootServiceManager implements Handler.Callback {
 
     private Shell.Task startRootProcess(ComponentName name, String action) {
         Context context = Utils.getContext();
-        boolean[] debug = new boolean[1];
         if (filterAction == null) {
             filterAction = UUID.randomUUID().toString();
-
-            // Receive ACK and service stop signal
-            Handler h = new Handler(Looper.getMainLooper(), this);
-            Messenger m = new Messenger(h);
-
             // Register receiver to receive binder from root process
             IntentFilter filter = new IntentFilter(filterAction);
-            BroadcastReceiver receiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Bundle bundle = intent.getBundleExtra(INTENT_EXTRA_KEY);
-                    if (bundle == null)
-                        return;
-                    IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
-                    if (binder == null)
-                        return;
-                    IRootServiceManager sm = IRootServiceManager.Stub.asInterface(binder);
-                    try {
-                        sm.connect(m.getBinder(), debug[0]);
-                    } catch (RemoteException e) {
-                        Utils.err(TAG, e);
-                    }
-                }
-            };
-            context.registerReceiver(receiver, filter);
+            context.registerReceiver(new ServiceReceiver(), filter);
         }
 
         Context de = Utils.getDeContext(context);
         File mainJar = new File(de.getCacheDir(), "main.jar");
 
-        String logParams = "";
-        String debugParams = "";
+        String env = "";
+        String params = "";
 
         if (Utils.vLog()) {
-            logParams = LOGGING_ENV + "=1";
+            env = LOGGING_ENV + "=1 ";
         }
 
         // Only support debugging on SDK >= 27
         if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
-            debug[0] = true;
+            env += DEBUG_ENV + "=1 ";
             // Reference of the params to start jdwp:
             // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
             if (Build.VERSION.SDK_INT == 27) {
-                debugParams = API_27_DEBUG;
+                params = API_27_DEBUG;
             } else {
-                debugParams = API_28_DEBUG;
+                params = API_28_DEBUG;
             }
         }
 
         String cmd = String.format(Locale.ROOT,
                 "(%s CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root " +
                 "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s >/dev/null 2>&1)&",
-                logParams, mainJar, Process.myPid(), debugParams, context.getPackageName(),
+                env, mainJar, Process.myPid(), params, context.getPackageName(),
                 name.flattenToString().replace("$", "\\$"), // args[0]
                 Process.myUid(),                            // args[1]
                 filterAction,                               // args[2]
@@ -330,33 +309,8 @@ public class RootServiceManager implements Handler.Callback {
 
     @Override
     public boolean handleMessage(@NonNull Message msg) {
-        switch (msg.what) {
-            case MSG_ACK:
-                IBinder b = msg.getData().getBinder(BUNDLE_BINDER_KEY);
-                if (b == null)
-                    return false;
-                RemoteProcess p;
-                try {
-                    p = new RemoteProcess(b);
-                } catch (RemoteException e) {
-                    return false;
-                }
-                if (msg.arg1 == 0) {
-                    mRemote = p;
-                    flags &= ~REMOTE_EN_ROUTE;
-                } else {
-                    mDaemon = p;
-                    flags &= ~DAEMON_EN_ROUTE;
-                }
-                for (int i = pendingTasks.size() - 1; i >= 0; --i) {
-                    if (pendingTasks.get(i).run()) {
-                        pendingTasks.remove(i);
-                    }
-                }
-                break;
-            case MSG_STOP:
-                stopInternal(new Pair<>((ComponentName) msg.obj, msg.arg1 != 0));
-                break;
+        if (msg.what == MSG_STOP) {
+            stopInternal(new Pair<>((ComponentName) msg.obj, msg.arg1 != 0));
         }
         return false;
     }
@@ -365,9 +319,9 @@ public class RootServiceManager implements Handler.Callback {
 
         final IRootServiceManager sm;
 
-        RemoteProcess(IBinder b) throws RemoteException {
-            super(b);
-            sm = IRootServiceManager.Stub.asInterface(b);
+        RemoteProcess(IRootServiceManager s) throws RemoteException {
+            super(s.asBinder());
+            sm = s;
         }
 
         @Override
@@ -392,6 +346,47 @@ public class RootServiceManager implements Handler.Callback {
                     notifyDisconnection(e);
                     it.remove();
                 }
+            }
+        }
+    }
+
+    class ServiceReceiver extends BroadcastReceiver {
+
+        private final Messenger m;
+
+        ServiceReceiver() {
+            // Create messenger to receive service stop notification
+            Handler h = new Handler(Looper.getMainLooper(), RootServiceManager.this);
+            m = new Messenger(h);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle bundle = intent.getBundleExtra(INTENT_BUNDLE_KEY);
+            if (bundle == null)
+                return;
+            IBinder binder = bundle.getBinder(BUNDLE_BINDER_KEY);
+            if (binder == null)
+                return;
+
+            IRootServiceManager sm = IRootServiceManager.Stub.asInterface(binder);
+            try {
+                sm.connect(m.getBinder());
+                RemoteProcess p = new RemoteProcess(sm);
+                if (intent.getBooleanExtra(INTENT_DAEMON_KEY, false)) {
+                    mDaemon = p;
+                    flags &= ~DAEMON_EN_ROUTE;
+                } else {
+                    mRemote = p;
+                    flags &= ~REMOTE_EN_ROUTE;
+                }
+                for (int i = pendingTasks.size() - 1; i >= 0; --i) {
+                    if (pendingTasks.get(i).run()) {
+                        pendingTasks.remove(i);
+                    }
+                }
+            } catch (RemoteException e) {
+                Utils.err(TAG, e);
             }
         }
     }

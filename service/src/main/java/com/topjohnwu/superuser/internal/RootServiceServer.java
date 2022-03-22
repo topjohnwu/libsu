@@ -17,9 +17,8 @@
 package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
-import static com.topjohnwu.superuser.internal.RootServiceManager.BUNDLE_BINDER_KEY;
+import static com.topjohnwu.superuser.internal.RootServiceManager.DEBUG_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
-import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_ACK;
 import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
 import static com.topjohnwu.superuser.internal.Utils.context;
@@ -30,7 +29,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Debug;
 import android.os.FileObserver;
 import android.os.IBinder;
@@ -76,17 +74,33 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     private RootServiceServer(Context context) {
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
         Utils.context = Utils.getContextImpl(context);
+
+        // Wait for debugger to attach if needed
+        if (System.getenv(DEBUG_ENV) != null) {
+            // ActivityThread.attach(true, 0) will set this to system_process
+            HiddenAPIs.setAppName(context.getPackageName() + ":root");
+            Utils.log(TAG, "Waiting for debugger to be attached...");
+            // For some reason Debug.waitForDebugger() won't work, manual spin lock...
+            while (!Debug.isDebuggerConnected()) {
+                try {
+                    // noinspection BusyWait
+                    Thread.sleep(200);
+                } catch (InterruptedException ignored) {}
+            }
+            Utils.log(TAG, "Debugger attached!");
+        }
+
         observer = new AppObserver(new File(context.getPackageCodePath()));
         observer.startWatching();
         if (context instanceof Callable) {
             try {
                 Object[] objs = (Object[]) ((Callable) context).call();
-                broadcast((int) objs[0], (String) objs[1]);
                 isDaemon = (boolean) objs[2];
                 if (isDaemon) {
                     // Register ourselves as system service
                     HiddenAPIs.addService(getServiceName(context.getPackageName()), this);
                 }
+                broadcast((int) objs[0], (String) objs[1]);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -96,49 +110,21 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     @Override
-    public void connect(IBinder binder, boolean debug) {
+    public void connect(IBinder binder) {
         int uid = getCallingUid();
-        UiThreadHandler.run(() -> connectInternal(uid, binder, debug));
+        UiThreadHandler.run(() -> connectInternal(uid, binder));
     }
 
-    private void connectInternal(int uid, IBinder binder, boolean debug) {
+    private void connectInternal(int uid, IBinder binder) {
         ClientProcess c = clients.get(uid);
         if (c != null)
             return;
-
         try {
             c = new ClientProcess(binder, uid);
-        } catch (RemoteException e) {
-            Utils.err(TAG, e);
-            return;
-        }
-
-        if (debug) {
-            // ActivityThread.attach(true, 0) will set this to system_process
-            HiddenAPIs.setAppName(context.getPackageName() + ":root");
-            Utils.log(TAG, "Waiting for debugger to be attached...");
-            // For some reason Debug.waitForDebugger() won't work, manual spin lock...
-            while (!Debug.isDebuggerConnected()) {
-                try { Thread.sleep(200); }
-                catch (InterruptedException ignored) {}
-            }
-            Utils.log(TAG, "Debugger attached!");
-        }
-
-        Bundle bundle = new Bundle();
-        bundle.putBinder(BUNDLE_BINDER_KEY, this);
-
-        Message m = Message.obtain();
-        m.what = MSG_ACK;
-        m.arg1 = isDaemon ? 1 : 0;
-        m.setData(bundle);
-        try {
-            c.m.send(m);
             clients.put(c.mUid, c);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
-        } finally {
-            m.recycle();
+            return;
         }
     }
 
@@ -147,7 +133,8 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         // Use the UID argument iff caller is root
         uid = getCallingUid() == 0 ? uid : getCallingUid();
         Utils.log(TAG, "broadcast to uid=" + uid);
-        Intent intent = RootServiceManager.getBroadcastIntent(context, action, this);
+        Intent intent = RootServiceManager.getBroadcastIntent(this, isDaemon);
+        intent.setAction(action);
         if (Build.VERSION.SDK_INT >= 24) {
             UserHandle h = UserHandle.getUserHandleForUid(uid);
             context.sendBroadcastAsUser(intent, h);
