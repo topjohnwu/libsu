@@ -19,6 +19,7 @@ package com.topjohnwu.superuser.internal;
 import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static com.topjohnwu.superuser.Shell.GetShellCallback;
 
+import androidx.annotation.GuardedBy;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.NoShellException;
@@ -30,8 +31,12 @@ import java.util.concurrent.Executor;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class MainShell {
 
+    @GuardedBy("self")
+    private static final ShellImpl[] mainShell = new ShellImpl[1];
+
+    @GuardedBy("class")
     private static boolean isInitMain;
-    private static ShellImpl mainShell;
+    @GuardedBy("class")
     private static BuilderImpl mainBuilder;
 
     private MainShell() {}
@@ -71,15 +76,21 @@ public final class MainShell {
         }
     }
 
-    public static synchronized ShellImpl getCached() {
-        if (mainShell != null && mainShell.getStatus() < 0)
-            mainShell = null;
-        return mainShell;
+    public static ShellImpl getCached() {
+        synchronized (mainShell) {
+            ShellImpl s = mainShell[0];
+            if (s != null && s.getStatus() < 0)
+                mainShell[0] = null;
+            return s;
+        }
     }
 
-    static synchronized void set(ShellImpl shell) {
-        if (isInitMain)
-            mainShell = shell;
+    static synchronized void setCached(ShellImpl shell) {
+        if (isInitMain) {
+            synchronized (mainShell) {
+                mainShell[0] = shell;
+            }
+        }
     }
 
     public static synchronized void setBuilder(Shell.Builder builder) {

@@ -127,12 +127,12 @@ public final class BuilderImpl extends Shell.Builder {
             Utils.ex(e);
             throw new NoShellException("Unable to create a shell!", e);
         }
-        MainShell.set(shell);
+        MainShell.setCached(shell);
         if (initializers != null) {
             Context ctx = Utils.getContext();
             for (Shell.Initializer init : initializers) {
                 if (init != null && !init.onInit(ctx, shell)) {
-                    MainShell.set(null);
+                    MainShell.setCached(null);
                     throw new NoShellException("Unable to init shell");
                 }
             }
