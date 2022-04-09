@@ -215,7 +215,7 @@ public abstract class Shell implements Closeable {
      * this method will accurately return {@code true}.
      * @return whether the application has access to root.
      */
-    public static boolean rootAccess() {
+    public static boolean isRootAvailable() {
         return Utils.isAppGrantedRoot();
     }
 
@@ -690,5 +690,17 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static Job sh(@NonNull InputStream in) {
         return MainShell.newJob(false, in);
+    }
+
+    /**
+     * @deprecated use {@link #isRootAvailable()}
+     */
+    @Deprecated
+    public static boolean rootAccess() {
+        try {
+            return getShell().isRoot();
+        } catch (NoShellException e) {
+            return false;
+        }
     }
 }

@@ -58,7 +58,7 @@ public final class SuFileInputStream {
                 // Try normal FileInputStream
                 return new FileInputStream(file);
             } catch (FileNotFoundException e) {
-                if (!Shell.rootAccess())
+                if (!Shell.isRootAvailable())
                     throw e;
                 return IOFactory.fifoIn(new SuFile(file));
             }

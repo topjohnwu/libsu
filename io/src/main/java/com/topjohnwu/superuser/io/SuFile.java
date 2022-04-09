@@ -61,19 +61,19 @@ public class SuFile extends File {
     private Shell mShell;
 
     public static File open(String pathname) {
-        return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
+        return Shell.isRootAvailable() ? new SuFile(pathname) : new File(pathname);
     }
 
     public static File open(String parent, String child) {
-        return Shell.rootAccess() ? new SuFile(parent, child) : new File(parent, child);
+        return Shell.isRootAvailable() ? new SuFile(parent, child) : new File(parent, child);
     }
 
     public static File open(File parent, String child) {
-        return Shell.rootAccess() ? new SuFile(parent, child) : new File(parent, child);
+        return Shell.isRootAvailable() ? new SuFile(parent, child) : new File(parent, child);
     }
 
     public static File open(URI uri) {
-        return Shell.rootAccess() ? new SuFile(uri) : new File(uri);
+        return Shell.isRootAvailable() ? new SuFile(uri) : new File(uri);
     }
 
     SuFile(@NonNull File file) {
