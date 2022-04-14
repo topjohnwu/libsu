@@ -127,7 +127,7 @@ class ShellImpl extends Shell {
     private Integer shellCheck() throws IOException {
         try {
             proc.exitValue();
-            throw new IOException("Created process is exited");
+            throw new IOException("Created process has terminated");
         } catch (IllegalThreadStateException ignored) {
             // Process is alive
         }
