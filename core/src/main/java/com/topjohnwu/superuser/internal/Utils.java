@@ -28,6 +28,7 @@ import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -138,16 +139,17 @@ public final class Utils {
             confirmedRootState = true;
             return true;
         }
-        try {
-            Runtime.getRuntime().exec("su --version");
-            // Even if the execution worked, we don't actually know whether the app has
-            // been granted root access. As a heuristic, let's return true here,
-            // but do NOT set the value as a confirmed state.
-            return true;
-        } catch (IOException e) {
-            // Cannot run program "su": error=2, No such file or directory
-            confirmedRootState = false;
-            return false;
+        // noinspection ConstantConditions
+        for (String path : System.getenv("PATH").split(":")) {
+            File su = new File(path + "/su");
+            if (su.canExecute()) {
+                // We don't actually know whether the app has been granted root access.
+                // As a heuristic, let's return true here,
+                // but do NOT set the value as a confirmed state.
+                return true;
+            }
         }
+        confirmedRootState = false;
+        return false;
     }
 }

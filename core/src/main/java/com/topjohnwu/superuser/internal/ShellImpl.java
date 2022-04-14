@@ -125,6 +125,13 @@ class ShellImpl extends Shell {
     }
 
     private Integer shellCheck() throws IOException {
+        try {
+            proc.exitValue();
+            throw new IOException("Created process has terminated");
+        } catch (IllegalThreadStateException ignored) {
+            // Process is alive
+        }
+
         // Clean up potential garbage from InputStreams
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
@@ -146,6 +153,7 @@ class ShellImpl extends Shell {
                 synchronized (Utils.class) {
                     Utils.confirmedRootState = true;
                 }
+                // noinspection ConstantConditions
                 String cwd = ShellUtils.escapedString(System.getProperty("user.dir"));
                 STDIN.write(("cd " + cwd + "\n").getBytes(UTF_8));
                 STDIN.flush();
