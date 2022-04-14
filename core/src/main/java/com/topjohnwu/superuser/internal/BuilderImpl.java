@@ -97,9 +97,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Try normal non-root shell
         if (shell == null) {
             if (!hasFlags(FLAG_NON_ROOT_SHELL)) {
-                synchronized (Utils.class) {
-                    Utils.confirmedRootState = false;
-                }
+                Utils.setConfirmedRootState(false);
             }
             shell = build("sh");
         }

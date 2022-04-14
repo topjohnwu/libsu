@@ -43,9 +43,14 @@ public final class Utils {
     private static Class<?> synchronizedCollectionClass;
     private static final String TAG = "LIBSU";
 
+    // -1: uninitialized
+    //  0: checked, no root
+    //  1: checked, undetermined
+    //  2: checked, root access
+    private static int currentRootState = -1;
+
     @SuppressLint("StaticFieldLeak")
     static Context context;
-    static Boolean confirmedRootState;
 
     public static void log(Object log) {
         log(TAG, log);
@@ -128,28 +133,34 @@ public final class Utils {
         }
     }
 
-    public synchronized static boolean isAppGrantedRoot() {
-        if (confirmedRootState != null) {
-            // This confirmed root state will also be set in BuilderImpl
-            // and ShellImpl when new shells are getting constructed.
-            return confirmedRootState;
-        }
-        if (Process.myUid() == 0) {
-            // The current process is a root service
-            confirmedRootState = true;
-            return true;
-        }
-        // noinspection ConstantConditions
-        for (String path : System.getenv("PATH").split(":")) {
-            File su = new File(path + "/su");
-            if (su.canExecute()) {
-                // We don't actually know whether the app has been granted root access.
-                // As a heuristic, let's return true here,
-                // but do NOT set the value as a confirmed state.
+    public synchronized static Boolean isAppGrantedRoot() {
+        if (currentRootState < 0) {
+            if (Process.myUid() == 0) {
+                // The current process is a root service
+                currentRootState = 2;
                 return true;
             }
+            // noinspection ConstantConditions
+            for (String path : System.getenv("PATH").split(":")) {
+                File su = new File(path, "su");
+                if (su.canExecute()) {
+                    // We don't actually know whether the app has been granted root access.
+                    // Do NOT set the value as a confirmed state.
+                    currentRootState = 1;
+                    return null;
+                }
+            }
+            currentRootState = 0;
+            return false;
         }
-        confirmedRootState = false;
-        return false;
+        switch (currentRootState) {
+            case 0 : return false;
+            case 2 : return true;
+            default: return null;
+        }
+    }
+
+    synchronized static void setConfirmedRootState(boolean value) {
+        currentRootState = value ? 2 : 0;
     }
 }

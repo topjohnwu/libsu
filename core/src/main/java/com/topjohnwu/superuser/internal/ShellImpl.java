@@ -150,9 +150,7 @@ class ShellImpl extends Shell {
             s = br.readLine();
             if (!TextUtils.isEmpty(s) && s.contains("uid=0")) {
                 status = ROOT_SHELL;
-                synchronized (Utils.class) {
-                    Utils.confirmedRootState = true;
-                }
+                Utils.setConfirmedRootState(true);
                 // noinspection ConstantConditions
                 String cwd = ShellUtils.escapedString(System.getProperty("user.dir"));
                 STDIN.write(("cd " + cwd + "\n").getBytes(UTF_8));

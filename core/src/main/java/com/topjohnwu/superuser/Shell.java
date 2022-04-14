@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -208,15 +209,32 @@ public abstract class Shell implements Closeable {
     /**
      * Whether the application has access to root.
      * <p>
+     * This method returns {@code null} when it is currently unable to determine whether
+     * root access has been granted to the application. A non-null value meant that the root
+     * permission grant state has been accurately determined and finalized. The application
+     * must have at least 1 root shell created to have this method return {@code true}.
+     * This method will not block the calling thread; results will be returned immediately.
+     * @return whether the application has access to root, or {@code null} when undetermined.
+     */
+    @Nullable
+    public static Boolean isAppGrantedRoot() {
+        return Utils.isAppGrantedRoot();
+    }
+
+    /**
+     * Whether the application has access to root.
+     * <p>
      * This method would NEVER produce false negatives, but false positives can be returned before
      * actually constructing a root shell. A {@code false} returned is guaranteed to be
      * 100% accurate, while {@code true} may be returned if the device is rooted, but the user
      * did not grant root access to your application. However, after any root shell is constructed,
      * this method will accurately return {@code true}.
      * @return whether the application has access to root.
+     * @deprecated please switch to {@link #isAppGrantedRoot()}
      */
+    @Deprecated
     public static boolean rootAccess() {
-        return Utils.isAppGrantedRoot();
+        return Objects.equals(isAppGrantedRoot(), Boolean.TRUE);
     }
 
     /* ************
