@@ -80,9 +80,9 @@ class FifoOutputStream extends FilterOutputStream {
             append = false;
         }
         if (append && !file.canWrite() && !file.createNewFile()) {
-            throw new FileNotFoundException("Can write to file "+file.getAbsolutePath());
+            throw new FileNotFoundException("Can write to file " + file.getAbsolutePath());
         } else if (!file.clear()) {
-            throw new FileNotFoundException("Failed to clear file "+file.getAbsolutePath());
+            throw new FileNotFoundException("Failed to clear file " + file.getAbsolutePath());
         }
     }
 
