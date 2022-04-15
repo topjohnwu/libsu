@@ -221,22 +221,6 @@ public abstract class Shell implements Closeable {
         return Utils.isAppGrantedRoot();
     }
 
-    /**
-     * Whether the application has access to root.
-     * <p>
-     * This method would NEVER produce false negatives, but false positives can be returned before
-     * actually constructing a root shell. A {@code false} returned is guaranteed to be
-     * 100% accurate, while {@code true} may be returned if the device is rooted, but the user
-     * did not grant root access to your application. However, after any root shell is constructed,
-     * this method will accurately return {@code true}.
-     * @return whether the application has access to root.
-     * @deprecated please switch to {@link #isAppGrantedRoot()}
-     */
-    @Deprecated
-    public static boolean rootAccess() {
-        return Objects.equals(isAppGrantedRoot(), Boolean.TRUE);
-    }
-
     /* ************
      * Static APIs
      * ************/
@@ -708,5 +692,21 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static Job sh(@NonNull InputStream in) {
         return MainShell.newJob(false, in);
+    }
+
+    /**
+     * Whether the application has access to root.
+     * <p>
+     * This method would NEVER produce false negatives, but false positives can be returned before
+     * actually constructing a root shell. A {@code false} returned is guaranteed to be
+     * 100% accurate, while {@code true} may be returned if the device is rooted, but the user
+     * did not grant root access to your application. However, after any root shell is constructed,
+     * this method will accurately return {@code true}.
+     * @return whether the application has access to root.
+     * @deprecated please switch to {@link #isAppGrantedRoot()}
+     */
+    @Deprecated
+    public static boolean rootAccess() {
+        return Objects.equals(isAppGrantedRoot(), Boolean.TRUE);
     }
 }
