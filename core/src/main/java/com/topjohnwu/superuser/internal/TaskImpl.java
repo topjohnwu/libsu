@@ -34,6 +34,8 @@ import java.util.concurrent.Future;
 
 class TaskImpl implements Shell.Task {
 
+    private static final String TAG = "TASK";
+
     static final String END_UUID;
     static final byte[] END_CMD;
     static final int UUID_LEN = 36;
@@ -68,7 +70,9 @@ class TaskImpl implements Shell.Task {
         stdin.flush();
 
         try {
-            res.code = out.get();
+            int code = out.get();
+            Utils.log(TAG, "exit code " + code);
+            res.code = code;
             err.get();
         } catch (ExecutionException | InterruptedException e) {
             throw (InterruptedIOException) new InterruptedIOException().initCause(e);
