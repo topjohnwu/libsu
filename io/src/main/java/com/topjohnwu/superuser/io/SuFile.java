@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -51,9 +52,10 @@ import java.util.Locale;
  * The following commands require {@code toybox} on Android 6.0 and higher, or {@code busybox}
  * to support legacy devices: {@code readlink}, {@code touch}, and {@code stat}.
  * <p>
- * This class has handy factory methods {@code SuFile.open(...)} for obtaining {@link File}
+ * This class has a few factory methods {@code SuFile.open(...)} for obtaining {@link File}
  * instances. These factory methods will return a normal {@link File} instance if the main
- * shell does not have root access, or else return a {@link SuFile} instance.
+ * shell does not have root access, or else return a {@link SuFile} instance. Warning: these
+ * factory methods may block the calling thread if a main shell has not been created yet!
  */
 public class SuFile extends File {
 
@@ -61,19 +63,19 @@ public class SuFile extends File {
     private Shell mShell;
 
     public static File open(String pathname) {
-        return Shell.rootAccess() ? new SuFile(pathname) : new File(pathname);
+        return Utils.isMainShellRoot() ? new SuFile(pathname) : new File(pathname);
     }
 
     public static File open(String parent, String child) {
-        return Shell.rootAccess() ? new SuFile(parent, child) : new File(parent, child);
+        return Utils.isMainShellRoot() ? new SuFile(parent, child) : new File(parent, child);
     }
 
     public static File open(File parent, String child) {
-        return Shell.rootAccess() ? new SuFile(parent, child) : new File(parent, child);
+        return Utils.isMainShellRoot() ? new SuFile(parent, child) : new File(parent, child);
     }
 
     public static File open(URI uri) {
-        return Shell.rootAccess() ? new SuFile(uri) : new File(uri);
+        return Utils.isMainShellRoot() ? new SuFile(uri) : new File(uri);
     }
 
     SuFile(@NonNull File file) {

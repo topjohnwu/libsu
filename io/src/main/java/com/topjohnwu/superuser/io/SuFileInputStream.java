@@ -18,8 +18,8 @@ package com.topjohnwu.superuser.io;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
+import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,7 +58,7 @@ public final class SuFileInputStream {
                 // Try normal FileInputStream
                 return new FileInputStream(file);
             } catch (FileNotFoundException e) {
-                if (!Shell.rootAccess())
+                if (!Utils.isMainShellRoot())
                     throw e;
                 return IOFactory.fifoIn(new SuFile(file));
             }

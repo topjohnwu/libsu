@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -162,5 +163,13 @@ public final class Utils {
 
     synchronized static void setConfirmedRootState(boolean value) {
         currentRootState = value ? 2 : 0;
+    }
+
+    public static boolean isRootPossible() {
+        return !Objects.equals(isAppGrantedRoot(), Boolean.FALSE);
+    }
+
+    public static boolean isMainShellRoot() {
+        return MainShell.get().isRoot();
     }
 }
