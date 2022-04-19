@@ -94,6 +94,9 @@ public final class MainShell {
     }
 
     public static synchronized void setBuilder(Shell.Builder builder) {
+        if (isInitMain || getCached() != null) {
+            throw new IllegalArgumentException("Main shell has been initialized");
+        }
         mainBuilder = (BuilderImpl) builder;
     }
 
