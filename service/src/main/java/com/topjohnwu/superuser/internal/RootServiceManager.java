@@ -39,6 +39,7 @@ import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -141,6 +142,12 @@ public class RootServiceManager implements Handler.Callback {
 
     private Shell.Task startRootProcess(ComponentName name, String action) {
         Context context = Utils.getContext();
+
+        if (Utils.hasStartupAgents(context)) {
+            Log.w(TAG, "Warning: JVMTI agent is enabled, " +
+                    "read RootService javadoc for more info.");
+        }
+
         if (filterAction == null) {
             filterAction = UUID.randomUUID().toString();
             // Register receiver to receive binder from root process

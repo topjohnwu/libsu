@@ -108,6 +108,13 @@ public final class Utils {
         return context;
     }
 
+    public static boolean hasStartupAgents(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+            return false;
+        File agents = new File(context.getCodeCacheDir(), "startup_agents");
+        return agents.isDirectory();
+    }
+
     public static boolean isSynchronized(Collection<?> collection) {
         if (synchronizedCollectionClass == null) {
             synchronizedCollectionClass =
