@@ -19,6 +19,7 @@ package com.topjohnwu.libsuexample;
 import static com.topjohnwu.libsuexample.MainActivity.TAG;
 
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.Process;
 import android.util.Log;
@@ -26,6 +27,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.ipc.RootService;
+import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
 
 import java.util.UUID;
 
@@ -59,13 +61,18 @@ class AIDLService extends RootService {
         public String getUUID() {
             return uuid;
         }
+
+        @Override
+        public IBinder getFS() {
+            return fs;
+        }
     }
 
-    private String uuid;
+    private final String uuid = UUID.randomUUID().toString();
+    private final Binder fs = FileSystemApi.createBinder();
 
     @Override
     public void onCreate() {
-        uuid = UUID.randomUUID().toString();
         Log.d(TAG, "AIDLService: onCreate, " + uuid);
     }
 

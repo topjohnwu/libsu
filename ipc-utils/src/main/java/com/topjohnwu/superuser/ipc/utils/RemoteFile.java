@@ -16,13 +16,14 @@
 
 package com.topjohnwu.superuser.ipc.utils;
 
-import android.os.Bundle;
 import android.os.RemoteException;
 import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
+import com.topjohnwu.superuser.internal.ExtendedFile;
 import com.topjohnwu.superuser.internal.IFileSystemService;
+import com.topjohnwu.superuser.internal.ParcelValues;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,30 +31,53 @@ import java.io.IOException;
 /**
  * Represents a {@link File} instance on a remote process.
  */
-public class RemoteFile extends File {
+public class RemoteFile extends ExtendedFile<RemoteFile> {
 
-    private final IFileSystemService fs;
+    final IFileSystemService fs;
+
+    private static final Creator<RemoteFile> CREATOR = new Creator<RemoteFile>() {
+
+        @Override
+        public RemoteFile[] createArray(int n) {
+            return new RemoteFile[n];
+        }
+
+        @Override
+        public RemoteFile create(RemoteFile self, String path) {
+            return new RemoteFile(self.fs, path);
+        }
+
+        @Override
+        public RemoteFile createChild(RemoteFile parent, String name) {
+            return new RemoteFile(parent.fs, new File(parent, name).getAbsolutePath());
+        }
+    };
 
     /**
      * Create a new file instance on a remote process.
      * @param remote the remote process's filesystem API
      * @param file the file path
      */
-    public RemoteFile(FileSystem.Remote remote, File file) {
-        super(file.getAbsolutePath());
+    public RemoteFile(FileSystemApi.Remote remote, File file) {
+        super(file.getAbsolutePath(), CREATOR);
         fs = remote.fs;
+    }
+
+    private RemoteFile(IFileSystemService f, String path) {
+        super(path, CREATOR);
+        fs = f;
     }
 
     @Override
     @NonNull
     public String getCanonicalPath() throws IOException {
         try {
-            Bundle b = fs.getCanonicalPath(getPath());
-            String ex = b.getString("error");
+            ParcelValues b = fs.getCanonicalPath(getPath());
+            IOException ex = b.getTyped(0);
             if (ex != null) {
-                throw new IOException("Remote IOException: " + ex);
+                throw ex;
             }
-            return b.getString("result", getPath());
+            return b.getTyped(1);
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -105,6 +129,42 @@ public class RemoteFile extends File {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isBlock() {
+        try {
+            return fs.isBlock(getPath());
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isCharacter() {
+        try {
+            return fs.isCharacter(getPath());
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isSymlink() {
+        try {
+            return fs.isSymlink(getPath());
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
     @Override
     public boolean isHidden() {
         try {
@@ -135,12 +195,12 @@ public class RemoteFile extends File {
     @Override
     public boolean createNewFile() throws IOException {
         try {
-            Bundle b = fs.createNewFile(getPath());
-            String ex = b.getString("error");
+            ParcelValues b = fs.createNewFile(getPath());
+            IOException ex = b.getTyped(0);
             if (ex != null) {
-                throw new IOException("Remote IOException: " + ex);
+                throw ex;
             }
-            return b.getBoolean("result", false);
+            return b.getTyped(1);
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -157,7 +217,7 @@ public class RemoteFile extends File {
 
     @Override
     public void deleteOnExit() {
-        throw new IllegalStateException("deleteOnExit() is not supported in RemoteFile");
+        throw new UnsupportedOperationException("deleteOnExit() is not supported in RemoteFile");
     }
 
     @Override

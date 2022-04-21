@@ -16,34 +16,43 @@
 
 package com.topjohnwu.libsuexample;
 
+import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
+import static android.os.ParcelFileDescriptor.MODE_WRITE_ONLY;
 import static com.topjohnwu.libsuexample.MainActivity.TAG;
 
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
+import com.topjohnwu.superuser.internal.ExtendedFile;
 import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
+import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
+import com.topjohnwu.superuser.ipc.utils.RemoteFile;
+import com.topjohnwu.superuser.ipc.utils.RemoteFileChannel;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class StressTest {
 
-    private static List<String> console;
+    private static final Random r = new Random();
+
+    private static FileSystemApi.Remote fs;
     private static FileCallback callback;
-    private static final byte[] buf = new byte[64 * 1024];
 
     interface FileCallback {
-        void onFile(SuFile file) throws Exception;
+        void onFile(ExtendedFile<?> file) throws Exception;
     }
 
-    public static void perform(List<String> c) {
-        console = c;
+    public static void perform(FileSystemApi.Remote s) {
+        fs = s;
         Shell.EXECUTOR.execute(() -> {
             try {
-                run();
+                //testShellIO();
+                testRemoteIO();
             } catch (Exception e){
                 Log.d(TAG, "", e);
             } finally {
@@ -54,29 +63,18 @@ public class StressTest {
 
     public static void cancel() {
         // These shall force tons of exceptions and cancel the thread :)
-        console = null;
         callback = null;
+        fs = null;
     }
 
-    private static void run() throws Exception {
-        // Change to a more reasonable path if you don't want the
-        // stress test to run forever
-        SuFile root = new SuFile("/system");
-
-        // This will stress test excessive root commands as SuFile runs
-        // a bunch of them in a short period of time
-        callback = file -> {
-            file.isCharacter();
-            file.isBlock();
-            file.isSymlink();
-        };
-        traverse(root);
+    private static void testShellIO() throws Exception {
+        SuFile root = new SuFile("/system/app");
 
         // Stress test fifo IOStreams
         OutputStream out = IOFactory.fifoOut(new SuFile("/dev/null"), false);
-        Random r = new Random();
+        byte[] buf = new byte[64 * 1024];
         callback = file -> {
-            try (InputStream in = IOFactory.fifoIn(file)) {
+            try (InputStream in = IOFactory.fifoIn((SuFile) file)) {
                 for (;;) {
                     // Randomize read/write length to test unaligned I/O
                     int len = r.nextInt(buf.length);
@@ -95,13 +93,41 @@ public class StressTest {
         }
     }
 
-    private static void traverse(SuFile base) throws Exception {
-        console.add(base.getPath());
+    private static void testRemoteIO() throws Exception {
+        RemoteFile root = new RemoteFile(fs, new File("/system/app"));
+
+        // Stress test fifo IOStreams
+        RemoteFile n = new RemoteFile(fs, new File("/dev/null"));
+        RemoteFileChannel out = new RemoteFileChannel(n, MODE_WRITE_ONLY);
+        ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);
+        callback = file -> {
+            Log.d(TAG, file.getPath());
+            try (RemoteFileChannel src = new RemoteFileChannel((RemoteFile) file, MODE_READ_ONLY)) {
+                for (;;) {
+                    // Randomize read/write length
+                    int len = r.nextInt(buf.capacity());
+                    buf.limit(len);
+                    if (src.read(buf) <= 0)
+                        break;
+                    buf.flip();
+                    out.write(buf);
+                    buf.clear();
+                }
+            }
+        };
+        try {
+            traverse(root);
+        } finally {
+            out.close();
+        }
+    }
+
+    private static void traverse(ExtendedFile<?> base) throws Exception {
         if (base.isDirectory()) {
-            SuFile[] ls = base.listFiles();
+            ExtendedFile<?>[] ls = base.listFiles();
             if (ls == null)
                 return;
-            for (SuFile file : ls) {
+            for (ExtendedFile<?> file : ls) {
                 traverse(file);
             }
         } else {

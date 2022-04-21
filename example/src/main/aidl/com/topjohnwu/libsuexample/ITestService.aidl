@@ -7,4 +7,5 @@ interface ITestService {
     int getPid();
     int getUid();
     String getUUID();
+    IBinder getFS();
 }

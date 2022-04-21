@@ -41,4 +41,5 @@ dependencies {
     implementation(project(":io"))
     implementation(project(":busybox"))
     implementation(project(":service"))
+    implementation(project(":ipc-utils"))
 }
