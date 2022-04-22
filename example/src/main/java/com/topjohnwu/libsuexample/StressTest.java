@@ -23,9 +23,9 @@ import static com.topjohnwu.libsuexample.MainActivity.TAG;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.ExtendedFile;
 import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
+import com.topjohnwu.superuser.io.ExtendedFile;
 import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
 import com.topjohnwu.superuser.ipc.utils.RemoteFile;
 import com.topjohnwu.superuser.ipc.utils.RemoteFileChannel;
@@ -44,7 +44,7 @@ public class StressTest {
     private static FileCallback callback;
 
     interface FileCallback {
-        void onFile(ExtendedFile<?> file) throws Exception;
+        void onFile(ExtendedFile file) throws Exception;
     }
 
     public static void perform(FileSystemApi.Remote s) {
@@ -122,12 +122,12 @@ public class StressTest {
         }
     }
 
-    private static void traverse(ExtendedFile<?> base) throws Exception {
+    private static void traverse(ExtendedFile base) throws Exception {
         if (base.isDirectory()) {
-            ExtendedFile<?>[] ls = base.listFiles();
+            ExtendedFile[] ls = base.listFiles();
             if (ls == null)
                 return;
-            for (ExtendedFile<?> file : ls) {
+            for (ExtendedFile file : ls) {
                 traverse(file);
             }
         } else {

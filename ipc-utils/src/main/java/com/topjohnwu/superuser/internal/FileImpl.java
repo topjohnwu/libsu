@@ -20,6 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 
+import com.topjohnwu.superuser.io.ExtendedFile;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
@@ -27,29 +29,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public abstract class ExtendedFile<T extends ExtendedFile<?>> extends File {
+public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
 
     private final Creator<T> c;
 
-    protected ExtendedFile(String absolutePath, Creator<T> creator) {
+    protected FileImpl(String absolutePath, Creator<T> creator) {
         super(absolutePath);
         c = creator;
     }
-
-    /**
-     * @return true if the abstract pathname denotes a block device.
-     */
-    public abstract boolean isBlock();
-
-    /**
-     * @return true if the abstract pathname denotes a character device.
-     */
-    public abstract boolean isCharacter();
-
-    /**
-     * @return true if the abstract pathname denotes a symbolic link file.
-     */
-    public abstract boolean isSymlink();
 
     @SuppressWarnings("unchecked")
     private T asT() {

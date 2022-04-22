@@ -21,7 +21,7 @@ import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.internal.ExtendedFile;
+import com.topjohnwu.superuser.internal.FileImpl;
 import com.topjohnwu.superuser.internal.IFileSystemService;
 import com.topjohnwu.superuser.internal.ParcelValues;
 
@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Represents a {@link File} instance on a remote process.
  */
-public class RemoteFile extends ExtendedFile<RemoteFile> {
+public class RemoteFile extends FileImpl<RemoteFile> {
 
     final IFileSystemService fs;
 

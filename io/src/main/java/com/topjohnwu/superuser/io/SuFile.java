@@ -22,7 +22,7 @@ import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
-import com.topjohnwu.superuser.internal.ExtendedFile;
+import com.topjohnwu.superuser.internal.FileImpl;
 import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
@@ -55,7 +55,7 @@ import java.util.Locale;
  * shell does not have root access, or else return a {@link SuFile} instance. Warning: these
  * factory methods may block the calling thread if a main shell has not been created yet!
  */
-public class SuFile extends ExtendedFile<SuFile> {
+public class SuFile extends FileImpl<SuFile> {
 
     private final String escapedPath;
     private Shell mShell;
