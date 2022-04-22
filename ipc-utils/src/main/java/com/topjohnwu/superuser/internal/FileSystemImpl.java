@@ -224,7 +224,9 @@ public class FileSystemImpl extends IFileSystemService.Stub {
         FileDescriptor fd;
         FileDescriptor read;
         FileDescriptor write;
-        ByteBuffer buf;
+
+        private ByteBuffer buf;
+        private StructStat st;
 
         @Override
         public void close() {
@@ -245,6 +247,19 @@ public class FileSystemImpl extends IFileSystemService.Stub {
         void ensureOpen() throws ClosedChannelException {
             if (fd == null || read == null || write == null)
                 throw new ClosedChannelException();
+        }
+
+        synchronized ByteBuffer getBuf() {
+            if (buf == null)
+                buf = ByteBuffer.allocateDirect(PIPE_CAPACITY);
+            buf.clear();
+            return buf;
+        }
+
+        synchronized StructStat getStat() throws ErrnoException {
+            if (st == null)
+                st = Os.fstat(fd);
+            return st;
         }
     }
 
@@ -317,8 +332,27 @@ public class FileSystemImpl extends IFileSystemService.Stub {
                     Int64Ref inOff = offset < 0 ? null : new Int64Ref(offset);
                     result = FileUtils.splice(h.fd, inOff, h.write, null, len, 0);
                 } else {
-                    MutableLong inOff = offset < 0 ? null : new MutableLong(offset);
-                    result = FileUtils.sendfile(h.write, h.fd, inOff, len);
+                    StructStat st = h.getStat();
+                    if (OsConstants.S_ISREG(st.st_mode) || OsConstants.S_ISBLK(st.st_mode)) {
+                        // sendfile only supports reading from mmap-able files
+                        MutableLong inOff = offset < 0 ? null : new MutableLong(offset);
+                        result = FileUtils.sendfile(h.write, h.fd, inOff, len);
+                    } else {
+                        // Fallback to copy into internal buffer
+                        ByteBuffer buf = h.getBuf();
+                        buf.limit(Math.min(len, buf.capacity()));
+                        if (offset < 0) {
+                            Os.read(h.fd, buf);
+                        } else {
+                            Os.pread(h.fd, buf, offset);
+                        }
+                        buf.flip();
+                        result = buf.remaining();
+                        // Need to write all bytes
+                        for (int sz = (int) result; sz > 0;) {
+                            sz -= Os.write(h.write, buf);
+                        }
+                    }
                 }
             }
             values.add((int) result);
@@ -348,22 +382,19 @@ public class FileSystemImpl extends IFileSystemService.Stub {
                 } else {
                     // Unfortunately, sendfile does not allow reading from pipes.
                     // Manually read into an internal buffer then write to output.
-                    if (h.buf == null) {
-                        h.buf = ByteBuffer.allocateDirect(PIPE_CAPACITY);
-                    }
+                    ByteBuffer buf = h.getBuf();
                     int sz = 0;
-                    h.buf.clear();
-                    h.buf.limit(len);
+                    buf.limit(len);
                     // Need to read and write exactly len bytes
                     while (len > sz) {
-                        sz += Os.read(h.read, h.buf);
+                        sz += Os.read(h.read, buf);
                     }
-                    h.buf.flip();
+                    buf.flip();
                     while (sz > 0) {
                         if (offset < 0) {
-                            sz -= Os.write(h.fd, h.buf);
+                            sz -= Os.write(h.fd, buf);
                         } else {
-                            int w = Os.pwrite(h.fd, h.buf, offset);
+                            int w = Os.pwrite(h.fd, buf, offset);
                             sz -= w;
                             offset += w;
                         }

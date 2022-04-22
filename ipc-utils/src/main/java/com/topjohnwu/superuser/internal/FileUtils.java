@@ -44,17 +44,9 @@ import java.lang.reflect.Method;
 
 class FileUtils {
 
-    private static final Object os;
+    private static Object os;
     private static Method splice;
     private static Method sendfile;
-
-    static {
-        try {
-            os = Class.forName("libcore.io.Libcore").getField("os").get(null);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException();
-        }
-    }
 
     static int pfdModeToPosix(int mode) {
         int res;
@@ -111,6 +103,9 @@ class FileUtils {
             return result;
         } else {
             try {
+                if (os == null) {
+                    os = Class.forName("libcore.io.Libcore").getField("os").get(null);
+                }
                 if (sendfile == null) {
                     sendfile = os.getClass().getMethod("sendfile",
                             FileDescriptor.class, FileDescriptor.class,
