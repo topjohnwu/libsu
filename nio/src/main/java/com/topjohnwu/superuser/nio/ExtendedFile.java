@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.io;
+package com.topjohnwu.superuser.nio;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

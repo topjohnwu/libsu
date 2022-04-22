@@ -25,10 +25,10 @@ import android.util.Log;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
-import com.topjohnwu.superuser.io.ExtendedFile;
-import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
-import com.topjohnwu.superuser.ipc.utils.RemoteFile;
-import com.topjohnwu.superuser.ipc.utils.RemoteFileChannel;
+import com.topjohnwu.superuser.nio.ExtendedFile;
+import com.topjohnwu.superuser.nio.FileSystemApi;
+import com.topjohnwu.superuser.nio.RemoteFile;
+import com.topjohnwu.superuser.nio.RemoteFileChannel;
 
 import java.io.File;
 import java.io.InputStream;

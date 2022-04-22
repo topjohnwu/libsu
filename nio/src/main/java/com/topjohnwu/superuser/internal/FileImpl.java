@@ -20,7 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 
-import com.topjohnwu.superuser.io.ExtendedFile;
+import com.topjohnwu.superuser.nio.ExtendedFile;
 
 import java.io.File;
 import java.io.FileFilter;

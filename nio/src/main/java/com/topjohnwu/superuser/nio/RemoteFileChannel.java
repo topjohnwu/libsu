@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.ipc.utils;
+package com.topjohnwu.superuser.nio;
 
 import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
 import static android.os.ParcelFileDescriptor.MODE_READ_WRITE;

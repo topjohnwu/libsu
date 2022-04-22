@@ -38,7 +38,7 @@ import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ipc.RootService;
-import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemApi;
 
 import java.io.IOException;
 import java.io.InputStream;

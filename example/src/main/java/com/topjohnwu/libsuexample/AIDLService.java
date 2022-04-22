@@ -27,7 +27,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.ipc.RootService;
-import com.topjohnwu.superuser.ipc.utils.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemApi;
 
 import java.util.UUID;
 

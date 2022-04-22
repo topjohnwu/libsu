@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.ipc.utils;
+package com.topjohnwu.superuser.nio;
 
 import android.os.RemoteException;
 import android.system.OsConstants;

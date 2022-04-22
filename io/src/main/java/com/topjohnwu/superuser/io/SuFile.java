@@ -24,6 +24,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.internal.FileImpl;
 import com.topjohnwu.superuser.internal.Utils;
+import com.topjohnwu.superuser.nio.ExtendedFile;
 
 import java.io.File;
 import java.io.FilenameFilter;
