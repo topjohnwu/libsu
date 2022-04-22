@@ -33,8 +33,13 @@ public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
 
     private final Creator<T> c;
 
-    protected FileImpl(String absolutePath, Creator<T> creator) {
-        super(absolutePath);
+    protected FileImpl(String pathname, Creator<T> creator) {
+        super(pathname);
+        c = creator;
+    }
+
+    protected FileImpl(String parent, String child, Creator<T> creator) {
+        super(parent, child);
         c = creator;
     }
 
@@ -105,7 +110,7 @@ public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
     }
 
     protected interface Creator<T extends File> {
-        T create(T self, String pathname);
+        T create(T src, String pathname);
         T createChild(T parent, String name);
         T[] createArray(int n);
     }

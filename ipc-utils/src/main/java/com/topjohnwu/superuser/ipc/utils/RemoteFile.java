@@ -43,8 +43,8 @@ public class RemoteFile extends FileImpl<RemoteFile> {
         }
 
         @Override
-        public RemoteFile create(RemoteFile self, String path) {
-            return new RemoteFile(self.fs, path);
+        public RemoteFile create(RemoteFile src, String path) {
+            return new RemoteFile(src.fs, path);
         }
 
         @Override

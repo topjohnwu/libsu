@@ -19,6 +19,8 @@ package com.topjohnwu.superuser.io;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.topjohnwu.superuser.internal.LocalFile;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
@@ -28,30 +30,46 @@ import java.net.URI;
 public abstract class ExtendedFile extends File {
 
     /**
+     * @see File#File(String)
+     */
+    @NonNull
+    public static ExtendedFile get(@NonNull String pathname) {
+        return new LocalFile(pathname);
+    }
+
+    /**
+     * @see File#File(String, String)
+     */
+    @NonNull
+    public static ExtendedFile get(@Nullable String parent, @NonNull String child) {
+        return new LocalFile(parent, child);
+    }
+
+    /**
      * {@inheritDoc}
      */
-    public ExtendedFile(@NonNull String pathname) {
+    protected ExtendedFile(@NonNull String pathname) {
         super(pathname);
     }
 
     /**
      * {@inheritDoc}
      */
-    public ExtendedFile(@Nullable String parent, @NonNull String child) {
+    protected ExtendedFile(@Nullable String parent, @NonNull String child) {
         super(parent, child);
     }
 
     /**
      * {@inheritDoc}
      */
-    public ExtendedFile(@Nullable File parent, @NonNull String child) {
+    protected ExtendedFile(@Nullable File parent, @NonNull String child) {
         super(parent, child);
     }
 
     /**
      * {@inheritDoc}
      */
-    public ExtendedFile(@NonNull URI uri) {
+    protected ExtendedFile(@NonNull URI uri) {
         super(uri);
     }
 

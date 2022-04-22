@@ -60,20 +60,23 @@ public class SuFile extends FileImpl<SuFile> {
     private final String escapedPath;
     private Shell mShell;
 
-    public static File open(String pathname) {
-        return Utils.isMainShellRoot() ? new SuFile(pathname) : new File(pathname);
+    public static ExtendedFile open(String pathname) {
+        return Utils.isMainShellRoot() ? new SuFile(pathname) : ExtendedFile.get(pathname);
     }
 
-    public static File open(String parent, String child) {
-        return Utils.isMainShellRoot() ? new SuFile(parent, child) : new File(parent, child);
+    public static ExtendedFile open(String parent, String child) {
+        return Utils.isMainShellRoot() ?
+                new SuFile(parent, child) : ExtendedFile.get(parent, child);
     }
 
-    public static File open(File parent, String child) {
-        return Utils.isMainShellRoot() ? new SuFile(parent, child) : new File(parent, child);
+    public static ExtendedFile open(File parent, String child) {
+        return Utils.isMainShellRoot() ?
+                new SuFile(parent, child) : ExtendedFile.get(parent.getPath(), child);
     }
 
-    public static File open(URI uri) {
-        return Utils.isMainShellRoot() ? new SuFile(uri) : new File(uri);
+    public static ExtendedFile open(URI uri) {
+        return Utils.isMainShellRoot() ?
+                new SuFile(uri) : ExtendedFile.get(new File(uri).getPath());
     }
 
     private static final Creator<SuFile> CREATOR = new Creator<SuFile>() {
@@ -84,7 +87,7 @@ public class SuFile extends FileImpl<SuFile> {
         }
 
         @Override
-        public SuFile create(SuFile self, String path) {
+        public SuFile create(SuFile src, String path) {
             return new SuFile(new File(path));
         }
 
