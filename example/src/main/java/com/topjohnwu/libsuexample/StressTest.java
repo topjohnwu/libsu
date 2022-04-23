@@ -27,31 +27,29 @@ import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemApi;
-import com.topjohnwu.superuser.nio.RemoteFile;
-import com.topjohnwu.superuser.nio.RemoteFileChannel;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Random;
 
 public class StressTest {
 
     private static final Random r = new Random();
 
-    private static FileSystemApi.Remote fs;
+    private static FileSystemApi fs;
     private static FileCallback callback;
 
     interface FileCallback {
         void onFile(ExtendedFile file) throws Exception;
     }
 
-    public static void perform(FileSystemApi.Remote s) {
+    public static void perform(FileSystemApi s) {
         fs = s;
         Shell.EXECUTOR.execute(() -> {
             try {
-                //testShellIO();
+                testShellIO();
                 testRemoteIO();
             } catch (Exception e){
                 Log.d(TAG, "", e);
@@ -94,15 +92,13 @@ public class StressTest {
     }
 
     private static void testRemoteIO() throws Exception {
-        RemoteFile root = new RemoteFile(fs, new File("/system/app"));
+        ExtendedFile root = fs.getFile("/system/app");
 
-        // Stress test fifo IOStreams
-        RemoteFile n = new RemoteFile(fs, new File("/dev/null"));
-        RemoteFileChannel out = new RemoteFileChannel(n, MODE_WRITE_ONLY);
+        FileChannel out = fs.openChannel("/dev/null", MODE_WRITE_ONLY);
         ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);
         callback = file -> {
             Log.d(TAG, file.getPath());
-            try (RemoteFileChannel src = new RemoteFileChannel((RemoteFile) file, MODE_READ_ONLY)) {
+            try (FileChannel src = fs.openChannel(file, MODE_READ_ONLY)) {
                 for (;;) {
                     // Randomize read/write length
                     int len = r.nextInt(buf.capacity());

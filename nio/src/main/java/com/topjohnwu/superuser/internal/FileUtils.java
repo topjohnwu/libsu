@@ -34,6 +34,7 @@ import android.os.Build;
 import android.system.ErrnoException;
 import android.system.Int64Ref;
 import android.system.Os;
+import android.util.ArraySet;
 import android.util.MutableLong;
 
 import androidx.annotation.RequiresApi;
@@ -41,12 +42,23 @@ import androidx.annotation.RequiresApi;
 import java.io.FileDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Set;
 
 class FileUtils {
 
     private static Object os;
     private static Method splice;
     private static Method sendfile;
+
+    static class Flag {
+        boolean read;
+        boolean write;
+        boolean create;
+        boolean truncate;
+        boolean append;
+    }
 
     static int pfdModeToPosix(int mode) {
         int res;
@@ -69,6 +81,64 @@ class FileUtils {
             res |= O_APPEND;
         }
         return res;
+    }
+
+    @RequiresApi(api = 26)
+    static Set<OpenOption> pfdModeToOptions(int mode) {
+        Set<OpenOption> set = new ArraySet<>();
+        if ((mode & MODE_READ_WRITE) == MODE_READ_WRITE) {
+            set.add(StandardOpenOption.READ);
+            set.add(StandardOpenOption.WRITE);
+        } else if ((mode & MODE_WRITE_ONLY) == MODE_WRITE_ONLY) {
+            set.add(StandardOpenOption.WRITE);
+        } else if ((mode & MODE_READ_ONLY) == MODE_READ_ONLY) {
+            set.add(StandardOpenOption.READ);
+        } else {
+            throw new IllegalArgumentException("Bad mode: " + mode);
+        }
+        if ((mode & MODE_CREATE) == MODE_CREATE) {
+            set.add(StandardOpenOption.CREATE);
+        }
+        if ((mode & MODE_TRUNCATE) == MODE_TRUNCATE) {
+            set.add(StandardOpenOption.TRUNCATE_EXISTING);
+        }
+        if ((mode & MODE_APPEND) == MODE_APPEND) {
+            set.add(StandardOpenOption.APPEND);
+        }
+        return set;
+    }
+
+    static Flag pfdModeToFlag(int mode) {
+        Flag f = new Flag();
+        if ((mode & MODE_READ_WRITE) == MODE_READ_WRITE) {
+            f.read = true;
+            f.write = true;
+        } else if ((mode & MODE_WRITE_ONLY) == MODE_WRITE_ONLY) {
+            f.write = true;
+        } else if ((mode & MODE_READ_ONLY) == MODE_READ_ONLY) {
+            f.read = true;
+        } else {
+            throw new IllegalArgumentException("Bad mode: " + mode);
+        }
+        if ((mode & MODE_CREATE) == MODE_CREATE) {
+            f.create = true;
+        }
+        if ((mode & MODE_TRUNCATE) == MODE_TRUNCATE) {
+            f.truncate = true;
+        }
+        if ((mode & MODE_APPEND) == MODE_APPEND) {
+            f.append = true;
+        }
+
+        // Validate flags
+        if (f.append && f.read) {
+            throw new IllegalArgumentException("READ + APPEND not allowed");
+        }
+        if (f.append && f.truncate) {
+            throw new IllegalArgumentException("APPEND + TRUNCATE not allowed");
+        }
+
+        return f;
     }
 
     @RequiresApi(api = 28)

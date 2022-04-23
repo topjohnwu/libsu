@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.nio;
+package com.topjohnwu.superuser.internal;
 
 import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
 import static android.os.ParcelFileDescriptor.MODE_READ_WRITE;
@@ -27,9 +27,6 @@ import android.os.RemoteException;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
-
-import com.topjohnwu.superuser.internal.IFileSystemService;
-import com.topjohnwu.superuser.internal.ParcelValues;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -44,7 +41,7 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
-public class RemoteFileChannel extends FileChannel {
+class RemoteFileChannel extends FileChannel {
 
     private static final int PIPE_CAPACITY = 16 * 4096;
 
@@ -57,8 +54,8 @@ public class RemoteFileChannel extends FileChannel {
     private final int handle;
 
     @SuppressWarnings("OctalInteger")
-    public RemoteFileChannel(RemoteFile file, int mode) throws IOException {
-        fs = file.fs;
+    RemoteFileChannel(IFileSystemService fs, File file, int mode) throws IOException {
+        this.fs = fs;
         this.mode = mode;
         try {
             // We use a FIFO created on the client side instead of opening a pipe and
@@ -68,7 +65,7 @@ public class RemoteFileChannel extends FileChannel {
             Os.mkfifo(fifo.getPath(), 0644);
 
             // Open the file on the remote process
-            handle = checkAndGet(fs.open(file.getPath(), mode, fifo.getPath()));
+            handle = checkAndGet(fs.open(file.getAbsolutePath(), mode, fifo.getPath()));
 
             // Since we do not have the machinery to interrupt native pthreads, we
             // have to make sure none of our I/O can block in all operations.

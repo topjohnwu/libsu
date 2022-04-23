@@ -76,7 +76,7 @@ public class MainActivity extends Activity implements Handler.Callback {
 
     private AIDLConnection aidlConn;
     private AIDLConnection daemonConn;
-    private FileSystemApi.Remote remoteFs;
+    private FileSystemApi remoteFs;
 
     class AIDLConnection implements ServiceConnection {
 
@@ -101,7 +101,7 @@ public class MainActivity extends Activity implements Handler.Callback {
                 consoleList.add("AIDL UID : " + ipc.getUid());
                 consoleList.add("AIDL UUID: " + ipc.getUUID());
                 if (!isDaemon)
-                    remoteFs = FileSystemApi.asRemote(ipc.getFS());
+                    remoteFs = FileSystemApi.getRemote(ipc.getFS());
             } catch (RemoteException e) {
                 Log.e(TAG, "Remote error", e);
             }

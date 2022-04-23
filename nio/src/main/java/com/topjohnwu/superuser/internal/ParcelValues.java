@@ -19,16 +19,13 @@ package com.topjohnwu.superuser.internal;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import androidx.annotation.RestrictTo;
-
 import java.util.ArrayList;
 
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public class ParcelValues extends ArrayList<Object> implements Parcelable {
+class ParcelValues extends ArrayList<Object> implements Parcelable {
 
     private static final ClassLoader cl = ParcelValues.class.getClassLoader();
 
-    public static final Creator<ParcelValues> CREATOR = new Creator<ParcelValues>() {
+    static final Creator<ParcelValues> CREATOR = new Creator<ParcelValues>() {
         @Override
         public ParcelValues createFromParcel(Parcel in) {
             return new ParcelValues(in);
@@ -40,7 +37,7 @@ public class ParcelValues extends ArrayList<Object> implements Parcelable {
         }
     };
 
-    public ParcelValues() {}
+    ParcelValues() {}
 
     private ParcelValues(Parcel in) {
         int size = in.readInt();

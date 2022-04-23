@@ -21,10 +21,7 @@ import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructStat;
 
-import androidx.annotation.RestrictTo;
-
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public class LocalFile extends FileImpl<LocalFile> {
+class LocalFile extends FileImpl<LocalFile> {
 
     private static final Creator<LocalFile> CREATOR = new Creator<LocalFile>() {
 
@@ -44,11 +41,11 @@ public class LocalFile extends FileImpl<LocalFile> {
         }
     };
 
-    public LocalFile(String pathname) {
+    LocalFile(String pathname) {
         super(pathname, CREATOR);
     }
 
-    public LocalFile(String parent, String child) {
+    LocalFile(String parent, String child) {
         super(parent, child, CREATOR);
     }
 

@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-package com.topjohnwu.superuser.nio;
+package com.topjohnwu.superuser.internal;
 
 import android.os.RemoteException;
 import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
-import com.topjohnwu.superuser.internal.FileImpl;
-import com.topjohnwu.superuser.internal.IFileSystemService;
-import com.topjohnwu.superuser.internal.ParcelValues;
-
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Represents a {@link File} instance on a remote process.
- */
-public class RemoteFile extends FileImpl<RemoteFile> {
+class RemoteFile extends FileImpl<RemoteFile> {
 
-    final IFileSystemService fs;
+    private final IFileSystemService fs;
 
     private static final Creator<RemoteFile> CREATOR = new Creator<RemoteFile>() {
 
@@ -49,22 +42,17 @@ public class RemoteFile extends FileImpl<RemoteFile> {
 
         @Override
         public RemoteFile createChild(RemoteFile parent, String name) {
-            return new RemoteFile(parent.fs, new File(parent, name).getAbsolutePath());
+            return new RemoteFile(parent.fs, parent.getPath(), name);
         }
     };
 
-    /**
-     * Create a new file instance on a remote process.
-     * @param remote the remote process's filesystem API
-     * @param file the file path
-     */
-    public RemoteFile(FileSystemApi.Remote remote, File file) {
-        super(file.getAbsolutePath(), CREATOR);
-        fs = remote.fs;
+    RemoteFile(IFileSystemService f, String path) {
+        super(path, CREATOR);
+        fs = f;
     }
 
-    private RemoteFile(IFileSystemService f, String path) {
-        super(path, CREATOR);
+    RemoteFile(IFileSystemService f, String parent, String child) {
+        super(parent, child, CREATOR);
         fs = f;
     }
 
@@ -129,9 +117,6 @@ public class RemoteFile extends FileImpl<RemoteFile> {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean isBlock() {
         try {
@@ -141,9 +126,6 @@ public class RemoteFile extends FileImpl<RemoteFile> {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean isCharacter() {
         try {
@@ -153,9 +135,6 @@ public class RemoteFile extends FileImpl<RemoteFile> {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean isSymlink() {
         try {

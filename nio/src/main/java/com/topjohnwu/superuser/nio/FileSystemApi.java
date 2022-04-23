@@ -17,61 +17,111 @@
 package com.topjohnwu.superuser.nio;
 
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Message;
+import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import com.topjohnwu.superuser.internal.FileSystemImpl;
-import com.topjohnwu.superuser.internal.IFileSystemService;
+import com.topjohnwu.superuser.internal.NIOFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.channels.FileChannel;
 
 /**
- * Expose filesystem APIs over Binder.
- *
- * In the remote process, create a new {@link Binder} object that exposes filesystem APIs by
- * calling {@link #createBinder()}. You can then pass this {@link Binder} object in many different
- * ways, such as adding it to an Intent, sending it with {@link Message}es, returning it in the
- * {@code onBind()} of bind / root services, or returning it in an AIDL interface.
- *
- * In the client process, create a {@link Remote} instance by passing the remote {@link IBinder}
- * proxy you received to {@link #asRemote(IBinder)}. This {@link Remote} instance can then be used
- * to construct remote I/O classes, such as {@link RemoteFile}
+ * Access file system APIs.
  */
-public final class FileSystemApi {
+public abstract class FileSystemApi {
 
-    // The actual reason why this class exists is because we do not want to expose
-    // IFileSystemService in any API surface to keep it an internal implementation detail.
+    private static Binder fsService;
 
-    private FileSystemApi() {}
+    private static final FileSystemApi LOCAL = NIOFactory.createLocal();
 
     /**
-     * Create a new {@link Binder} instance that exposes filesystem APIs.
-     * An example use case is to return this value in {@code onBind()} of (root) services.
+     * Get the service that exposes file system APIs over Binder IPC.
+     * <p>
+     * Sending the {@link Binder} obtained from this method to a client process enables
+     * the calling process to perform file system operations on behalf of the client.
+     * This allows a client process to access files normally denied by its permissions.
+     * <p>
+     * You can pass this {@link Binder} object in many different ways, such as returning it in the
+     * {@code onBind()} method of (root) services, passing it around with a {@link Bundle},
+     * or returning it in an AIDL interface method. The receiving end will get an {@link IBinder},
+     * which should be passed to {@link #getRemote(IBinder)} for usage.
      */
     @NonNull
-    public static Binder createBinder() {
-        return new FileSystemImpl();
+    public synchronized static Binder getService() {
+        if (fsService == null)
+            fsService = NIOFactory.createFsService();
+        return fsService;
+    }
+
+    @NonNull
+    public static FileSystemApi getLocal() {
+        return LOCAL;
     }
 
     /**
-     * Create a {@link Remote} instance that exposes filesystem APIs of a remote process.
-     * @param service an instance or a remote proxy of the return value of {@link #createBinder()}
-     * @return this return value is for constructing {@link RemoteFile}
+     * Create a {@link FileSystemApi} to access file system APIs of a remote process.
+     * @param binder a remote proxy of the {@link Binder} obtained from {@link #getService()}
      */
     @NonNull
-    public static Remote asRemote(@NonNull IBinder service) {
-        return new Remote(service);
+    public static FileSystemApi getRemote(@NonNull IBinder binder) {
+        return NIOFactory.createRemote(binder);
     }
 
     /**
-     * Represents the filesystem API of a remote process.
-     * @see #asRemote(IBinder)
+     * @see File#File(String)
      */
-    public static class Remote {
-        final IFileSystemService fs;
-        Remote(IBinder b) {
-            fs = IFileSystemService.Stub.asInterface(b);
-        }
+    @NonNull
+    public abstract ExtendedFile getFile(@NonNull String pathname);
+
+    /**
+     * @see File#File(String, String)
+     */
+    @NonNull
+    public abstract ExtendedFile getFile(@Nullable String parent, @NonNull String child);
+
+    /**
+     * @see File#File(File, String)
+     */
+    @NonNull
+    public final ExtendedFile getFile(@Nullable File parent, @NonNull String child) {
+        return getFile(parent == null ? null : parent.getPath(), child);
     }
 
+    /**
+     * @see File#File(URI)
+     */
+    @NonNull
+    public final ExtendedFile getFile(@NonNull URI uri) {
+        return getFile(new File(uri).getPath());
+    }
+
+    /**
+     * Opens a file channel to access the file.
+     * @param pathname the file to be opened.
+     * @param mode same {@code mode} argument in {@link ParcelFileDescriptor#open(File, int)}
+     * @return a new FileChannel pointing to the given file.
+     * @throws IOException if the given file can not be opened with the requested mode.
+     * @see ParcelFileDescriptor#open(File, int)
+     */
+    @NonNull
+    public final FileChannel openChannel(@NonNull String pathname, int mode) throws IOException {
+        return openChannel(new File(pathname), mode);
+    }
+
+    /**
+     * Opens a file channel to access the file.
+     * @param file the file to be opened.
+     * @param mode same {@code mode} argument in {@link ParcelFileDescriptor#open(File, int)}
+     * @return a new FileChannel pointing to the given file.
+     * @throws IOException if the given file can not be opened with the requested mode.
+     * @see ParcelFileDescriptor#open(File, int)
+     */
+    @NonNull
+    public abstract FileChannel openChannel(@NonNull File file, int mode) throws IOException;
 }

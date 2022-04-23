@@ -35,7 +35,6 @@ import android.util.MutableLong;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RestrictTo;
 
 import java.io.Closeable;
 import java.io.File;
@@ -45,8 +44,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public class FileSystemImpl extends IFileSystemService.Stub {
+class FileSystemService extends IFileSystemService.Stub {
 
     // This is only for testing purpose
     private static final boolean FORCE_NO_SPLICE = false;

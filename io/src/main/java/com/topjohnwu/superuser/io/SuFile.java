@@ -25,6 +25,7 @@ import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.internal.FileImpl;
 import com.topjohnwu.superuser.internal.Utils;
 import com.topjohnwu.superuser.nio.ExtendedFile;
+import com.topjohnwu.superuser.nio.FileSystemApi;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -62,22 +63,23 @@ public class SuFile extends FileImpl<SuFile> {
     private Shell mShell;
 
     public static ExtendedFile open(String pathname) {
-        return Utils.isMainShellRoot() ? new SuFile(pathname) : ExtendedFile.get(pathname);
+        return Utils.isMainShellRoot() ?
+                new SuFile(pathname) : FileSystemApi.getLocal().getFile(pathname);
     }
 
     public static ExtendedFile open(String parent, String child) {
         return Utils.isMainShellRoot() ?
-                new SuFile(parent, child) : ExtendedFile.get(parent, child);
+                new SuFile(parent, child) : FileSystemApi.getLocal().getFile(parent, child);
     }
 
     public static ExtendedFile open(File parent, String child) {
-        return Utils.isMainShellRoot() ?
-                new SuFile(parent, child) : ExtendedFile.get(parent.getPath(), child);
+        return Utils.isMainShellRoot() ? new SuFile(parent, child) :
+                FileSystemApi.getLocal().getFile(parent.getPath(), child);
     }
 
     public static ExtendedFile open(URI uri) {
         return Utils.isMainShellRoot() ?
-                new SuFile(uri) : ExtendedFile.get(new File(uri).getPath());
+                new SuFile(uri) : FileSystemApi.getLocal().getFile(new File(uri).getPath());
     }
 
     private static final Creator<SuFile> CREATOR = new Creator<SuFile>() {
