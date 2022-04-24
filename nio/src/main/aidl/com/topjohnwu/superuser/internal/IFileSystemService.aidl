@@ -8,9 +8,6 @@ interface IFileSystemService {
     /* (err, String) */ ParcelValues getCanonicalPath(String path);
     boolean isDirectory(String path);
     boolean isFile(String path);
-    boolean isBlock(String path);
-    boolean isCharacter(String path);
-    boolean isSymlink(String path);
     boolean isHidden(String path);
     long lastModified(String path);
     long length(String path);
@@ -27,6 +24,7 @@ interface IFileSystemService {
     long getTotalSpace(String path);
     long getFreeSpace(String path);
     long getUsableSpace(String path);
+    int getMode(String path);
 
     // I/O APIs
     /* (err, int) */ ParcelValues open(String path, int mode, String fifo);

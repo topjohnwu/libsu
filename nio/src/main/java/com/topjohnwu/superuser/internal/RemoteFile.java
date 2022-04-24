@@ -16,6 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static android.os.ParcelFileDescriptor.MODE_APPEND;
+import static android.os.ParcelFileDescriptor.MODE_CREATE;
+import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
+import static android.os.ParcelFileDescriptor.MODE_TRUNCATE;
+import static android.os.ParcelFileDescriptor.MODE_WRITE_ONLY;
+
 import android.os.RemoteException;
 import android.system.OsConstants;
 
@@ -23,6 +29,9 @@ import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.Channels;
 
 class RemoteFile extends FileImpl<RemoteFile> {
 
@@ -120,7 +129,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean isBlock() {
         try {
-            return fs.isBlock(getPath());
+            return OsConstants.S_ISBLK(fs.getMode(getPath()));
         } catch (RemoteException e) {
             return false;
         }
@@ -129,7 +138,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean isCharacter() {
         try {
-            return fs.isCharacter(getPath());
+            return OsConstants.S_ISCHR(fs.getMode(getPath()));
         } catch (RemoteException e) {
             return false;
         }
@@ -138,7 +147,25 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean isSymlink() {
         try {
-            return fs.isSymlink(getPath());
+            return OsConstants.S_ISLNK(fs.getMode(getPath()));
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isNamedPipe() {
+        try {
+            return OsConstants.S_ISFIFO(fs.getMode(getPath()));
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isSocket() {
+        try {
+            return OsConstants.S_ISSOCK(fs.getMode(getPath()));
         } catch (RemoteException e) {
             return false;
         }
@@ -316,5 +343,20 @@ class RemoteFile extends FileImpl<RemoteFile> {
         } catch (RemoteException e) {
             return 0L;
         }
+    }
+
+    @Override
+    public InputStream openInputStream() throws IOException {
+        return Channels.newInputStream(new RemoteFileChannel(fs, this, MODE_READ_ONLY));
+    }
+
+    @Override
+    public OutputStream openOutputStream(boolean append) throws IOException {
+        int mode = MODE_WRITE_ONLY | MODE_CREATE;
+        if (append)
+            mode |= MODE_APPEND;
+        else
+            mode |= MODE_TRUNCATE;
+        return Channels.newOutputStream(new RemoteFileChannel(fs, this, mode));
     }
 }

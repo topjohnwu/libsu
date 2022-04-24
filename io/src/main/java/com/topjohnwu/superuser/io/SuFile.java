@@ -23,12 +23,16 @@ import androidx.annotation.NonNull;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.internal.FileImpl;
+import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.internal.Utils;
 import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemApi;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -321,6 +325,22 @@ public class SuFile extends FileImpl<SuFile> {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isNamedPipe() {
+        return cmdBool("[ -p @@ ]");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isSocket() {
+        return cmdBool("[ -S @@ ]");
+    }
+
+    /**
      * Returns the time that the file denoted by this abstract pathname was
      * last modified.
      * <p>
@@ -500,5 +520,15 @@ public class SuFile extends FileImpl<SuFile> {
             }
         }
         return out.toArray(new String[0]);
+    }
+
+    @Override
+    public InputStream openInputStream() throws IOException {
+        return IOFactory.fifoIn(this);
+    }
+
+    @Override
+    public OutputStream openOutputStream(boolean append) throws IOException {
+        return IOFactory.fifoOut(this, append);
     }
 }

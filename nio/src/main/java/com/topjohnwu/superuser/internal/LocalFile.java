@@ -21,6 +21,12 @@ import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructStat;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 class LocalFile extends FileImpl<LocalFile> {
 
     private static final Creator<LocalFile> CREATOR = new Creator<LocalFile>() {
@@ -77,5 +83,35 @@ class LocalFile extends FileImpl<LocalFile> {
         } catch (ErrnoException e) {
             return false;
         }
+    }
+
+    @Override
+    public boolean isNamedPipe() {
+        try {
+            StructStat st = Os.lstat(getPath());
+            return OsConstants.S_ISFIFO(st.st_mode);
+        } catch (ErrnoException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isSocket() {
+        try {
+            StructStat st = Os.lstat(getPath());
+            return OsConstants.S_ISSOCK(st.st_mode);
+        } catch (ErrnoException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public InputStream openInputStream() throws IOException {
+        return new FileInputStream(this);
+    }
+
+    @Override
+    public OutputStream openOutputStream(boolean append) throws IOException {
+        return new FileOutputStream(this, append);
     }
 }

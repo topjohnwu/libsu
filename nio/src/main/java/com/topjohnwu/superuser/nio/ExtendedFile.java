@@ -21,8 +21,12 @@ import androidx.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 
 public abstract class ExtendedFile extends File {
@@ -66,9 +70,31 @@ public abstract class ExtendedFile extends File {
     public abstract boolean isCharacter();
 
     /**
-     * @return true if the abstract pathname denotes a symbolic link file.
+     * @return true if the abstract pathname denotes a symbolic link.
      */
     public abstract boolean isSymlink();
+
+    /**
+     * @return true if the abstract pathname denotes a named pipe (FIFO).
+     */
+    public abstract boolean isNamedPipe();
+
+    /**
+     * @return true if the abstract pathname denotes a socket file.
+     */
+    public abstract boolean isSocket();
+
+    /**
+     * Opens an InputStream with the matching implementation of the file.
+     * @see FileInputStream#FileInputStream(File)
+     */
+    public abstract InputStream openInputStream() throws IOException;
+
+    /**
+     * Opens an OutputStream with the matching implementation of the file.
+     * @see FileOutputStream#FileOutputStream(File, boolean)
+     */
+    public abstract OutputStream openOutputStream(boolean append) throws IOException;
 
     /**
      * {@inheritDoc}

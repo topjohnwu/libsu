@@ -83,36 +83,6 @@ class FileSystemService extends IFileSystemService.Stub {
     }
 
     @Override
-    public boolean isBlock(String path) {
-        try {
-            StructStat st = Os.lstat(path);
-            return OsConstants.S_ISBLK(st.st_mode);
-        } catch (ErrnoException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isCharacter(String path) {
-        try {
-            StructStat st = Os.lstat(path);
-            return OsConstants.S_ISCHR(st.st_mode);
-        } catch (ErrnoException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isSymlink(String path) {
-        try {
-            StructStat st = Os.lstat(path);
-            return OsConstants.S_ISLNK(st.st_mode);
-        } catch (ErrnoException e) {
-            return false;
-        }
-    }
-
-    @Override
     public boolean isHidden(String path) {
         return mCache.get(path).isHidden();
     }
@@ -214,6 +184,15 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public long getUsableSpace(String path) {
         return mCache.get(path).getUsableSpace();
+    }
+
+    @Override
+    public int getMode(String path) {
+        try {
+            return Os.lstat(path).st_mode;
+        } catch (ErrnoException e) {
+            return 0;
+        }
     }
 
     // I/O APIs
