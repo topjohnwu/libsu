@@ -52,7 +52,7 @@ import java.util.Locale;
  * <p>
  * Each method description in this class will list out its required commands.
  * The following commands exist on all Android versions: {@code rm}, {@code rmdir},
- * {@code mv}, {@code ls}, and {@code mkdir}.
+ * {@code mv}, {@code ls}, {@code ln}, and {@code mkdir}.
  * The following commands require {@code toybox} on Android 6.0 and higher, or {@code busybox}
  * to support legacy devices: {@code readlink}, {@code touch}, and {@code stat}.
  * <p>
@@ -176,6 +176,36 @@ public class SuFile extends FileImpl<SuFile> {
     @Override
     public boolean createNewFile() {
         return cmdBool("[ ! -e @@ ] && echo -n > @@");
+    }
+
+    /**
+     * Creates a new hard link named by this abstract pathname of an existing file
+     * if and only if a file with this name does not yet exist.
+     * <p>
+     * Requires command {@code ln}.
+     * @param existing a path to an existing file.
+     * @return <code>true</code> if the named file does not exist and was successfully
+     *         created; <code>false</code> if the creation failed.
+     */
+    @Override
+    public boolean createNewLink(String existing) {
+        existing = ShellUtils.escapedString(existing);
+        return cmdBool("[ ! -d " + existing + " ] && ln @@ " + existing);
+    }
+
+    /**
+     * Creates a new symbolic link named by this abstract pathname to a target file
+     * if and only if a file with this name does not yet exist.
+     * <p>
+     * Requires command {@code ln}.
+     * @param target the target of the symbolic link.
+     * @return <code>true</code> if the named file does not exist and was successfully
+     *         created; <code>false</code> if the creation failed.
+     */
+    @Override
+    public boolean createNewSymlink(String target) {
+        target = ShellUtils.escapedString(target);
+        return cmdBool("[ ! -d " + target + " ] && ln -s @@ " + target);
     }
 
     /**

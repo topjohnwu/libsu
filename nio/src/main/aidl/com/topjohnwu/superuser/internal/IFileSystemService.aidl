@@ -25,6 +25,7 @@ interface IFileSystemService {
     long getFreeSpace(String path);
     long getUsableSpace(String path);
     int getMode(String path);
+    /* (err, bool) */ ParcelValues createLink(String link, String target, boolean soft);
 
     // I/O APIs
     /* (err, int) */ ParcelValues open(String path, int mode, String fifo);

@@ -195,6 +195,27 @@ class FileSystemService extends IFileSystemService.Stub {
         }
     }
 
+    @Override
+    public ParcelValues createLink(String link, String target, boolean soft) {
+        ParcelValues p = new ParcelValues();
+        try {
+            if (soft)
+                Os.symlink(target, link);
+            else
+                Os.link(target, link);
+            p.add(null);
+            p.add(true);
+        } catch (ErrnoException e) {
+            if (e.errno == OsConstants.EEXIST) {
+                p.add(null);
+            } else {
+                p.add(new IOException(e));
+            }
+            p.add(false);
+        }
+        return p;
+    }
+
     // I/O APIs
 
     static class FileHolder implements Closeable {

@@ -114,4 +114,29 @@ class LocalFile extends FileImpl<LocalFile> {
     public OutputStream openOutputStream(boolean append) throws IOException {
         return new FileOutputStream(this, append);
     }
+
+    @Override
+    public boolean createNewLink(String existing) throws IOException {
+        return createLink(existing, false);
+    }
+
+    @Override
+    public boolean createNewSymlink(String target) throws IOException {
+        return createLink(target, true);
+    }
+
+    private boolean createLink(String target, boolean soft) throws IOException {
+        try {
+            if (soft)
+                Os.symlink(target, getPath());
+            else
+                Os.link(target, getPath());
+            return true;
+        } catch (ErrnoException e) {
+            if (e.errno != OsConstants.EEXIST) {
+                throw new IOException(e);
+            }
+            return false;
+        }
+    }
 }

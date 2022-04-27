@@ -85,6 +85,26 @@ public abstract class ExtendedFile extends File {
     public abstract boolean isSocket();
 
     /**
+     * Creates a new hard link named by this abstract pathname of an existing file
+     * if and only if a file with this name does not yet exist.
+     * @param existing a path to an existing file.
+     * @return <code>true</code> if the named file does not exist and was successfully
+     *         created; <code>false</code> if the named file already exists.
+     * @throws IOException if an I/O error occurred.
+     */
+    public abstract boolean createNewLink(String existing) throws IOException;
+
+    /**
+     * Creates a new symbolic link named by this abstract pathname to a target file
+     * if and only if a file with this name does not yet exist.
+     * @param target the target of the symbolic link.
+     * @return <code>true</code> if the named file does not exist and was successfully
+     *         created; <code>false</code> if the named file already exists.
+     * @throws IOException if an I/O error occurred.
+     */
+    public abstract boolean createNewSymlink(String target) throws IOException;
+
+    /**
      * Opens an InputStream with the matching implementation of the file.
      * @see FileInputStream#FileInputStream(File)
      */
