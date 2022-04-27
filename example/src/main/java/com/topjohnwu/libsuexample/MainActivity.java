@@ -38,7 +38,7 @@ import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ipc.RootService;
-import com.topjohnwu.superuser.nio.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,7 +76,7 @@ public class MainActivity extends Activity implements Handler.Callback {
 
     private AIDLConnection aidlConn;
     private AIDLConnection daemonConn;
-    private FileSystemApi remoteFs;
+    private FileSystemManager remoteFs;
 
     class AIDLConnection implements ServiceConnection {
 
@@ -101,7 +101,7 @@ public class MainActivity extends Activity implements Handler.Callback {
                 consoleList.add("AIDL UID : " + ipc.getUid());
                 consoleList.add("AIDL UUID: " + ipc.getUUID());
                 if (!isDaemon)
-                    remoteFs = FileSystemApi.getRemote(ipc.getFS());
+                    remoteFs = FileSystemManager.getRemote(ipc.getFS());
             } catch (RemoteException e) {
                 Log.e(TAG, "Remote error", e);
             }

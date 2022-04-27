@@ -26,7 +26,7 @@ import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.nio.ExtendedFile;
-import com.topjohnwu.superuser.nio.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,14 +38,14 @@ public class StressTest {
 
     private static final Random r = new Random();
 
-    private static FileSystemApi fs;
+    private static FileSystemManager fs;
     private static FileCallback callback;
 
     interface FileCallback {
         void onFile(ExtendedFile file) throws Exception;
     }
 
-    public static void perform(FileSystemApi s) {
+    public static void perform(FileSystemManager s) {
         fs = s;
         Shell.EXECUTOR.execute(() -> {
             try {
@@ -92,7 +92,7 @@ public class StressTest {
     }
 
     private static void testRemoteIO() throws Exception {
-        ExtendedFile root = fs.getFile("/system/app");
+        ExtendedFile root = fs.newFile("/system/app");
 
         FileChannel out = fs.openChannel("/dev/null", MODE_WRITE_ONLY);
         ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);

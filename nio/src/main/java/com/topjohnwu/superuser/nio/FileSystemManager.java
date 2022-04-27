@@ -34,11 +34,11 @@ import java.nio.channels.FileChannel;
 /**
  * Access file system APIs.
  */
-public abstract class FileSystemApi {
+public abstract class FileSystemManager {
 
     private static Binder fsService;
 
-    private static final FileSystemApi LOCAL = NIOFactory.createLocal();
+    private static final FileSystemManager LOCAL = NIOFactory.createLocal();
 
     /**
      * Get the service that exposes file system APIs over Binder IPC.
@@ -60,16 +60,16 @@ public abstract class FileSystemApi {
     }
 
     @NonNull
-    public static FileSystemApi getLocal() {
+    public static FileSystemManager getLocal() {
         return LOCAL;
     }
 
     /**
-     * Create a {@link FileSystemApi} to access file system APIs of a remote process.
+     * Create a {@link FileSystemManager} to access file system APIs of a remote process.
      * @param binder a remote proxy of the {@link Binder} obtained from {@link #getService()}
      */
     @NonNull
-    public static FileSystemApi getRemote(@NonNull IBinder binder) {
+    public static FileSystemManager getRemote(@NonNull IBinder binder) {
         return NIOFactory.createRemote(binder);
     }
 
@@ -77,28 +77,28 @@ public abstract class FileSystemApi {
      * @see File#File(String)
      */
     @NonNull
-    public abstract ExtendedFile getFile(@NonNull String pathname);
+    public abstract ExtendedFile newFile(@NonNull String pathname);
 
     /**
      * @see File#File(String, String)
      */
     @NonNull
-    public abstract ExtendedFile getFile(@Nullable String parent, @NonNull String child);
+    public abstract ExtendedFile newFile(@Nullable String parent, @NonNull String child);
 
     /**
      * @see File#File(File, String)
      */
     @NonNull
-    public final ExtendedFile getFile(@Nullable File parent, @NonNull String child) {
-        return getFile(parent == null ? null : parent.getPath(), child);
+    public final ExtendedFile newFile(@Nullable File parent, @NonNull String child) {
+        return newFile(parent == null ? null : parent.getPath(), child);
     }
 
     /**
      * @see File#File(URI)
      */
     @NonNull
-    public final ExtendedFile getFile(@NonNull URI uri) {
-        return getFile(new File(uri).getPath());
+    public final ExtendedFile newFile(@NonNull URI uri) {
+        return newFile(new File(uri).getPath());
     }
 
     /**

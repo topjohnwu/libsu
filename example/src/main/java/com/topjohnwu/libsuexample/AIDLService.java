@@ -26,7 +26,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.superuser.ipc.RootService;
-import com.topjohnwu.superuser.nio.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.util.UUID;
 
@@ -63,7 +63,7 @@ class AIDLService extends RootService {
 
         @Override
         public IBinder getFS() {
-            return FileSystemApi.getService();
+            return FileSystemManager.getService();
         }
     }
 

@@ -26,7 +26,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.nio.ExtendedFile;
-import com.topjohnwu.superuser.nio.FileSystemApi;
+import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,17 +41,17 @@ public final class NIOFactory {
 
     private NIOFactory() {}
 
-    public static FileSystemApi createLocal() {
-        return new FileSystemApi() {
+    public static FileSystemManager createLocal() {
+        return new FileSystemManager() {
             @NonNull
             @Override
-            public ExtendedFile getFile(@NonNull String pathname) {
+            public ExtendedFile newFile(@NonNull String pathname) {
                 return new LocalFile(pathname);
             }
 
             @NonNull
             @Override
-            public ExtendedFile getFile(@Nullable String parent, @NonNull String child) {
+            public ExtendedFile newFile(@Nullable String parent, @NonNull String child) {
                 return new LocalFile(parent, child);
             }
 
@@ -91,19 +91,19 @@ public final class NIOFactory {
         };
     }
 
-    public static FileSystemApi createRemote(IBinder b) {
-        return new FileSystemApi() {
+    public static FileSystemManager createRemote(IBinder b) {
+        return new FileSystemManager() {
             final IFileSystemService fs = IFileSystemService.Stub.asInterface(b);
 
             @NonNull
             @Override
-            public ExtendedFile getFile(@NonNull String pathname) {
+            public ExtendedFile newFile(@NonNull String pathname) {
                 return new RemoteFile(fs, pathname);
             }
 
             @NonNull
             @Override
-            public ExtendedFile getFile(@Nullable String parent, @NonNull String child) {
+            public ExtendedFile newFile(@Nullable String parent, @NonNull String child) {
                 return new RemoteFile(fs, parent, child);
             }
 
