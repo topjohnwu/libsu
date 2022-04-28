@@ -209,7 +209,7 @@ class FileSystemService extends IFileSystemService.Stub {
             if (e.errno == OsConstants.EEXIST) {
                 p.add(null);
             } else {
-                p.add(new IOException(e));
+                p.add(e);
             }
             p.add(false);
         }
@@ -297,7 +297,7 @@ class FileSystemService extends IFileSystemService.Stub {
             }
             values.add(handle);
         } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
+            values.set(0, e);
             h.close();
         }
         return values;
@@ -354,10 +354,8 @@ class FileSystemService extends IFileSystemService.Stub {
                 }
             }
             values.add((int) result);
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }
@@ -399,10 +397,8 @@ class FileSystemService extends IFileSystemService.Stub {
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }
@@ -417,10 +413,8 @@ class FileSystemService extends IFileSystemService.Stub {
                 h.ensureOpen();
                 values.add(Os.lseek(h.fd, offset, whence));
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }
@@ -438,10 +432,8 @@ class FileSystemService extends IFileSystemService.Stub {
                 values.add(Os.lseek(h.fd, 0, SEEK_CUR));
                 Os.lseek(h.fd, cur, SEEK_SET);
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }
@@ -456,10 +448,8 @@ class FileSystemService extends IFileSystemService.Stub {
                 h.ensureOpen();
                 Os.ftruncate(h.fd, length);
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }
@@ -477,10 +467,8 @@ class FileSystemService extends IFileSystemService.Stub {
                 else
                     Os.fdatasync(h.fd);
             }
-        } catch (IOException e) {
+        } catch (IOException | ErrnoException e) {
             values.set(0, e);
-        } catch (ErrnoException e) {
-            values.set(0, new IOException(e));
         }
         return values;
     }

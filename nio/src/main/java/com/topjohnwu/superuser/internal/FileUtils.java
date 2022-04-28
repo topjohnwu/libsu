@@ -40,6 +40,8 @@ import android.util.MutableLong;
 import androidx.annotation.RequiresApi;
 
 import java.io.FileDescriptor;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.OpenOption;
@@ -47,6 +49,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Set;
 
 class FileUtils {
+
+    private static final String REMOTE_ERR_MSG = "Exception thrown on remote process";
 
     private static Object os;
     private static Method splice;
@@ -188,5 +192,33 @@ class FileUtils {
                 throw new ErrnoException("sendfile", ENOSYS);
             }
         }
+    }
+
+    static void checkException(ParcelValues values) throws IOException {
+        Throwable err = values.getTyped(0);
+        if (err == null)
+            return;
+        if (err instanceof IOException) {
+            try {
+                // Wrap the exception with its own class so that the rethrown exception
+                // has the same type. This wrapping is to make it clear that the exception
+                // originates from a remote process, not local.
+                Constructor<?> c = err.getClass().getConstructor(String.class);
+                IOException e = (IOException) c.newInstance(REMOTE_ERR_MSG);
+                e.initCause(err);
+                throw e;
+            } catch (ReflectiveOperationException e) {
+                // In theory there should be no exception without a constructor that
+                // accepts a single string as message. In this case, just rethrow.
+                throw (IOException) err;
+            }
+        } else {
+            throw new IOException(REMOTE_ERR_MSG, err);
+        }
+    }
+
+    static <T> T tryAndGet(ParcelValues values) throws IOException {
+        checkException(values);
+        return values.getTyped(1);
     }
 }

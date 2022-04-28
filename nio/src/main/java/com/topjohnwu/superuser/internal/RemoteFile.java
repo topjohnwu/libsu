@@ -66,12 +66,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @NonNull
     public String getCanonicalPath() throws IOException {
         try {
-            ParcelValues b = fs.getCanonicalPath(getPath());
-            IOException ex = b.getTyped(0);
-            if (ex != null) {
-                throw ex;
-            }
-            return b.getTyped(1);
+            return FileUtils.tryAndGet(fs.getCanonicalPath(getPath()));
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -198,12 +193,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewFile() throws IOException {
         try {
-            ParcelValues b = fs.createNewFile(getPath());
-            IOException ex = b.getTyped(0);
-            if (ex != null) {
-                throw ex;
-            }
-            return b.getTyped(1);
+            return FileUtils.tryAndGet(fs.createNewFile(getPath()));
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -212,12 +202,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewLink(String existing) throws IOException {
         try {
-            ParcelValues b = fs.createLink(getPath(), existing, false);
-            IOException ex = b.getTyped(0);
-            if (ex != null) {
-                throw ex;
-            }
-            return b.getTyped(1);
+            return FileUtils.tryAndGet(fs.createLink(getPath(), existing, false));
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -226,12 +211,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewSymlink(String target) throws IOException {
         try {
-            ParcelValues b = fs.createLink(getPath(), target, true);
-            IOException ex = b.getTyped(0);
-            if (ex != null) {
-                throw ex;
-            }
-            return b.getTyped(1);
+            return FileUtils.tryAndGet(fs.createLink(getPath(), target, true));
         } catch (RemoteException e) {
             throw new IOException(e);
         }
