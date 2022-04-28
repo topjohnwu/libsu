@@ -18,52 +18,44 @@ package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
 
 import com.topjohnwu.superuser.nio.ExtendedFile;
 
-import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
+abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
 
-    private final Creator<T> c;
-
-    protected FileImpl(String pathname, Creator<T> creator) {
+    protected FileImpl(String pathname) {
         super(pathname);
-        c = creator;
     }
 
-    protected FileImpl(String parent, String child, Creator<T> creator) {
+    protected FileImpl(String parent, String child) {
         super(parent, child);
-        c = creator;
     }
 
-    @SuppressWarnings("unchecked")
-    private T asT() {
-        return (T) this;
-    }
+    protected abstract T create(String path);
+    protected abstract T createChild(String name);
+    protected abstract T[] createArray(int n);
 
     @NonNull
     @Override
     public T getAbsoluteFile() {
-        return c.create(asT(), getAbsolutePath());
+        return create(getAbsolutePath());
     }
 
     @NonNull
     @Override
     public T getCanonicalFile() throws IOException {
-        return c.create(asT(), getCanonicalPath());
+        return create(getCanonicalPath());
     }
 
     @Nullable
     @Override
     public T getParentFile() {
-        return c.create(asT(), getParent());
+        return create(getParent());
     }
 
     @Nullable
@@ -73,9 +65,9 @@ public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
         if (ss == null)
             return null;
         int n = ss.length;
-        T[] fs = c.createArray(n);
+        T[] fs = createArray(n);
         for (int i = 0; i < n; i++) {
-            fs[i] = c.createChild(asT(), ss[i]);
+            fs[i] = createChild(ss[i]);
         }
         return fs;
     }
@@ -89,9 +81,9 @@ public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
         ArrayList<T> files = new ArrayList<>();
         for (String s : ss) {
             if ((filter == null) || filter.accept(this, s))
-                files.add(c.createChild(asT(), s));
+                files.add(createChild(s));
         }
-        return files.toArray(c.createArray(0));
+        return files.toArray(createArray(0));
     }
 
     @Nullable
@@ -102,16 +94,10 @@ public abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
             return null;
         ArrayList<T> files = new ArrayList<>();
         for (String s : ss) {
-            T f = c.createChild(asT(), s);
+            T f = createChild(s);
             if ((filter == null) || filter.accept(f))
                 files.add(f);
         }
-        return files.toArray(c.createArray(0));
-    }
-
-    protected interface Creator<T extends File> {
-        T create(T src, String pathname);
-        T createChild(T parent, String name);
-        T[] createArray(int n);
+        return files.toArray(createArray(0));
     }
 }

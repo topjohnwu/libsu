@@ -29,30 +29,27 @@ import java.io.OutputStream;
 
 class LocalFile extends FileImpl<LocalFile> {
 
-    private static final Creator<LocalFile> CREATOR = new Creator<LocalFile>() {
-
-        @Override
-        public LocalFile[] createArray(int n) {
-            return new LocalFile[n];
-        }
-
-        @Override
-        public LocalFile create(LocalFile src, String path) {
-            return new LocalFile(path);
-        }
-
-        @Override
-        public LocalFile createChild(LocalFile parent, String name) {
-            return new LocalFile(parent.getPath(), name);
-        }
-    };
-
     LocalFile(String pathname) {
-        super(pathname, CREATOR);
+        super(pathname);
     }
 
     LocalFile(String parent, String child) {
-        super(parent, child, CREATOR);
+        super(parent, child);
+    }
+
+    @Override
+    protected LocalFile create(String path) {
+        return new LocalFile(path);
+    }
+
+    @Override
+    protected LocalFile createChild(String name) {
+        return new LocalFile(getPath(), name);
+    }
+
+    @Override
+    protected LocalFile[] createArray(int n) {
+        return new LocalFile[n];
     }
 
     @Override

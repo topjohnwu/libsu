@@ -37,32 +37,29 @@ class RemoteFile extends FileImpl<RemoteFile> {
 
     private final IFileSystemService fs;
 
-    private static final Creator<RemoteFile> CREATOR = new Creator<RemoteFile>() {
-
-        @Override
-        public RemoteFile[] createArray(int n) {
-            return new RemoteFile[n];
-        }
-
-        @Override
-        public RemoteFile create(RemoteFile src, String path) {
-            return new RemoteFile(src.fs, path);
-        }
-
-        @Override
-        public RemoteFile createChild(RemoteFile parent, String name) {
-            return new RemoteFile(parent.fs, parent.getPath(), name);
-        }
-    };
-
     RemoteFile(IFileSystemService f, String path) {
-        super(path, CREATOR);
+        super(path);
         fs = f;
     }
 
     RemoteFile(IFileSystemService f, String parent, String child) {
-        super(parent, child, CREATOR);
+        super(parent, child);
         fs = f;
+    }
+
+    @Override
+    protected RemoteFile create(String path) {
+        return new RemoteFile(fs, path);
+    }
+
+    @Override
+    protected RemoteFile createChild(String name) {
+        return new RemoteFile(fs, getPath(), name);
+    }
+
+    @Override
+    protected RemoteFile[] createArray(int n) {
+        return new RemoteFile[n];
     }
 
     @Override
