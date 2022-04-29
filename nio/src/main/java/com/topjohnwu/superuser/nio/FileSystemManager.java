@@ -22,6 +22,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.os.RemoteException;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -117,9 +118,10 @@ public abstract class FileSystemManager {
      * Calling these APIs will throw {@link UnsupportedOperationException}.
      *
      * @param binder a remote proxy of the {@link Binder} obtained from {@link #getService()}
+     * @throws RemoteException if the remote process has died.
      */
     @NonNull
-    public static FileSystemManager getRemote(@NonNull IBinder binder) {
+    public static FileSystemManager getRemote(@NonNull IBinder binder) throws RemoteException {
         return NIOFactory.createRemote(binder);
     }
 

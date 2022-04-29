@@ -28,6 +28,7 @@ interface IFileSystemService {
     /* (err, bool) */ ParcelValues createLink(String link, String target, boolean soft);
 
     // I/O APIs
+    oneway void register(IBinder client);
     /* (err, int) */ ParcelValues open(String path, int mode, String fifo);
     oneway void close(int handle);
     /* (err, int) */ ParcelValues pread(int handle, int len, long offset);

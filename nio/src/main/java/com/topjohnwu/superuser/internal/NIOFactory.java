@@ -16,8 +16,10 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.system.ErrnoException;
 import android.system.OsConstants;
 
@@ -91,10 +93,13 @@ public final class NIOFactory {
         };
     }
 
-    public static FileSystemManager createRemote(IBinder b) {
-        return new FileSystemManager() {
-            final IFileSystemService fs = IFileSystemService.Stub.asInterface(b);
+    public static FileSystemManager createRemote(IBinder b) throws RemoteException {
+        IFileSystemService fs = IFileSystemService.Stub.asInterface(b);
+        if (fs == null || !IFileSystemService.DESCRIPTOR.equals(b.getInterfaceDescriptor()))
+            throw new IllegalArgumentException("The IBinder provided is invalid");
 
+        fs.register(new Binder());
+        return new FileSystemManager() {
             @NonNull
             @Override
             public ExtendedFile newFile(@NonNull String pathname) {

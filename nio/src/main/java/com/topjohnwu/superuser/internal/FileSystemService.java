@@ -24,7 +24,10 @@ import static android.system.OsConstants.SEEK_END;
 import static android.system.OsConstants.SEEK_SET;
 
 import android.annotation.SuppressLint;
+import android.os.Binder;
 import android.os.Build;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.system.ErrnoException;
 import android.system.Int64Ref;
 import android.system.Os;
@@ -42,7 +45,6 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class FileSystemService extends IFileSystemService.Stub {
 
@@ -261,24 +263,74 @@ class FileSystemService extends IFileSystemService.Stub {
         }
     }
 
-    static class FileNotOpenException extends IOException {
-        FileNotOpenException() {
-            super("Requested file was not opened!");
+    static class FileContainer {
+
+        private final static String ERROR_MSG = "Requested file was not opened!";
+
+        private int nextHandle = 0;
+        // pid -> handle -> holder
+        private final SparseArray<SparseArray<FileHolder>> files = new SparseArray<>();
+
+        @NonNull
+        synchronized FileHolder get(int handle) throws IOException {
+            int pid = Binder.getCallingPid();
+            SparseArray<FileHolder> pidFiles = files.get(pid);
+            if (pidFiles == null)
+                throw new IOException(ERROR_MSG);
+            FileHolder h = pidFiles.get(handle);
+            if (h == null)
+                throw new IOException(ERROR_MSG);
+            return h;
+        }
+
+        synchronized int put(FileHolder h) {
+            int pid = Binder.getCallingPid();
+            SparseArray<FileHolder> pidFiles = files.get(pid);
+            if (pidFiles == null) {
+                pidFiles = new SparseArray<>();
+                files.put(pid, pidFiles);
+            }
+            int handle = nextHandle++;
+            pidFiles.append(handle, h);
+            return handle;
+        }
+
+        synchronized void remove(int handle) {
+            int pid = Binder.getCallingPid();
+            SparseArray<FileHolder> pidFiles = files.get(pid);
+            if (pidFiles == null)
+                return;
+            FileHolder h = pidFiles.get(handle);
+            if (h == null)
+                return;
+            pidFiles.remove(handle);
+            synchronized (h) {
+                h.close();
+            }
+        }
+
+        synchronized void pidDied(int pid) {
+            SparseArray<FileHolder> pidFiles = files.get(pid);
+            if (pidFiles == null)
+                return;
+            files.remove(pid);
+            for (int i = 0; i < pidFiles.size(); ++i) {
+                FileHolder h = pidFiles.valueAt(i);
+                synchronized (h) {
+                    h.close();
+                }
+            }
         }
     }
 
-    private final AtomicInteger nextHandle = new AtomicInteger(0);
-    private final SparseArray<FileHolder> openFiles = new SparseArray<>();
+    private final FileContainer openFiles = new FileContainer();
 
-    @NonNull
-    private FileHolder getHolder(int handle) throws FileNotOpenException {
-        synchronized (openFiles) {
-            FileHolder h = openFiles.get(handle);
-            if (h == null) {
-                throw new FileNotOpenException();
-            }
-            return h;
-        }
+    @Override
+    public void register(IBinder client) {
+        int pid = Binder.getCallingPid();
+        try {
+            client.linkToDeath(() -> openFiles.pidDied(pid), 0);
+        } catch (RemoteException ignored) {}
     }
 
     @SuppressWarnings("OctalInteger")
@@ -286,16 +338,12 @@ class FileSystemService extends IFileSystemService.Stub {
     public ParcelValues open(String path, int mode, String fifo) {
         ParcelValues values = new ParcelValues();
         values.add(null);
-        int handle = nextHandle.getAndIncrement();
         FileHolder h = new FileHolder();
         try {
             h.fd = Os.open(path, mode | O_NONBLOCK, 0666);
             h.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
             h.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
-            synchronized (openFiles) {
-                openFiles.append(handle, h);
-            }
-            values.add(handle);
+            values.add(openFiles.put(h));
         } catch (ErrnoException e) {
             values.set(0, e);
             h.close();
@@ -305,16 +353,7 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @Override
     public void close(int handle) {
-        final FileHolder h;
-        synchronized (openFiles) {
-            h = openFiles.get(handle);
-            if (h == null)
-                return;
-            openFiles.remove(handle);
-        }
-        synchronized (h) {
-            h.close();
-        }
+        openFiles.remove(handle);
     }
 
     @Override
@@ -322,7 +361,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             final long result;
             synchronized (h) {
                 h.ensureOpen();
@@ -365,7 +404,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             synchronized (h) {
                 h.ensureOpen();
                 if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
@@ -408,7 +447,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             synchronized (h) {
                 h.ensureOpen();
                 values.add(Os.lseek(h.fd, offset, whence));
@@ -424,7 +463,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             synchronized (h) {
                 h.ensureOpen();
                 long cur = Os.lseek(h.fd, 0, SEEK_CUR);
@@ -443,7 +482,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             synchronized (h) {
                 h.ensureOpen();
                 Os.ftruncate(h.fd, length);
@@ -459,7 +498,7 @@ class FileSystemService extends IFileSystemService.Stub {
         ParcelValues values = new ParcelValues();
         values.add(null);
         try {
-            final FileHolder h = getHolder(handle);
+            final FileHolder h = openFiles.get(handle);
             synchronized (h) {
                 h.ensureOpen();
                 if (metaData)
