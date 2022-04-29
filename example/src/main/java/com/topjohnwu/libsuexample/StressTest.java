@@ -92,7 +92,7 @@ public class StressTest {
     }
 
     private static void testRemoteIO() throws Exception {
-        ExtendedFile root = fs.newFile("/system/app");
+        ExtendedFile root = fs.getFile("/system/app");
 
         FileChannel out = fs.openChannel("/dev/null", MODE_WRITE_ONLY);
         ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);

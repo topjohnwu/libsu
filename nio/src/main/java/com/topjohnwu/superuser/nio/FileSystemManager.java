@@ -129,28 +129,28 @@ public abstract class FileSystemManager {
      * @see File#File(String)
      */
     @NonNull
-    public abstract ExtendedFile newFile(@NonNull String pathname);
+    public abstract ExtendedFile getFile(@NonNull String pathname);
 
     /**
      * @see File#File(String, String)
      */
     @NonNull
-    public abstract ExtendedFile newFile(@Nullable String parent, @NonNull String child);
+    public abstract ExtendedFile getFile(@Nullable String parent, @NonNull String child);
 
     /**
      * @see File#File(File, String)
      */
     @NonNull
-    public final ExtendedFile newFile(@Nullable File parent, @NonNull String child) {
-        return newFile(parent == null ? null : parent.getPath(), child);
+    public final ExtendedFile getFile(@Nullable File parent, @NonNull String child) {
+        return getFile(parent == null ? null : parent.getPath(), child);
     }
 
     /**
      * @see File#File(URI)
      */
     @NonNull
-    public final ExtendedFile newFile(@NonNull URI uri) {
-        return newFile(new File(uri).getPath());
+    public final ExtendedFile getFile(@NonNull URI uri) {
+        return getFile(new File(uri).getPath());
     }
 
     /**

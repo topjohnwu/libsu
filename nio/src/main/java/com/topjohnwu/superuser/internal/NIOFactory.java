@@ -47,13 +47,13 @@ public final class NIOFactory {
         return new FileSystemManager() {
             @NonNull
             @Override
-            public ExtendedFile newFile(@NonNull String pathname) {
+            public ExtendedFile getFile(@NonNull String pathname) {
                 return new LocalFile(pathname);
             }
 
             @NonNull
             @Override
-            public ExtendedFile newFile(@Nullable String parent, @NonNull String child) {
+            public ExtendedFile getFile(@Nullable String parent, @NonNull String child) {
                 return new LocalFile(parent, child);
             }
 
@@ -102,13 +102,13 @@ public final class NIOFactory {
         return new FileSystemManager() {
             @NonNull
             @Override
-            public ExtendedFile newFile(@NonNull String pathname) {
+            public ExtendedFile getFile(@NonNull String pathname) {
                 return new RemoteFile(fs, pathname);
             }
 
             @NonNull
             @Override
-            public ExtendedFile newFile(@Nullable String parent, @NonNull String child) {
+            public ExtendedFile getFile(@Nullable String parent, @NonNull String child) {
                 return new RemoteFile(fs, parent, child);
             }
 

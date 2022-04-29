@@ -41,7 +41,7 @@ import java.net.URI;
  * backends. The library includes backends for accessing files locally, accessing files remotely
  * via IPC, and accessing files through shell commands (by using {@code SuFile}, included in the
  * {@code io} module). The developer can get instances of this class with
- * {@link FileSystemManager#newFile}.
+ * {@link FileSystemManager#getFile}.
  * <p>
  * Implementations of this class is required to return the same type of {@link ExtendedFile} in
  * all of its APIs returning {@link File}s. This means that, for example, if the developer is
@@ -127,13 +127,13 @@ public abstract class ExtendedFile extends File {
      * Opens an InputStream with the matching implementation of the file.
      * @see FileInputStream#FileInputStream(File)
      */
-    public abstract InputStream openInputStream() throws IOException;
+    public abstract InputStream newInputStream() throws IOException;
 
     /**
      * Opens an OutputStream with the matching implementation of the file.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
-    public abstract OutputStream openOutputStream(boolean append) throws IOException;
+    public abstract OutputStream newOutputStream(boolean append) throws IOException;
 
     /**
      * {@inheritDoc}

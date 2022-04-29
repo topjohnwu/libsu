@@ -70,22 +70,22 @@ public class SuFile extends ExtendedFile {
 
     public static ExtendedFile open(String pathname) {
         return Utils.isMainShellRoot() ? new SuFile(pathname) :
-                FileSystemManager.getLocal().newFile(pathname);
+                FileSystemManager.getLocal().getFile(pathname);
     }
 
     public static ExtendedFile open(String parent, String child) {
         return Utils.isMainShellRoot() ? new SuFile(parent, child) :
-                FileSystemManager.getLocal().newFile(parent, child);
+                FileSystemManager.getLocal().getFile(parent, child);
     }
 
     public static ExtendedFile open(File parent, String child) {
         return Utils.isMainShellRoot() ? new SuFile(parent, child) :
-                FileSystemManager.getLocal().newFile(parent.getPath(), child);
+                FileSystemManager.getLocal().getFile(parent.getPath(), child);
     }
 
     public static ExtendedFile open(URI uri) {
         return Utils.isMainShellRoot() ? new SuFile(uri) :
-                FileSystemManager.getLocal().newFile(new File(uri).getPath());
+                FileSystemManager.getLocal().getFile(new File(uri).getPath());
     }
 
     SuFile(@NonNull File file) {
@@ -641,12 +641,12 @@ public class SuFile extends ExtendedFile {
     }
 
     @Override
-    public InputStream openInputStream() throws IOException {
+    public InputStream newInputStream() throws IOException {
         return IOFactory.fifoIn(this);
     }
 
     @Override
-    public OutputStream openOutputStream(boolean append) throws IOException {
+    public OutputStream newOutputStream(boolean append) throws IOException {
         return IOFactory.fifoOut(this, append);
     }
 }

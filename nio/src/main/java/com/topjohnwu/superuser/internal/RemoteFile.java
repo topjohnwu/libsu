@@ -351,12 +351,12 @@ class RemoteFile extends FileImpl<RemoteFile> {
     }
 
     @Override
-    public InputStream openInputStream() throws IOException {
+    public InputStream newInputStream() throws IOException {
         return Channels.newInputStream(new RemoteFileChannel(fs, this, MODE_READ_ONLY));
     }
 
     @Override
-    public OutputStream openOutputStream(boolean append) throws IOException {
+    public OutputStream newOutputStream(boolean append) throws IOException {
         int mode = MODE_WRITE_ONLY | MODE_CREATE;
         if (append)
             mode |= MODE_APPEND;
