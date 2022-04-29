@@ -29,6 +29,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+/**
+ * {@link File} API with extended features.
+ * <p>
+ * The goal of this class is to extend missing features in the {@link File} API that are available
+ * in the NIO package but not possible to be re-implemented without low-level file system access.
+ * For instance, detecting file types other than regular files and directories, handling and
+ * creating hard links and symbolic links.
+ * <p>
+ * Another goal of this class is to provide a generalized API interface for custom file system
+ * backends. The library includes backends for accessing files locally, accessing files remotely
+ * via IPC, and accessing files through shell commands (by using {@code SuFile}, included in the
+ * {@code io} module). The developer can get instances of this class through several APIs in
+ * {@link FileSystemManager}.
+ * <p>
+ * Implementations of this class is required to return the same type of {@link ExtendedFile} in
+ * all of its APIs returning {@link File}s. This means that, for example, if the developer is
+ * getting a list of files in a directory using a remote file system with {@link #listFiles()},
+ * all files returned in the array will also be using the same remote file system backend.
+ */
 public abstract class ExtendedFile extends File {
 
     /**

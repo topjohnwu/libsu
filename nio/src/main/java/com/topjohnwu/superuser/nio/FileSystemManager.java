@@ -41,16 +41,16 @@ public abstract class FileSystemManager {
     private static final FileSystemManager LOCAL = NIOFactory.createLocal();
 
     /**
-     * Get the service that exposes file system APIs over Binder IPC.
+     * Get the service that exports the file system of the current process over Binder IPC.
      * <p>
      * Sending the {@link Binder} obtained from this method to a client process enables
-     * the calling process to perform file system operations on behalf of the client.
+     * the current process to perform file system operations on behalf of the client.
      * This allows a client process to access files normally denied by its permissions.
      * <p>
      * You can pass this {@link Binder} object in many different ways, such as returning it in the
-     * {@code onBind()} method of (root) services, passing it around with a {@link Bundle},
+     * {@code onBind()} method of (root) services, passing it around in a {@link Bundle},
      * or returning it in an AIDL interface method. The receiving end will get an {@link IBinder},
-     * which should be passed to {@link #getRemote(IBinder)} for usage.
+     * which the developer should then pass to {@link #getRemote(IBinder)} for usage.
      */
     @NonNull
     public synchronized static Binder getService() {
@@ -59,13 +59,27 @@ public abstract class FileSystemManager {
         return fsService;
     }
 
+    /**
+     * Create a {@link FileSystemManager} to access the file system of the current local process.
+     */
     @NonNull
     public static FileSystemManager getLocal() {
         return LOCAL;
     }
 
     /**
-     * Create a {@link FileSystemManager} to access file system APIs of a remote process.
+     * Create a {@link FileSystemManager} to access the file system of a remote process.
+     * <p>
+     * Several APIs are not supported through a remote process:
+     * <ul>
+     *     <li>{@link File#deleteOnExit()}</li>
+     *     <li>{@link FileChannel#map(FileChannel.MapMode, long, long)}</li>
+     *     <li>{@link FileChannel#lock()}</li>
+     *     <li>{@link FileChannel#lock(long, long, boolean)}</li>
+     *     <li>{@link FileChannel#tryLock()}</li>
+     *     <li>{@link FileChannel#tryLock(long, long, boolean)}</li>
+     * </ul>
+     * Calling these APIs will throw {@link UnsupportedOperationException}.
      * @param binder a remote proxy of the {@link Binder} obtained from {@link #getService()}
      */
     @NonNull
