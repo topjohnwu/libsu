@@ -289,7 +289,7 @@ class FileSystemService extends IFileSystemService.Stub {
         int handle = nextHandle.getAndIncrement();
         FileHolder h = new FileHolder();
         try {
-            h.fd = Os.open(path, FileUtils.modeToPosix(mode) | O_NONBLOCK, 0666);
+            h.fd = Os.open(path, mode | O_NONBLOCK, 0666);
             h.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
             h.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
             synchronized (openFiles) {
