@@ -124,13 +124,21 @@ public abstract class ExtendedFile extends File {
     public abstract boolean createNewSymlink(String target) throws IOException;
 
     /**
-     * Opens an InputStream with the matching implementation of the file.
+     * Opens an InputStream with the matching file system backend of the file.
      * @see FileInputStream#FileInputStream(File)
      */
     public abstract InputStream newInputStream() throws IOException;
 
     /**
-     * Opens an OutputStream with the matching implementation of the file.
+     * Opens an OutputStream with the matching file system backend of the file.
+     * @see FileOutputStream#FileOutputStream(File)
+     */
+    public final OutputStream newOutputStream() throws IOException {
+        return newOutputStream(false);
+    }
+
+    /**
+     * Opens an OutputStream with the matching file system backend of the file.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
     public abstract OutputStream newOutputStream(boolean append) throws IOException;
