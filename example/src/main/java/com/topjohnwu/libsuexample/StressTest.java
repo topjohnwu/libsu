@@ -16,9 +16,9 @@
 
 package com.topjohnwu.libsuexample;
 
-import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
-import static android.os.ParcelFileDescriptor.MODE_WRITE_ONLY;
 import static com.topjohnwu.libsuexample.MainActivity.TAG;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_ONLY;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY;
 
 import android.util.Log;
 

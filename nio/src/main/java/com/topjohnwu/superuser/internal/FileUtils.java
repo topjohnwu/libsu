@@ -16,12 +16,6 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static android.os.ParcelFileDescriptor.MODE_APPEND;
-import static android.os.ParcelFileDescriptor.MODE_CREATE;
-import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
-import static android.os.ParcelFileDescriptor.MODE_READ_WRITE;
-import static android.os.ParcelFileDescriptor.MODE_TRUNCATE;
-import static android.os.ParcelFileDescriptor.MODE_WRITE_ONLY;
 import static android.system.OsConstants.ENOSYS;
 import static android.system.OsConstants.O_APPEND;
 import static android.system.OsConstants.O_CREAT;
@@ -29,6 +23,12 @@ import static android.system.OsConstants.O_RDONLY;
 import static android.system.OsConstants.O_RDWR;
 import static android.system.OsConstants.O_TRUNC;
 import static android.system.OsConstants.O_WRONLY;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_APPEND;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_CREATE;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_ONLY;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_WRITE;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_TRUNCATE;
+import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY;
 
 import android.os.Build;
 import android.system.ErrnoException;
@@ -63,7 +63,7 @@ class FileUtils {
         boolean append;
     }
 
-    static int pfdModeToPosix(int mode) {
+    static int modeToPosix(int mode) {
         int res;
         if ((mode & MODE_READ_WRITE) == MODE_READ_WRITE) {
             res = O_RDWR;
@@ -87,7 +87,7 @@ class FileUtils {
     }
 
     @RequiresApi(api = 26)
-    static Set<OpenOption> pfdModeToOptions(int mode) {
+    static Set<OpenOption> modeToOptions(int mode) {
         Set<OpenOption> set = new ArraySet<>();
         if ((mode & MODE_READ_WRITE) == MODE_READ_WRITE) {
             set.add(StandardOpenOption.READ);
@@ -111,7 +111,7 @@ class FileUtils {
         return set;
     }
 
-    static Flag pfdModeToFlag(int mode) {
+    static Flag modeToFlag(int mode) {
         Flag f = new Flag();
         if ((mode & MODE_READ_WRITE) == MODE_READ_WRITE) {
             f.read = true;

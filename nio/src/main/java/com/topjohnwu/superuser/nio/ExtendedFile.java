@@ -40,8 +40,8 @@ import java.net.URI;
  * Another goal of this class is to provide a generalized API interface for custom file system
  * backends. The library includes backends for accessing files locally, accessing files remotely
  * via IPC, and accessing files through shell commands (by using {@code SuFile}, included in the
- * {@code io} module). The developer can get instances of this class through several APIs in
- * {@link FileSystemManager}.
+ * {@code io} module). The developer can get instances of this class with
+ * {@link FileSystemManager#newFile}.
  * <p>
  * Implementations of this class is required to return the same type of {@link ExtendedFile} in
  * all of its APIs returning {@link File}s. This means that, for example, if the developer is

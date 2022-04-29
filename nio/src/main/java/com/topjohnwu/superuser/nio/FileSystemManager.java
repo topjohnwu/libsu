@@ -16,11 +16,14 @@
 
 package com.topjohnwu.superuser.nio;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -28,6 +31,7 @@ import com.topjohnwu.superuser.internal.NIOFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Retention;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 
@@ -36,9 +40,40 @@ import java.nio.channels.FileChannel;
  */
 public abstract class FileSystemManager {
 
-    private static Binder fsService;
+    /**
+     * For use with {@link #openChannel}: open the file with read-only access.
+     */
+    public static final int MODE_READ_ONLY = ParcelFileDescriptor.MODE_READ_ONLY;
+    /**
+     * For use with {@link #openChannel}: open the file with write-only access.
+     */
+    public static final int MODE_WRITE_ONLY = ParcelFileDescriptor.MODE_WRITE_ONLY;
+    /**
+     * For use with {@link #openChannel}: open the file with read and write access.
+     */
+    public static final int MODE_READ_WRITE = ParcelFileDescriptor.MODE_READ_WRITE;
+    /**
+     * For use with {@link #openChannel}: create the file if it doesn't already exist.
+     */
+    public static final int MODE_CREATE = ParcelFileDescriptor.MODE_CREATE;
+    /**
+     * For use with {@link #openChannel}: erase contents of file when opening.
+     */
+    public static final int MODE_TRUNCATE = ParcelFileDescriptor.MODE_TRUNCATE;
+    /**
+     * For use with {@link #openChannel}: append to end of file while writing.
+     */
+    public static final int MODE_APPEND = ParcelFileDescriptor.MODE_APPEND;
+
+    @Retention(SOURCE)
+    @IntDef(value = {
+            MODE_READ_ONLY, MODE_WRITE_ONLY, MODE_READ_WRITE,
+            MODE_CREATE, MODE_TRUNCATE, MODE_APPEND}, flag = true)
+    @interface OpenMode {}
 
     private static final FileSystemManager LOCAL = NIOFactory.createLocal();
+
+    private static Binder fsService;
 
     /**
      * Get the service that exports the file system of the current process over Binder IPC.
@@ -80,6 +115,7 @@ public abstract class FileSystemManager {
      *     <li>{@link FileChannel#tryLock(long, long, boolean)}</li>
      * </ul>
      * Calling these APIs will throw {@link UnsupportedOperationException}.
+     *
      * @param binder a remote proxy of the {@link Binder} obtained from {@link #getService()}
      */
     @NonNull
@@ -117,25 +153,25 @@ public abstract class FileSystemManager {
 
     /**
      * Opens a file channel to access the file.
+     *
      * @param pathname the file to be opened.
-     * @param mode same {@code mode} argument in {@link ParcelFileDescriptor#open(File, int)}
+     * @param mode     the desired access mode.
      * @return a new FileChannel pointing to the given file.
      * @throws IOException if the given file can not be opened with the requested mode.
-     * @see ParcelFileDescriptor#open(File, int)
      */
     @NonNull
-    public final FileChannel openChannel(@NonNull String pathname, int mode) throws IOException {
+    public final FileChannel openChannel(@NonNull String pathname, @OpenMode int mode) throws IOException {
         return openChannel(new File(pathname), mode);
     }
 
     /**
      * Opens a file channel to access the file.
+     *
      * @param file the file to be opened.
-     * @param mode same {@code mode} argument in {@link ParcelFileDescriptor#open(File, int)}
+     * @param mode the desired access mode.
      * @return a new FileChannel pointing to the given file.
      * @throws IOException if the given file can not be opened with the requested mode.
-     * @see ParcelFileDescriptor#open(File, int)
      */
     @NonNull
-    public abstract FileChannel openChannel(@NonNull File file, int mode) throws IOException;
+    public abstract FileChannel openChannel(@NonNull File file, @OpenMode int mode) throws IOException;
 }

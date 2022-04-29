@@ -59,9 +59,9 @@ public final class NIOFactory {
             @Override
             public FileChannel openChannel(@NonNull File file, int mode) throws IOException {
                 if (Build.VERSION.SDK_INT >= 26) {
-                    return FileChannel.open(file.toPath(), FileUtils.pfdModeToOptions(mode));
+                    return FileChannel.open(file.toPath(), FileUtils.modeToOptions(mode));
                 } else {
-                    FileUtils.Flag f = FileUtils.pfdModeToFlag(mode);
+                    FileUtils.Flag f = FileUtils.modeToFlag(mode);
                     if (f.write) {
                         if (!f.create) {
                             if (!file.exists()) {
