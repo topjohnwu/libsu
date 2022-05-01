@@ -143,24 +143,24 @@ class FileSystemService extends IFileSystemService.Stub {
         return mCache.get(path).setLastModified(time);
     }
 
-    @SuppressWarnings("OctalInteger")
-    @Override
-    public boolean setPermission(String path, int access, boolean enable, boolean ownerOnly) {
-        try {
-            access = access & 07;
-            int mask = ownerOnly ? (access << 6) : (access | (access << 3) | (access << 6));
-            StructStat st = Os.stat(path);
-            int mode = st.st_mode & 07777;
-            Os.chmod(path, enable ? (mode | mask) : (mode & ~mask));
-            return true;
-        } catch (ErrnoException e) {
-            return false;
-        }
-    }
-
     @Override
     public boolean setReadOnly(String path) {
         return mCache.get(path).setReadOnly();
+    }
+
+    @Override
+    public boolean setWritable(String path, boolean writable, boolean ownerOnly) {
+        return mCache.get(path).setWritable(writable, ownerOnly);
+    }
+
+    @Override
+    public boolean setReadable(String path, boolean readable, boolean ownerOnly) {
+        return mCache.get(path).setReadable(readable, ownerOnly);
+    }
+
+    @Override
+    public boolean setExecutable(String path, boolean executable, boolean ownerOnly) {
+        return mCache.get(path).setExecutable(executable, ownerOnly);
     }
 
     @Override

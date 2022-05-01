@@ -18,8 +18,10 @@ interface IFileSystemService {
     boolean mkdirs(String path);
     boolean renameTo(String path, String dest);
     boolean setLastModified(String path, long time);
-    boolean setPermission(String path, int access, boolean enable, boolean ownerOnly);
     boolean setReadOnly(String path);
+    boolean setWritable(String path, boolean writable, boolean ownerOnly);
+    boolean setReadable(String path, boolean readable, boolean ownerOnly);
+    boolean setExecutable(String path, boolean executable, boolean ownerOnly);
     boolean checkAccess(String path, int access);
     long getTotalSpace(String path);
     long getFreeSpace(String path);

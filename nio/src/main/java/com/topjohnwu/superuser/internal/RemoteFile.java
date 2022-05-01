@@ -286,42 +286,31 @@ class RemoteFile extends FileImpl<RemoteFile> {
         }
     }
 
-    private boolean setPermission(int access, boolean enable, boolean ownerOnly) {
+    @Override
+    public boolean setWritable(boolean writable, boolean ownerOnly) {
         try {
-            return fs.setPermission(getPath(), access, enable, ownerOnly);
+            return fs.setWritable(getPath(), writable, ownerOnly);
         } catch (RemoteException e) {
             return false;
         }
     }
 
     @Override
-    public boolean setWritable(boolean writable, boolean ownerOnly) {
-        return setPermission(0x2, writable, ownerOnly);
-    }
-
-    @Override
-    public boolean setWritable(boolean writable) {
-        return setPermission(0x2, writable, true);
-    }
-
-    @Override
     public boolean setReadable(boolean readable, boolean ownerOnly) {
-        return setPermission(0x4, readable, ownerOnly);
-    }
-
-    @Override
-    public boolean setReadable(boolean readable) {
-        return setPermission(0x4, readable, true);
+        try {
+            return fs.setReadable(getPath(), readable, ownerOnly);
+        } catch (RemoteException e) {
+            return false;
+        }
     }
 
     @Override
     public boolean setExecutable(boolean executable, boolean ownerOnly) {
-        return setPermission(0x1, executable, ownerOnly);
-    }
-
-    @Override
-    public boolean setExecutable(boolean executable) {
-        return setPermission(0x1, executable, true);
+        try {
+            return fs.setExecutable(getPath(), executable, ownerOnly);
+        } catch (RemoteException e) {
+            return false;
+        }
     }
 
     @Override
