@@ -189,7 +189,8 @@ public abstract class Shell implements Closeable {
      * construct a new {@code Shell} in a background thread.
      * The cached/created shell instance is returned to the callback executed by provided executor.
      * @param executor the executor used to handle the result callback event.
-     *                 If {@code null} is passed, the callback can run on any thread.
+     *                 If {@code null} is passed, the callback will run on the same background
+     *                 thread as the new {@code Shell} is constructed.
      * @param callback invoked when a shell is acquired.
      */
     public static void getShell(@Nullable Executor executor, @NonNull GetShellCallback callback) {

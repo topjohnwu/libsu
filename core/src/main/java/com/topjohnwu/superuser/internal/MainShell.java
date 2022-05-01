@@ -55,7 +55,7 @@ public final class MainShell {
 
     private static void returnShell(Shell s, Executor e, GetShellCallback cb) {
         if (e == null)
-            cb.onShell(s);
+            EXECUTOR.execute(() -> cb.onShell(s));
         else
             e.execute(() -> cb.onShell(s));
     }
