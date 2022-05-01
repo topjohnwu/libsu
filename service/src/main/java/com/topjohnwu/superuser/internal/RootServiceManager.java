@@ -39,6 +39,7 @@ import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -80,6 +81,13 @@ public class RootServiceManager implements Handler.Callback {
     private static final String API_28_DEBUG =
             "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y " +
             "-Xcompiler-option --debuggable";
+    private static final String JVMTI_ERROR = " \n" +
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" +
+            "! Warning: JVMTI agent is enabled. Please enable the !\n" +
+            "! 'Always install with package manager' option in    !\n" +
+            "! Android Studio. For more details and information,  !\n" +
+            "! check out RootService's Javadoc.                   !\n" +
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 
     private static final int REMOTE_EN_ROUTE = 1 << 0;
     private static final int DAEMON_EN_ROUTE = 1 << 1;
@@ -141,6 +149,11 @@ public class RootServiceManager implements Handler.Callback {
 
     private Shell.Task startRootProcess(ComponentName name, String action) {
         Context context = Utils.getContext();
+
+        if (Utils.hasStartupAgents(context)) {
+            Log.e(TAG, JVMTI_ERROR);
+        }
+
         if (filterAction == null) {
             filterAction = UUID.randomUUID().toString();
             // Register receiver to receive binder from root process
