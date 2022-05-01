@@ -38,8 +38,7 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
-    implementation(project(":io"))
-    implementation(project(":busybox"))
     implementation(project(":service"))
+    implementation(project(":io"))
     implementation(project(":nio"))
 }

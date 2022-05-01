@@ -34,7 +34,6 @@ import android.widget.ScrollView;
 import androidx.annotation.NonNull;
 
 import com.topjohnwu.libsuexample.databinding.ActivityMainBinding;
-import com.topjohnwu.superuser.BusyBoxInstaller;
 import com.topjohnwu.superuser.CallbackList;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ipc.RootService;
@@ -52,8 +51,7 @@ public class MainActivity extends Activity implements Handler.Callback {
         Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.setDefaultBuilder(Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
-                // BusyBoxInstaller should come first!
-                .setInitializers(BusyBoxInstaller.class, ExampleInitializer.class)
+                .setInitializers(ExampleInitializer.class)
         );
     }
 
