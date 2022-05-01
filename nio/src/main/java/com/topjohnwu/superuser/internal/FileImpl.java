@@ -37,8 +37,10 @@ abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
     }
 
     protected abstract T create(String path);
-    protected abstract T createChild(String name);
     protected abstract T[] createArray(int n);
+    @NonNull
+    @Override
+    public abstract T getChildFile(String name);
 
     @NonNull
     @Override
@@ -67,7 +69,7 @@ abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
         int n = ss.length;
         T[] fs = createArray(n);
         for (int i = 0; i < n; i++) {
-            fs[i] = createChild(ss[i]);
+            fs[i] = getChildFile(ss[i]);
         }
         return fs;
     }
@@ -81,7 +83,7 @@ abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
         ArrayList<T> files = new ArrayList<>();
         for (String s : ss) {
             if ((filter == null) || filter.accept(this, s))
-                files.add(createChild(s));
+                files.add(getChildFile(s));
         }
         return files.toArray(createArray(0));
     }
@@ -94,7 +96,7 @@ abstract class FileImpl<T extends ExtendedFile> extends ExtendedFile {
             return null;
         ArrayList<T> files = new ArrayList<>();
         for (String s : ss) {
-            T f = createChild(s);
+            T f = getChildFile(s);
             if ((filter == null) || filter.accept(f))
                 files.add(f);
         }

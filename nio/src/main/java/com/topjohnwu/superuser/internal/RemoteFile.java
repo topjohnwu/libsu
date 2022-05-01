@@ -52,8 +52,9 @@ class RemoteFile extends FileImpl<RemoteFile> {
         return new RemoteFile(fs, path);
     }
 
+    @NonNull
     @Override
-    protected RemoteFile createChild(String name) {
+    public RemoteFile getChildFile(String name) {
         return new RemoteFile(fs, getPath(), name);
     }
 

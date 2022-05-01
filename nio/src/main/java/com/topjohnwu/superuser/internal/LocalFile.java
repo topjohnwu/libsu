@@ -21,6 +21,8 @@ import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructStat;
 
+import androidx.annotation.NonNull;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,8 +44,9 @@ class LocalFile extends FileImpl<LocalFile> {
         return new LocalFile(path);
     }
 
+    @NonNull
     @Override
-    protected LocalFile createChild(String name) {
+    public LocalFile getChildFile(String name) {
         return new LocalFile(getPath(), name);
     }
 

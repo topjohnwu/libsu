@@ -51,28 +51,28 @@ import java.net.URI;
 public abstract class ExtendedFile extends File {
 
     /**
-     * {@inheritDoc}
+     * @see File#File(String)
      */
     protected ExtendedFile(@NonNull String pathname) {
         super(pathname);
     }
 
     /**
-     * {@inheritDoc}
+     * @see File#File(String, String)
      */
     protected ExtendedFile(@Nullable String parent, @NonNull String child) {
         super(parent, child);
     }
 
     /**
-     * {@inheritDoc}
+     * @see File#File(File, String)
      */
     protected ExtendedFile(@Nullable File parent, @NonNull String child) {
         super(parent, child);
     }
 
     /**
-     * {@inheritDoc}
+     * @see File#File(URI)
      */
     protected ExtendedFile(@NonNull URI uri) {
         super(uri);
@@ -142,6 +142,13 @@ public abstract class ExtendedFile extends File {
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
     public abstract OutputStream newOutputStream(boolean append) throws IOException;
+
+    /**
+     * Create a child relative to the abstract pathname using the same file system backend.
+     * @see File#File(File, String)
+     */
+    @NonNull
+    public abstract ExtendedFile getChildFile(String child);
 
     /**
      * {@inheritDoc}

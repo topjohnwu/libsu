@@ -115,7 +115,9 @@ public class SuFile extends ExtendedFile {
         return s;
     }
 
-    private SuFile createChild(String name) {
+    @NonNull
+    @Override
+    public SuFile getChildFile(String name) {
         SuFile s = new SuFile(this, name);
         s.mShell = mShell;
         return s;
@@ -590,7 +592,7 @@ public class SuFile extends ExtendedFile {
         int n = ss.length;
         SuFile[] fs = new SuFile[n];
         for (int i = 0; i < n; i++) {
-            fs[i] = createChild(ss[i]);
+            fs[i] = getChildFile(ss[i]);
         }
         return fs;
     }
@@ -613,7 +615,7 @@ public class SuFile extends ExtendedFile {
         int n = ss.length;
         SuFile[] fs = new SuFile[n];
         for (int i = 0; i < n; i++) {
-            fs[i] = createChild(ss[i]);
+            fs[i] = getChildFile(ss[i]);
         }
         return fs;
     }
@@ -633,7 +635,7 @@ public class SuFile extends ExtendedFile {
             return null;
         ArrayList<SuFile> files = new ArrayList<>();
         for (String s : ss) {
-            SuFile f = createChild(s);
+            SuFile f = getChildFile(s);
             if ((filter == null) || filter.accept(f))
                 files.add(f);
         }
