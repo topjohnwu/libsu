@@ -411,6 +411,24 @@ public abstract class Shell implements Closeable {
         public abstract Builder setTimeout(long timeout);
 
         /**
+         * Set the {@link Context} to use when creating a shell.
+         * <p>
+         * The {@link Context} instance provided here will not be directly passed to
+         * {@link Initializer#onInit(Context, Shell)}; the raw ContextImpl of the application
+         * will be obtained through the provided context, and that will be used instead.
+         * <p>
+         * Calling this method is not usually necessary but recommended, as the library can
+         * obtain the current application through Android internal APIs. However, if your
+         * application uses {@link android.R.attr#sharedUserId}, or a shell/root service can be
+         * created during the application attach process, then setting a Context explicitly
+         * using this method is required.
+         * @param context a context of the current package.
+         * @return this Builder object for chaining of calls.
+         */
+        @NonNull
+        public abstract Builder setContext(@NonNull Context context);
+
+        /**
          * Combine all of the options that have been set and build a new {@code Shell} instance
          * with the default methods.
          * <p>

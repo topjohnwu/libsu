@@ -85,9 +85,10 @@ public final class Utils {
             // Fetching ActivityThread on the main thread is no longer required on API 18+
             // See: https://cs.android.com/android/platform/frameworks/base/+/66a017b63461a22842b3678c9520f803d5ddadfc
             try {
-                context = (Context) Class.forName("android.app.ActivityThread")
+                Context c = (Context) Class.forName("android.app.ActivityThread")
                         .getMethod("currentApplication")
                         .invoke(null);
+                context = getContextImpl(c);
             } catch (Exception e) {
                 // Shall never happen
                 Utils.err(e);
