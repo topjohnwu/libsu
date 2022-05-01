@@ -23,7 +23,6 @@ import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.IOFactory;
 import com.topjohnwu.superuser.io.SuFile;
 import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemManager;
@@ -68,11 +67,10 @@ public class StressTest {
     private static void testShellIO() throws Exception {
         SuFile root = new SuFile("/system/app");
 
-        // Stress test fifo IOStreams
-        OutputStream out = IOFactory.fifoOut(new SuFile("/dev/null"), false);
+        OutputStream out = new SuFile("/dev/null").newOutputStream();
         byte[] buf = new byte[64 * 1024];
         callback = file -> {
-            try (InputStream in = IOFactory.fifoIn((SuFile) file)) {
+            try (InputStream in = file.newInputStream()) {
                 for (;;) {
                     // Randomize read/write length to test unaligned I/O
                     int len = r.nextInt(buf.length);
