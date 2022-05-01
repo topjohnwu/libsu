@@ -41,9 +41,9 @@ import java.util.concurrent.Executor;
 /**
  * A remote root service using native Android Binder IPC.
  * <p>
- * Pro tip: while developing an app with RootServices, modify the run/debug configuration and check
- * the "Always install with package manager" option if testing on Android 11+, or else the code
- * changes will not be reflected after Android Studio's deployment.
+ * Important: while developing an app with RootServices, modify the run/debug configuration and
+ * check the "Always install with package manager" option if testing on Android 11+, or else the
+ * code changes will not be reflected after Android Studio's deployment.
  * <p>
  * This class is almost a complete recreation of a bound service running in a root process.
  * Instead of using the original {@code Context.bindService(...)} methods to start and bind

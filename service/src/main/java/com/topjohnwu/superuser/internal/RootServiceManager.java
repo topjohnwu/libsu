@@ -81,6 +81,13 @@ public class RootServiceManager implements Handler.Callback {
     private static final String API_28_DEBUG =
             "-XjdwpProvider:adbconnection -XjdwpOptions:suspend=n,server=y " +
             "-Xcompiler-option --debuggable";
+    private static final String JVMTI_ERROR = " \n" +
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" +
+            "! Warning: JVMTI agent is enabled. Please enable the !\n" +
+            "! 'Always install with package manager' option in    !\n" +
+            "! Android Studio. For more details and information,  !\n" +
+            "! check out RootService's Javadoc.                   !\n" +
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 
     private static final int REMOTE_EN_ROUTE = 1 << 0;
     private static final int DAEMON_EN_ROUTE = 1 << 1;
@@ -144,8 +151,7 @@ public class RootServiceManager implements Handler.Callback {
         Context context = Utils.getContext();
 
         if (Utils.hasStartupAgents(context)) {
-            Log.w(TAG, "Warning: JVMTI agent is enabled, " +
-                    "read RootService javadoc for more info.");
+            Log.e(TAG, JVMTI_ERROR);
         }
 
         if (filterAction == null) {
