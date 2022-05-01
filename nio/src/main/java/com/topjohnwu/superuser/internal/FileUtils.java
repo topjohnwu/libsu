@@ -39,6 +39,7 @@ import android.util.MutableLong;
 
 import androidx.annotation.RequiresApi;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -203,5 +204,13 @@ class FileUtils {
     static <T> T tryAndGet(ParcelValues values) throws IOException {
         checkException(values);
         return values.getTyped(1);
+    }
+
+    @SuppressWarnings("OctalInteger")
+    static File createTempFIFO() throws ErrnoException, IOException {
+        File fifo = File.createTempFile("libsu-fifo-", null);
+        fifo.delete();
+        Os.mkfifo(fifo.getPath(), 0644);
+        return fifo;
     }
 }

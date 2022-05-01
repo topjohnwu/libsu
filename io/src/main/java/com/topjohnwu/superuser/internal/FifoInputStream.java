@@ -22,10 +22,6 @@ import static com.topjohnwu.superuser.internal.FifoOutputStream.TAG;
 import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import android.content.Context;
-import android.system.ErrnoException;
-import android.system.Os;
-
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.io.SuFile;
 
@@ -35,7 +31,6 @@ import java.io.FileNotFoundException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,72 +38,44 @@ import java.util.concurrent.TimeoutException;
 
 class FifoInputStream extends FilterInputStream {
 
-    private final File fifo;
-
     FifoInputStream(SuFile file) throws FileNotFoundException {
         super(null);
         if (file.isDirectory() || !file.canRead())
             throw new FileNotFoundException("No such file or directory: " + file.getAbsolutePath());
 
-        Context c = Utils.getDeContext(Utils.getContext());
-        fifo = new File(c.getCacheDir(), UUID.randomUUID().toString());
+        File fifo = null;
         try {
-            Os.mkfifo(fifo.getPath(), 0600);
-        } catch (ErrnoException e) {
-            Utils.err(e);
-            throw (FileNotFoundException)
-                    new FileNotFoundException("Failed to mkfifo").initCause(e);
-        }
-        // In case the stream was not manually closed
-        fifo.deleteOnExit();
-
-        try {
-            openStream(file);
-        } catch (Exception e){
-            fifo.delete();
-            throw e;
-        }
-    }
-
-    private void openStream(SuFile file) throws FileNotFoundException {
-        try {
-            file.getShell().execTask((in, out, err) -> {
-                String cmd = "cat " + file.getEscapedPath() + " > " + fifo + " 2>/dev/null &";
-                Utils.log(TAG, cmd);
-                in.write(cmd.getBytes(UTF_8));
-                in.write('\n');
-                in.flush();
-                in.write(END_CMD);
-                in.flush();
-                // Wait till the operation is done
-                out.read(JUNK);
-            });
-        } catch (IOException e) {
-            throw (FileNotFoundException)
-                    new FileNotFoundException("Error during root command").initCause(e);
-        }
-
-        // Open the fifo only after the shell request
-        Future<InputStream> stream = Shell.EXECUTOR.submit(() -> new FileInputStream(fifo));
-        try {
-            in = stream.get(FIFO_TIMEOUT, TimeUnit.MILLISECONDS);
-            // Root command might fail for any random reason, bail out
-        } catch (ExecutionException|InterruptedException|TimeoutException e) {
+            fifo = FileUtils.createTempFIFO();
+            openStream(file, fifo);
+        } catch (Exception e) {
+            if (e instanceof FileNotFoundException)
+                throw (FileNotFoundException) e;
             Throwable cause = e.getCause();
             if (cause instanceof FileNotFoundException)
                 throw (FileNotFoundException) cause;
-            else
-                throw (FileNotFoundException)
-                        new FileNotFoundException("Cannot open fifo").initCause(e);
+            throw (FileNotFoundException) new FileNotFoundException("Cannot open fifo").initCause(e);
+        } finally {
+            if (fifo != null)
+                fifo.delete();
         }
     }
 
-    @Override
-    public void close() throws IOException {
-        try {
-            super.close();
-        } finally {
-            fifo.delete();
-        }
+    private void openStream(SuFile file, File fifo)
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        file.getShell().execTask((in, out, err) -> {
+            String cmd = "cat " + file.getEscapedPath() + " > " + fifo + " 2>/dev/null &";
+            Utils.log(TAG, cmd);
+            in.write(cmd.getBytes(UTF_8));
+            in.write('\n');
+            in.flush();
+            in.write(END_CMD);
+            in.flush();
+            // Wait till the operation is done
+            out.read(JUNK);
+        });
+
+        // Open the fifo only after the shell request
+        Future<InputStream> stream = Shell.EXECUTOR.submit(() -> new FileInputStream(fifo));
+        in = stream.get(FIFO_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 }

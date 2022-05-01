@@ -19,10 +19,6 @@ package com.topjohnwu.superuser.internal;
 import static com.topjohnwu.superuser.internal.IOFactory.JUNK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import android.content.Context;
-import android.system.ErrnoException;
-import android.system.Os;
-
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.io.SuFile;
 
@@ -32,7 +28,6 @@ import java.io.FileOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +41,6 @@ class FifoOutputStream extends FilterOutputStream {
     static final String TAG = "FIFOIO";
     static final byte[] END_CMD = "echo\n".getBytes(UTF_8);
 
-    private final File fifo;
     private boolean append;
 
     FifoOutputStream(SuFile file, boolean append) throws FileNotFoundException {
@@ -54,22 +48,20 @@ class FifoOutputStream extends FilterOutputStream {
         this.append = append;
         checkFile(file);
 
-        Context c = Utils.getDeContext(Utils.getContext());
-        fifo = new File(c.getCacheDir(), UUID.randomUUID().toString());
+        File fifo = null;
         try {
-            Os.mkfifo(fifo.getPath(), 0600);
-        } catch (ErrnoException e) {
-            throw (FileNotFoundException)
-                    new FileNotFoundException("Failed to mkfifo").initCause(e);
-        }
-        // In case the stream was not manually closed
-        fifo.deleteOnExit();
-
-        try {
-            openStream(file);
-        } catch (Exception e){
-            fifo.delete();
-            throw e;
+            fifo = FileUtils.createTempFIFO();
+            openStream(file, fifo);
+        } catch (Exception e) {
+            if (e instanceof FileNotFoundException)
+                throw (FileNotFoundException) e;
+            Throwable cause = e.getCause();
+            if (cause instanceof FileNotFoundException)
+                throw (FileNotFoundException) cause;
+            throw (FileNotFoundException) new FileNotFoundException("Cannot open fifo").initCause(e);
+        } finally {
+            if (fifo != null)
+                fifo.delete();
         }
     }
 
@@ -86,37 +78,23 @@ class FifoOutputStream extends FilterOutputStream {
         }
     }
 
-    private void openStream(SuFile file) throws FileNotFoundException {
-        try {
-            file.getShell().execTask((in, out, err) -> {
-                String cmd = "cat " + fifo + op() + file.getEscapedPath() + " 2>/dev/null &";
-                Utils.log(TAG, cmd);
-                in.write(cmd.getBytes(UTF_8));
-                in.write('\n');
-                in.flush();
-                in.write(END_CMD);
-                in.flush();
-                // Wait till the operation is done
-                out.read(JUNK);
-            });
-        } catch (IOException e) {
-            throw (FileNotFoundException)
-                    new FileNotFoundException("Error running root command").initCause(e);
-        }
+    private void openStream(SuFile file, File fifo)
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        file.getShell().execTask((in, out, err) -> {
+            String cmd = "cat " + fifo + op() + file.getEscapedPath() + " 2>/dev/null &";
+            Utils.log(TAG, cmd);
+            in.write(cmd.getBytes(UTF_8));
+            in.write('\n');
+            in.flush();
+            in.write(END_CMD);
+            in.flush();
+            // Wait till the operation is done
+            out.read(JUNK);
+        });
 
         // Open the fifo only after the shell request
         Future<OutputStream> stream = Shell.EXECUTOR.submit(() -> new FileOutputStream(fifo));
-        try {
-            out = stream.get(FIFO_TIMEOUT, TimeUnit.MILLISECONDS);
-            // Root command might fail for any random reason, bail out
-        } catch (ExecutionException |InterruptedException| TimeoutException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof FileNotFoundException)
-                throw (FileNotFoundException) cause;
-            else
-                throw (FileNotFoundException)
-                        new FileNotFoundException("Cannot open fifo").initCause(e);
-        }
+        out = stream.get(FIFO_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     private String op() {
@@ -126,14 +104,5 @@ class FifoOutputStream extends FilterOutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         out.write(b, off, len);
-    }
-
-    @Override
-    public void close() throws IOException {
-        try {
-            super.close();
-        } finally {
-            fifo.delete();
-        }
     }
 }

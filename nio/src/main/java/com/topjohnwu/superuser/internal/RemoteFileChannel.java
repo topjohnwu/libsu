@@ -57,12 +57,11 @@ class RemoteFileChannel extends FileChannel {
     RemoteFileChannel(IFileSystemService fs, File file, int mode) throws IOException {
         this.fs = fs;
         this.mode = mode;
+        File fifo = null;
         try {
             // We use a FIFO created on the client side instead of opening a pipe and
             // passing it through binder as this is the most portable and reliable method.
-            File fifo = File.createTempFile("libsu-filechannel", null);
-            fifo.delete();
-            Os.mkfifo(fifo.getPath(), 0644);
+            fifo = FileUtils.createTempFIFO();
 
             // Open the file on the remote process
             int posixMode = FileUtils.modeToPosix(mode);
@@ -72,11 +71,12 @@ class RemoteFileChannel extends FileChannel {
             // have to make sure none of our I/O can block in all operations.
             read = Os.open(fifo.getPath(), O_RDONLY | O_NONBLOCK, 0);
             write = Os.open(fifo.getPath(), O_WRONLY | O_NONBLOCK, 0);
-
-            // Once both sides opened the pipe, it can be unlinked
-            fifo.delete();
         } catch (RemoteException | ErrnoException e) {
             throw new IOException(e);
+        } finally {
+            // Once both sides opened the pipe, it can be unlinked
+            if (fifo != null)
+                fifo.delete();
         }
     }
 
