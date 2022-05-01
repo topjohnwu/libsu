@@ -74,9 +74,11 @@ abstract class StreamGobbler<T> implements Callable<T> {
 
         @Override
         public Integer call() throws Exception {
-            String code = process(true);
+            String codeStr = process(true);
             try {
-                return code == null ? NO_RESULT_CODE : Integer.parseInt(code);
+                int code = codeStr == null ? NO_RESULT_CODE : Integer.parseInt(codeStr);
+                Utils.log(TAG, "(exit code: " + code + ")");
+                return code;
             } catch (NumberFormatException e) {
                 return NO_RESULT_CODE;
             }
