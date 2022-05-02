@@ -62,7 +62,7 @@ class AIDLService extends RootService {
         }
 
         @Override
-        public IBinder getFS() {
+        public IBinder getFileSystemService() {
             return FileSystemManager.getService();
         }
     }

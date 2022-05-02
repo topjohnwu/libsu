@@ -82,9 +82,11 @@ public abstract class FileSystemManager {
      * Sending the {@link Binder} obtained from this method to a client process enables
      * the current process to perform file system operations on behalf of the client.
      * This allows a client process to access files normally denied by its permissions.
+     * This method is usually called in a root process, and the Binder service returned will
+     * be send over to a non-root client process.
      * <p>
-     * You can pass this {@link Binder} object in many different ways, such as returning it in the
-     * {@code onBind()} method of (root) services, passing it around in a {@link Bundle},
+     * You can pass this {@link Binder} object in multiple ways, such as returning it in the
+     * {@code onBind()} method of root services, passing it around in a {@link Bundle},
      * or returning it in an AIDL interface method. The receiving end will get an {@link IBinder},
      * which the developer should then pass to {@link #getRemote(IBinder)} for usage.
      */
@@ -96,7 +98,7 @@ public abstract class FileSystemManager {
     }
 
     /**
-     * Create a {@link FileSystemManager} to access the file system of the current local process.
+     * Get the {@link FileSystemManager} to access the file system of the current local process.
      */
     @NonNull
     public static FileSystemManager getLocal() {
