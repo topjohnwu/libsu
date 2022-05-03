@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":6,"i3":9,"i4":9,"i5":9,"i6":9,"i7":6,"i8":6,"i9":10,"i10":6,"i11":9,"i12":9,"i13":10,"i14":6};
+var data = {"i0":9,"i1":9,"i2":6,"i3":9,"i4":9,"i5":9,"i6":9,"i7":6,"i8":6,"i9":9,"i10":10,"i11":6,"i12":9,"i13":10,"i14":6};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -402,24 +402,24 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 </td>
 </tr>
 <tr id="i9" class="rowColor">
+<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang" class="externalLink">Boolean</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isAppGrantedRoot()">isAppGrantedRoot</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Whether the application has access to root.</div>
+</td>
+</tr>
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isRoot()">isRoot</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Return whether the shell has root access.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>abstract <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newJob()">newJob</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Construct a new <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> that uses the shell for execution.</div>
-</td>
-</tr>
-<tr id="i11" class="rowColor">
-<td class="colFirst"><code>static boolean</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rootAccess()">rootAccess</a></span>()</code></th>
-<td class="colLast">
-<div class="block">Whether the application has access to root.</div>
 </td>
 </tr>
 <tr id="i12" class="altColor">
@@ -751,23 +751,24 @@ public static&nbsp;<a href="Shell.html" title="class in com.topjohnwu.superuser"
 </dl>
 </li>
 </ul>
-<a id="rootAccess()">
+<a id="isAppGrantedRoot()">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>rootAccess</h4>
-<pre class="methodSignature">public static&nbsp;boolean&nbsp;rootAccess()</pre>
+<h4>isAppGrantedRoot</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/Nullable.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@Nullable</a>
+public static&nbsp;<a href="https://developer.android.com/reference/java/lang/Boolean.html?is-external=true" title="class or interface in java.lang" class="externalLink">Boolean</a>&nbsp;isAppGrantedRoot()</pre>
 <div class="block">Whether the application has access to root.
  <p>
- This method would NEVER produce false negatives, but false positives can be returned before
- actually constructing a root shell. A <code>false</code> returned is guaranteed to be
- 100% accurate, while <code>true</code> may be returned if the device is rooted, but the user
- did not grant root access to your application. However, after any root shell is constructed,
- this method will accurately return <code>true</code>.</div>
+ This method returns <code>null</code> when it is currently unable to determine whether
+ root access has been granted to the application. A non-null value meant that the root
+ permission grant state has been accurately determined and finalized. The application
+ must have at least 1 root shell created to have this method return <code>true</code>.
+ This method will not block the calling thread; results will be returned immediately.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>whether the application has access to root.</dd>
+<dd>whether the application has access to root, or <code>null</code> when undetermined.</dd>
 </dl>
 </li>
 </ul>

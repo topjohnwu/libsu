@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":9,"i34":9,"i35":9,"i36":9,"i37":10,"i38":10,"i39":10,"i40":10,"i41":10,"i42":10,"i43":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10,"i38":10,"i39":10,"i40":9,"i41":9,"i42":9,"i43":9,"i44":10,"i45":10,"i46":10,"i47":10,"i48":10,"i49":10,"i50":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -124,7 +124,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">java.io.File</a></li>
 <li>
 <ul class="inheritance">
+<li><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">com.topjohnwu.superuser.nio.ExtendedFile</a></li>
+<li>
+<ul class="inheritance">
 <li>com.topjohnwu.superuser.io.SuFile</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -139,7 +144,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <hr>
 <pre>public class <span class="typeNameLabel">SuFile</span>
-extends <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></pre>
+extends <a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></pre>
 <div class="block">A <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a> implementation using root shell.
  <p>
  All methods of this class are implemented by executing commands via the main shell.
@@ -149,13 +154,14 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  <p>
  Each method description in this class will list out its required commands.
  The following commands exist on all Android versions: <code>rm</code>, <code>rmdir</code>,
- <code>mv</code>, <code>ls</code>, and <code>mkdir</code>.
+ <code>mv</code>, <code>ls</code>, <code>ln</code>, and <code>mkdir</code>.
  The following commands require <code>toybox</code> on Android 6.0 and higher, or <code>busybox</code>
  to support legacy devices: <code>readlink</code>, <code>touch</code>, and <code>stat</code>.
  <p>
- This class has handy factory methods <code>SuFile.open(...)</code> for obtaining <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a>
+ This class has a few factory methods <code>SuFile.open(...)</code> for obtaining <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a>
  instances. These factory methods will return a normal <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a> instance if the main
- shell does not have root access, or else return a <a href="SuFile.html" title="class in com.topjohnwu.superuser.io"><code>SuFile</code></a> instance.</div>
+ shell does not have root access, or else return a <a href="SuFile.html" title="class in com.topjohnwu.superuser.io"><code>SuFile</code></a> instance. Warning: these
+ factory methods may block the calling thread if a main shell has not been created yet!</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="../../../../serialized-form.html#com.topjohnwu.superuser.io.SuFile">Serialized Form</a></dd>
@@ -261,55 +267,77 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 </tr>
 <tr id="i5" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createNewLink(java.lang.String)">createNewLink</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;existing)</code></th>
+<td class="colLast">
+<div class="block">Creates a new hard link named by this abstract pathname of an existing file
+ if and only if a file with this name does not yet exist.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createNewSymlink(java.lang.String)">createNewSymlink</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;target)</code></th>
+<td class="colLast">
+<div class="block">Creates a new symbolic link named by this abstract pathname to a target file
+ if and only if a file with this name does not yet exist.</div>
+</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#delete()">delete</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Deletes the file or directory denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#deleteOnExit()">deleteOnExit</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Unsupported</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#deleteRecursive()">deleteRecursive</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Deletes the file or directory denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#exists()">exists</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getAbsoluteFile()">getAbsoluteFile</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code><a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getAbsolutePath()">getAbsolutePath</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getCanonicalFile()">getCanonicalFile</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the canonical form of this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code><a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getCanonicalPath()">getCanonicalPath</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the canonical pathname string of this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i15" class="rowColor">
+<td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getChildFile(java.lang.String)">getChildFile</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;name)</code></th>
+<td class="colLast">
+<div class="block">Create a child relative to the abstract pathname using the same file system backend.</div>
+</td>
+</tr>
+<tr id="i16" class="altColor">
 <td class="colFirst"><code><a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getEscapedPath()">getEscapedPath</a></span>()</code></th>
 <td class="colLast">
@@ -317,63 +345,67 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  for shell commands.</div>
 </td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getFreeSpace()">getFreeSpace</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the number of unallocated bytes in the partition.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getParentFile()">getParentFile</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code><a href="../Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShell()">getShell</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getTotalSpace()">getTotalSpace</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the size of the partition.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUsableSpace()">getUsableSpace</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the number of bytes available to this process on the partition.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isBlock()">isBlock</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isCharacter()">isCharacter</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isDirectory()">isDirectory</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isFile()">isFile</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i26" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isNamedPipe()">isNamedPipe</a></span>()</code></th>
+</tr>
+<tr id="i27" class="rowColor">
+<td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isSocket()">isSocket</a></span>()</code></th>
+</tr>
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isSymlink()">isSymlink</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#lastModified()">lastModified</a></span>()</code></th>
 <td class="colLast">
@@ -381,14 +413,14 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  last modified.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#length()">length</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the length of the file denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code><a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#list()">list</a></span>()</code></th>
 <td class="colLast">
@@ -396,7 +428,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  directory denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code><a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#list(java.io.FilenameFilter)">list</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/FilenameFilter.html?is-external=true" title="class or interface in java.io" class="externalLink">FilenameFilter</a>&nbsp;filter)</code></th>
 <td class="colLast">
@@ -404,7 +436,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  directory denoted by this abstract pathname that satisfy the specified filter.</div>
 </td>
 </tr>
-<tr id="i28" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listFiles()">listFiles</a></span>()</code></th>
 <td class="colLast">
@@ -412,7 +444,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  directory denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i29" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listFiles(java.io.FileFilter)">listFiles</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/FileFilter.html?is-external=true" title="class or interface in java.io" class="externalLink">FileFilter</a>&nbsp;filter)</code></th>
 <td class="colLast">
@@ -420,7 +452,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  directory denoted by this abstract pathname that satisfy the specified filter.</div>
 </td>
 </tr>
-<tr id="i30" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code><a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listFiles(java.io.FilenameFilter)">listFiles</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/FilenameFilter.html?is-external=true" title="class or interface in java.io" class="externalLink">FilenameFilter</a>&nbsp;filter)</code></th>
 <td class="colLast">
@@ -428,14 +460,14 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  directory denoted by this abstract pathname that satisfy the specified filter.</div>
 </td>
 </tr>
-<tr id="i31" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#mkdir()">mkdir</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Creates the directory named by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#mkdirs()">mkdirs</a></span>()</code></th>
 <td class="colLast">
@@ -443,36 +475,50 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  necessary but nonexistent parent directories.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></td>
+<tr id="i38" class="altColor">
+<td class="colFirst"><code><a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newInputStream()">newInputStream</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Opens an InputStream with the matching file system backend of the file.</div>
+</td>
+</tr>
+<tr id="i39" class="rowColor">
+<td class="colFirst"><code><a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newOutputStream(boolean)">newOutputStream</a></span>&#8203;(boolean&nbsp;append)</code></th>
+<td class="colLast">
+<div class="block">Opens an OutputStream with the matching file system backend of the file.</div>
+</td>
+</tr>
+<tr id="i40" class="altColor">
+<td class="colFirst"><code>static <a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#open(java.io.File,java.lang.String)">open</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;parent,
     <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i34" class="altColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></td>
+<tr id="i41" class="rowColor">
+<td class="colFirst"><code>static <a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#open(java.lang.String)">open</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;pathname)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i35" class="rowColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></td>
+<tr id="i42" class="altColor">
+<td class="colFirst"><code>static <a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#open(java.lang.String,java.lang.String)">open</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;parent,
     <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i36" class="altColor">
-<td class="colFirst"><code>static <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></td>
+<tr id="i43" class="rowColor">
+<td class="colFirst"><code>static <a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#open(java.net.URI)">open</a></span>&#8203;(<a href="https://developer.android.com/reference/java/net/URI.html?is-external=true" title="class or interface in java.net" class="externalLink">URI</a>&nbsp;uri)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i37" class="rowColor">
+<tr id="i44" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#renameTo(java.io.File)">renameTo</a></span>&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;dest)</code></th>
 <td class="colLast">
 <div class="block">Renames the file denoted by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i38" class="altColor">
+<tr id="i45" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setExecutable(boolean,boolean)">setExecutable</a></span>&#8203;(boolean&nbsp;executable,
              boolean&nbsp;ownerOnly)</code></th>
@@ -481,14 +527,14 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  pathname.</div>
 </td>
 </tr>
-<tr id="i39" class="rowColor">
+<tr id="i46" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setLastModified(long)">setLastModified</a></span>&#8203;(long&nbsp;time)</code></th>
 <td class="colLast">
 <div class="block">Sets the last-modified time of the file or directory named by this abstract pathname.</div>
 </td>
 </tr>
-<tr id="i40" class="altColor">
+<tr id="i47" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setReadable(boolean,boolean)">setReadable</a></span>&#8203;(boolean&nbsp;readable,
            boolean&nbsp;ownerOnly)</code></th>
@@ -497,7 +543,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  pathname.</div>
 </td>
 </tr>
-<tr id="i41" class="rowColor">
+<tr id="i48" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setReadOnly()">setReadOnly</a></span>()</code></th>
 <td class="colLast">
@@ -505,14 +551,14 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
  only read operations are allowed.</div>
 </td>
 </tr>
-<tr id="i42" class="altColor">
+<tr id="i49" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setShell(com.topjohnwu.superuser.Shell)">setShell</a></span>&#8203;(<a href="../Shell.html" title="class in com.topjohnwu.superuser">Shell</a>&nbsp;shell)</code></th>
 <td class="colLast">
 <div class="block">Set the <code>Shell</code> instance to be used internally for all operations.</div>
 </td>
 </tr>
-<tr id="i43" class="rowColor">
+<tr id="i50" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setWritable(boolean,boolean)">setWritable</a></span>&#8203;(boolean&nbsp;writable,
            boolean&nbsp;ownerOnly)</code></th>
@@ -522,6 +568,13 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 </td>
 </tr>
 </table>
+<ul class="blockList">
+<li class="blockList"><a id="methods.inherited.from.class.com.topjohnwu.superuser.nio.ExtendedFile">
+<!--   -->
+</a>
+<h3>Methods inherited from class&nbsp;com.topjohnwu.superuser.nio.<a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></h3>
+<code><a href="../nio/ExtendedFile.html#newOutputStream()">newOutputStream</a></code></li>
+</ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.io.File">
 <!--   -->
@@ -606,7 +659,7 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 <ul class="blockList">
 <li class="blockList">
 <h4>open</h4>
-<pre class="methodSignature">public static&nbsp;<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;pathname)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;pathname)</pre>
 </li>
 </ul>
 <a id="open(java.lang.String,java.lang.String)">
@@ -615,8 +668,8 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 <ul class="blockList">
 <li class="blockList">
 <h4>open</h4>
-<pre class="methodSignature">public static&nbsp;<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;parent,
-                        <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;parent,
+                                <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</pre>
 </li>
 </ul>
 <a id="open(java.io.File,java.lang.String)">
@@ -625,8 +678,8 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 <ul class="blockList">
 <li class="blockList">
 <h4>open</h4>
-<pre class="methodSignature">public static&nbsp;<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;parent,
-                        <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;parent,
+                                <a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;child)</pre>
 </li>
 </ul>
 <a id="open(java.net.URI)">
@@ -635,7 +688,25 @@ extends <a href="https://developer.android.com/reference/java/io/File.html?is-ex
 <ul class="blockList">
 <li class="blockList">
 <h4>open</h4>
-<pre class="methodSignature">public static&nbsp;<a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/net/URI.html?is-external=true" title="class or interface in java.net" class="externalLink">URI</a>&nbsp;uri)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a>&nbsp;open&#8203;(<a href="https://developer.android.com/reference/java/net/URI.html?is-external=true" title="class or interface in java.net" class="externalLink">URI</a>&nbsp;uri)</pre>
+</li>
+</ul>
+<a id="getChildFile(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getChildFile</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>&nbsp;getChildFile&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;name)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../nio/ExtendedFile.html#getChildFile(java.lang.String)">ExtendedFile</a></code></span></div>
+<div class="block">Create a child relative to the abstract pathname using the same file system backend.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#getChildFile(java.lang.String)">getChildFile</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#%3Cinit%3E(java.io.File,java.lang.String)" title="class or interface in java.io" class="externalLink"><code>File(File, String)</code></a></dd>
+</dl>
 </li>
 </ul>
 <a id="setShell(com.topjohnwu.superuser.Shell)">
@@ -724,6 +795,50 @@ public&nbsp;<a href="https://developer.android.com/reference/java/lang/String.ht
 <dl>
 <dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
 <dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#createNewFile()" title="class or interface in java.io" class="externalLink">createNewFile</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+</dl>
+</li>
+</ul>
+<a id="createNewLink(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createNewLink</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;createNewLink&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;existing)</pre>
+<div class="block">Creates a new hard link named by this abstract pathname of an existing file
+ if and only if a file with this name does not yet exist.
+ <p>
+ Requires command <code>ln</code>.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#createNewLink(java.lang.String)">createNewLink</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>existing</code> - a path to an existing file.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if the named file does not exist and was successfully
+         created; <code>false</code> if the creation failed.</dd>
+</dl>
+</li>
+</ul>
+<a id="createNewSymlink(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createNewSymlink</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;createNewSymlink&#8203;(<a href="https://developer.android.com/reference/java/lang/String.html?is-external=true" title="class or interface in java.lang" class="externalLink">String</a>&nbsp;target)</pre>
+<div class="block">Creates a new symbolic link named by this abstract pathname to a target file
+ if and only if a file with this name does not yet exist.
+ <p>
+ Requires command <code>ln</code>.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#createNewSymlink(java.lang.String)">createNewSymlink</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>target</code> - the target of the symbolic link.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if the named file does not exist and was successfully
+         created; <code>false</code> if the creation failed.</dd>
 </dl>
 </li>
 </ul>
@@ -829,9 +944,10 @@ public&nbsp;<a href="https://developer.android.com/reference/java/lang/String.ht
 <h4>getAbsoluteFile</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
 public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>&nbsp;getAbsoluteFile()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../nio/ExtendedFile.html#getAbsoluteFile()">ExtendedFile</a></code></span></div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#getAbsoluteFile()" title="class or interface in java.io" class="externalLink">getAbsoluteFile</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#getAbsoluteFile()">getAbsoluteFile</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 </dl>
 </li>
 </ul>
@@ -866,8 +982,8 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
  <p>
  Requires command <code>readlink</code>.</div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#getCanonicalFile()" title="class or interface in java.io" class="externalLink">getCanonicalFile</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#getCanonicalFile()">getCanonicalFile</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#getCanonicalFile()" title="class or interface in java.io" class="externalLink"><code>File.getCanonicalFile()</code></a></dd>
 </dl>
@@ -880,9 +996,10 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
 <li class="blockList">
 <h4>getParentFile</h4>
 <pre class="methodSignature">public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a>&nbsp;getParentFile()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../nio/ExtendedFile.html#getParentFile()">ExtendedFile</a></code></span></div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#getParentFile()" title="class or interface in java.io" class="externalLink">getParentFile</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#getParentFile()">getParentFile</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 </dl>
 </li>
 </ul>
@@ -974,6 +1091,8 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
 <h4>isBlock</h4>
 <pre class="methodSignature">public&nbsp;boolean&nbsp;isBlock()</pre>
 <dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#isBlock()">isBlock</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>true if the abstract pathname denotes a block device.</dd>
 </dl>
@@ -987,6 +1106,8 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
 <h4>isCharacter</h4>
 <pre class="methodSignature">public&nbsp;boolean&nbsp;isCharacter()</pre>
 <dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#isCharacter()">isCharacter</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>true if the abstract pathname denotes a character device.</dd>
 </dl>
@@ -1000,8 +1121,40 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
 <h4>isSymlink</h4>
 <pre class="methodSignature">public&nbsp;boolean&nbsp;isSymlink()</pre>
 <dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#isSymlink()">isSymlink</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>true if the abstract pathname denotes a symbolic link file.</dd>
+<dd>true if the abstract pathname denotes a symbolic link.</dd>
+</dl>
+</li>
+</ul>
+<a id="isNamedPipe()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isNamedPipe</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;isNamedPipe()</pre>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#isNamedPipe()">isNamedPipe</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>true if the abstract pathname denotes a named pipe (FIFO).</dd>
+</dl>
+</li>
+</ul>
+<a id="isSocket()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>isSocket</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;isSocket()</pre>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#isSocket()">isSocket</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>true if the abstract pathname denotes a socket file.</dd>
 </dl>
 </li>
 </ul>
@@ -1250,8 +1403,8 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
  <p>
  Requires command <code>ls</code>.</div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles()" title="class or interface in java.io" class="externalLink">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#listFiles()">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles()" title="class or interface in java.io" class="externalLink"><code>File.listFiles()</code></a></dd>
 </dl>
@@ -1270,8 +1423,8 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
  <p>
  Requires command <code>ls</code>.</div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles(java.io.FilenameFilter)" title="class or interface in java.io" class="externalLink">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#listFiles(java.io.FilenameFilter)">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles(java.io.FilenameFilter)" title="class or interface in java.io" class="externalLink"><code>File.listFiles(FilenameFilter)</code></a></dd>
 </dl>
@@ -1280,7 +1433,7 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
 <a id="listFiles(java.io.FileFilter)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>listFiles</h4>
 <pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/Nullable.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@Nullable</a>
@@ -1290,10 +1443,50 @@ public&nbsp;<a href="SuFile.html" title="class in com.topjohnwu.superuser.io">Su
  <p>
  Requires command <code>ls</code>.</div>
 <dl>
-<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
-<dd><code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles(java.io.FileFilter)" title="class or interface in java.io" class="externalLink">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink">File</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#listFiles(java.io.FileFilter)">listFiles</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="https://developer.android.com/reference/java/io/File.html?is-external=true#listFiles(java.io.FileFilter)" title="class or interface in java.io" class="externalLink"><code>File.listFiles(FileFilter)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="newInputStream()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newInputStream</h4>
+<pre class="methodSignature">public&nbsp;<a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">InputStream</a>&nbsp;newInputStream()
+                           throws <a href="https://developer.android.com/reference/java/io/IOException.html?is-external=true" title="class or interface in java.io" class="externalLink">IOException</a></pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../nio/ExtendedFile.html#newInputStream()">ExtendedFile</a></code></span></div>
+<div class="block">Opens an InputStream with the matching file system backend of the file.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#newInputStream()">newInputStream</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code><a href="https://developer.android.com/reference/java/io/IOException.html?is-external=true" title="class or interface in java.io" class="externalLink">IOException</a></code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://developer.android.com/reference/java/io/FileInputStream.html?is-external=true#%3Cinit%3E(java.io.File)" title="class or interface in java.io" class="externalLink"><code>FileInputStream(File)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="newOutputStream(boolean)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>newOutputStream</h4>
+<pre class="methodSignature">public&nbsp;<a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink">OutputStream</a>&nbsp;newOutputStream&#8203;(boolean&nbsp;append)
+                             throws <a href="https://developer.android.com/reference/java/io/IOException.html?is-external=true" title="class or interface in java.io" class="externalLink">IOException</a></pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../nio/ExtendedFile.html#newOutputStream(boolean)">ExtendedFile</a></code></span></div>
+<div class="block">Opens an OutputStream with the matching file system backend of the file.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../nio/ExtendedFile.html#newOutputStream(boolean)">newOutputStream</a></code>&nbsp;in class&nbsp;<code><a href="../nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></code></dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code><a href="https://developer.android.com/reference/java/io/IOException.html?is-external=true" title="class or interface in java.io" class="externalLink">IOException</a></code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://developer.android.com/reference/java/io/FileOutputStream.html?is-external=true#%3Cinit%3E(java.io.File,boolean)" title="class or interface in java.io" class="externalLink"><code>FileOutputStream(File, boolean)</code></a></dd>
 </dl>
 </li>
 </ul>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":2,"i1":2,"i2":8,"i3":2,"i4":2,"i5":2,"i6":1,"i7":2,"i8":2,"i9":2,"i10":1,"i11":1,"i12":2,"i13":2,"i14":2,"i15":2,"i16":2};
+var data = {"i0":2,"i1":2,"i2":2,"i3":8,"i4":2,"i5":2,"i6":2,"i7":1,"i8":2,"i9":2,"i10":2,"i11":1,"i12":1,"i13":2,"i14":2,"i15":2,"i16":2,"i17":2};
 var tabs = {65535:["t0","All Classes"],1:["t1","Interface Summary"],2:["t2","Class Summary"],8:["t4","Exception Summary"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -109,102 +109,108 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><a href="com/topjohnwu/superuser/BusyBoxInstaller.html" title="class in com.topjohnwu.superuser">BusyBoxInstaller</a></td>
-<th class="colLast" scope="row">
-<div class="block">An initializer that installs and setup the bundled BusyBox.</div>
-</th>
-</tr>
-<tr id="i1" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/CallbackList.html" title="class in com.topjohnwu.superuser">CallbackList</a>&lt;<a href="com/topjohnwu/superuser/CallbackList.html" title="type parameter in CallbackList">E</a>&gt;</td>
 <th class="colLast" scope="row">
 <div class="block">An <a href="https://developer.android.com/reference/java/util/AbstractList.html?is-external=true" title="class or interface in java.util" class="externalLink"><code>AbstractList</code></a> that calls <code>onAddElement</code> when a new element is added to the list.</div>
 </th>
 </tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><a href="com/topjohnwu/superuser/nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></td>
+<th class="colLast" scope="row">
+<div class="block"><a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a> API with extended features.</div>
+</th>
+</tr>
 <tr id="i2" class="altColor">
+<td class="colFirst"><a href="com/topjohnwu/superuser/nio/FileSystemManager.html" title="class in com.topjohnwu.superuser.nio">FileSystemManager</a></td>
+<th class="colLast" scope="row">
+<div class="block">Access file system APIs.</div>
+</th>
+</tr>
+<tr id="i3" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/NoShellException.html" title="class in com.topjohnwu.superuser">NoShellException</a></td>
 <th class="colLast" scope="row">
 <div class="block">Thrown when it is impossible to construct <code>Shell</code>.</div>
 </th>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></td>
 <th class="colLast" scope="row">
 <div class="block">A remote root service using native Android Binder IPC.</div>
 </th>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></td>
 <th class="colLast" scope="row">
 <div class="block">A class providing APIs to an interactive Unix shell.</div>
 </th>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></td>
 <th class="colLast" scope="row">
 <div class="block">Builder class for <a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser"><code>Shell</code></a> instances.</div>
 </th>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.GetShellCallback.html" title="interface in com.topjohnwu.superuser">Shell.GetShellCallback</a></td>
 <th class="colLast" scope="row">
 <div class="block">The callback used in <a href="com/topjohnwu/superuser/Shell.html#getShell(com.topjohnwu.superuser.Shell.GetShellCallback)"><code>Shell.getShell(GetShellCallback)</code></a>.</div>
 </th>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a></td>
 <th class="colLast" scope="row">
 <div class="block">The initializer when a new <code>Shell</code> is constructed.</div>
 </th>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></td>
 <th class="colLast" scope="row">
 <div class="block">Represents a shell Job that could later be executed or submitted to background threads.</div>
 </th>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.Result.html" title="class in com.topjohnwu.superuser">Shell.Result</a></td>
 <th class="colLast" scope="row">
 <div class="block">The result of a <a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a>.</div>
 </th>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.ResultCallback.html" title="interface in com.topjohnwu.superuser">Shell.ResultCallback</a></td>
 <th class="colLast" scope="row">
 <div class="block">The callback to receive a result in <a href="com/topjohnwu/superuser/Shell.Job.html#submit(com.topjohnwu.superuser.Shell.ResultCallback)"><code>Shell.Job.submit(Shell.ResultCallback)</code></a>.</div>
 </th>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a></td>
 <th class="colLast" scope="row">
 <div class="block">A task that can be executed by a shell with the method <a href="com/topjohnwu/superuser/Shell.html#execTask(com.topjohnwu.superuser.Shell.Task)"><code>Shell.execTask(Task)</code></a>.</div>
 </th>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/ShellUtils.html" title="class in com.topjohnwu.superuser">ShellUtils</a></td>
 <th class="colLast" scope="row">
 <div class="block">Some handy utility methods that are used in <code>libsu</code>.</div>
 </th>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></td>
 <th class="colLast" scope="row">
 <div class="block">A <a href="https://developer.android.com/reference/java/io/File.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>File</code></a> implementation using root shell.</div>
 </th>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/io/SuFileInputStream.html" title="class in com.topjohnwu.superuser.io">SuFileInputStream</a></td>
 <th class="colLast" scope="row">
 <div class="block">Open <a href="https://developer.android.com/reference/java/io/InputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>InputStream</code></a>s that read files with root access.</div>
 </th>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/io/SuFileOutputStream.html" title="class in com.topjohnwu.superuser.io">SuFileOutputStream</a></td>
 <th class="colLast" scope="row">
 <div class="block">Open <a href="https://developer.android.com/reference/java/io/OutputStream.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>OutputStream</code></a>s that read files with root access.</div>
 </th>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><a href="com/topjohnwu/superuser/io/SuRandomAccessFile.html" title="class in com.topjohnwu.superuser.io">SuRandomAccessFile</a></td>
 <th class="colLast" scope="row">
 <div class="block">Access files using the main shell and mimics <a href="https://developer.android.com/reference/java/io/RandomAccessFile.html?is-external=true" title="class or interface in java.io" class="externalLink"><code>RandomAccessFile</code></a>.</div>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":9,"i4":6,"i5":10,"i6":6};
+var data = {"i0":6,"i1":6,"i2":6,"i3":9,"i4":6,"i5":6,"i6":10,"i7":6};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -216,20 +216,27 @@ extends <a href="https://developer.android.com/reference/java/lang/Object.html?i
 </tr>
 <tr id="i4" class="altColor">
 <td class="colFirst"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setContext(android.content.Context)">setContext</a></span>&#8203;(<a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;context)</code></th>
+<td class="colLast">
+<div class="block">Set the <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a> to use when creating a shell.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setFlags(int)">setFlags</a></span>&#8203;(int&nbsp;flags)</code></th>
 <td class="colLast">
 <div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
  constructed.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setInitializers(java.lang.Class...)">setInitializers</a></span>&#8203;(<a href="https://developer.android.com/reference/java/lang/Class.html?is-external=true" title="class or interface in java.lang" class="externalLink">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;...&nbsp;classes)</code></th>
 <td class="colLast">
 <div class="block">Set the desired <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setTimeout(long)">setTimeout</a></span>&#8203;(long&nbsp;timeout)</code></th>
 <td class="colLast">
@@ -352,6 +359,34 @@ public abstract&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>timeout</code> - the maximum time to wait in seconds.
                 The default timeout is 20 seconds.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>this Builder object for chaining of calls.</dd>
+</dl>
+</li>
+</ul>
+<a id="setContext(android.content.Context)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setContext</h4>
+<pre class="methodSignature"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+public abstract&nbsp;<a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a>&nbsp;setContext&#8203;(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html?is-external=true" title="class or interface in androidx.annotation" class="externalLink">@NonNull</a>
+                                         <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink">Context</a>&nbsp;context)</pre>
+<div class="block">Set the <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a> to use when creating a shell.
+ <p>
+ The <a href="https://developer.android.com/reference/android/content/Context.html?is-external=true" title="class or interface in android.content" class="externalLink"><code>Context</code></a> instance provided here will not be directly passed to
+ <a href="Shell.Initializer.html#onInit(android.content.Context,com.topjohnwu.superuser.Shell)"><code>Shell.Initializer.onInit(Context, Shell)</code></a>; the raw ContextImpl of the application
+ will be obtained through the provided context, and that will be used instead.
+ <p>
+ Calling this method is not usually necessary but recommended, as the library can
+ obtain the current application through Android internal APIs. However, if your
+ application uses <a href="https://developer.android.com/reference/android/R.attr.html?is-external=true#sharedUserId" title="class or interface in android" class="externalLink"><code>R.attr.sharedUserId</code></a>, or a shell/root service can be
+ created during the application attach process, then setting a Context explicitly
+ using this method is required.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>context</code> - a context of the current package.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>this Builder object for chaining of calls.</dd>
 </dl>

@@ -143,9 +143,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 extends <a href="https://developer.android.com/reference/android/content/ContextWrapper.html?is-external=true" title="class or interface in android.content" class="externalLink">ContextWrapper</a></pre>
 <div class="block">A remote root service using native Android Binder IPC.
  <p>
- Pro tip: while developing an app with RootServices, modify the run/debug configuration and check
- the "Always install with package manager" option if testing on Android 11+, or else the code
- changes will not be reflected after Android Studio's deployment.
+ Important: while developing an app with RootServices, modify the run/debug configuration and
+ check the "Always install with package manager" option if testing on Android 11+, or else the
+ code changes will not be reflected after Android Studio's deployment.
  <p>
  This class is almost a complete recreation of a bound service running in a root process.
  Instead of using the original <code>Context.bindService(...)</code> methods to start and bind
