@@ -24,19 +24,16 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '4.0.3'
+    def libsuVersion = '5.0.0'
 
-    // The core module is used by all other components
+    // The core module that provides APIs to a shell
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
 
-    // Optional: APIs for creating root services
+    // Optional: APIs for creating root services. Depends on ":core"
     implementation "com.github.topjohnwu.libsu:service:${libsuVersion}"
 
-    // Optional: For com.topjohnwu.superuser.io classes
-    implementation "com.github.topjohnwu.libsu:io:${libsuVersion}"
-
-    // Optional: Bundle prebuilt BusyBox binaries
-    implementation "com.github.topjohnwu.libsu:busybox:${libsuVersion}"
+    // Optional: Provides remote file system support
+    implementation "com.github.topjohnwu.libsu:nio:${libsuVersion}"
 }
 ```
 
@@ -137,22 +134,6 @@ Shell.Builder builder = /* Create a shell builder */ ;
 builder.setInitializers(ExampleInitializer.class);
 ```
 
-### I/O
-
-Built on top of the `core` foundation is a suite of I/O classes, re-creating `java.io` classes for root access. Use `File`, `FileInputStream`, and `FileOutputStream` equivalents on files that are only accessible with root permissions. Add `com.github.topjohnwu.libsu:io` as a dependency to access root I/O classes:
-
-```java
-File bootBlock = SuFile.open("/dev/block/by-name/boot");
-if (bootBlock.exists()) {
-    try (InputStream in = SuFileInputStream.open(bootBlock);
-         OutputStream out = SuFileOutputStream.open("/data/boot.img")) {
-        // Do I/O stuffs...
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
-```
-
 ### Root Services
 
 If interacting with a root shell is too limited for your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). For more details, please read the full Javadoc of `RootService` and check out the example app for more details. Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
@@ -174,22 +155,40 @@ RootService.bind(intent, connection);
 
 If the application process creating the root service has a debugger attached, the root service will automatically enable debugging mode and wait for the debugger to attach. In Android Studio, go to **"Run > Attach Debugger to Android Process"**, tick the **"Show all processes"** box, and you should be able to manually attach to the remote root process. Currently, only the **"Java only"** debugger is supported.
 
-### BusyBox
+### I/O
 
-It is recommended to utilize root services instead of relying on the shell environment for your application. However, if you still want to embed BusyBox directly in your app to ensure a 100% reproducible shell environment, add `com.github.topjohnwu.libsu:busybox` as a dependency (`android:extractNativeLibs=false` is **NOT** compatible with the `busybox` module):
+Add `com.github.topjohnwu.libsu:nio` as a dependency to access remote file system APIs:
 
 ```java
-Shell.Builder builder = /* Create a shell builder */ ;
-// Set BusyBoxInstaller as the first initializer
-builder.setInitializers(BusyBoxInstaller.class, /* other initializers */);
-```
+// Create the file system service in the root process
+// For example, create and send the service back to the client in a RootService
+public class ExampleService extends RootService {
+    @Override
+    public IBinder onBind(Intent intent) {
+        return FileSystemManager.getService();
+    }
+}
 
-The BusyBox binaries are statically linked, feature complete, and includes full SElinux support. As a result they are pretty large in size (1.3 - 2.1 MB for each ABI). To reduce APK size, the best option is to use either [App Bundles](https://developer.android.com/guide/app-bundle) or [Split APKs](https://developer.android.com/studio/build/configure-apk-splits).
+// In the client process
+IBinder binder = /* From the root service connection */;
+FileSystemManager remoteFS;
+try {
+    remoteFS = FileSystemManager.getRemote(binder);
+} catch (RemoteException e) {
+    // Handle errors
+}
+ExtendedFile bootBlock = remoteFS.getFile("/dev/block/by-name/boot");
+if (bootBlock.exists()) {
+    ExtendedFile bootBackup = remoteFS.getFile("/data/boot.img");
+    try (InputStream in = bootBlock.newInputStream();
+         OutputStream out = bootBackup.newOutputStream()) {
+        // Do I/O stuffs...
+    } catch (IOException e) {
+        // Handle errors
+    }
+}
+```
 
 ## License
 
 This project is licensed under the Apache License, Version 2.0. Please refer to `LICENSE` for the full text.
-
-In the module `busybox`, prebuilt BusyBox binaries are included. BusyBox is licensed under GPLv2, please check its repository for full detail. The binaries included in the project are built with sources from [this repository](https://github.com/topjohnwu/ndk-busybox).
-
-Theoretically, using a GPLv2 binary without linkage does not affect your app, so it should be fine to use it in closed source or other licensed projects as long as the source code of the binary itself is released (which I just provided), but **this is not legal advice**. Please consult legal experts if feeling concerned using the `busybox` module.
