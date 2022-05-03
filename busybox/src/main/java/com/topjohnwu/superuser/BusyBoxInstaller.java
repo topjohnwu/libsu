@@ -16,16 +16,12 @@
 
 package com.topjohnwu.superuser;
 
-import static com.topjohnwu.superuser.ShellUtils.fastCmdResult;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.system.Os;
 
 import androidx.annotation.NonNull;
-
-import com.topjohnwu.superuser.internal.Utils;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -46,7 +42,9 @@ import java.util.UUID;
  * Please refer to the
  * <a href="https://topjohnwu.github.io/Magisk/guides.html#busybox">Magisk Documentation</a>
  * for more details on how "Standalone Mode ASH" mode works.
+ * @deprecated
  */
+@Deprecated
 public class BusyBoxInstaller extends Shell.Initializer {
 
     private static final String LIBSU_PREF = "libsu";
@@ -65,20 +63,28 @@ public class BusyBoxInstaller extends Shell.Initializer {
         } catch (Exception ignored) {}
     }
 
+    private static Context getDeContext(Context context) {
+        return Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
+    }
+
+    private static boolean cmdResult(Shell shell, String cmd) {
+        return shell.newJob().add(cmd).to(null).exec().isSuccess();
+    }
+
     @Override
     public boolean onInit(@NonNull Context context, @NonNull Shell shell) {
         Shell.Job job = shell.newJob();
         job.add("export ASH_STANDALONE=1");
 
         File lib = new File(context.getApplicationInfo().nativeLibraryDir, "libbusybox.so");
-        if (shell.isRoot() && !fastCmdResult(shell, lib + " sh -c '" + lib + " true'")) {
+        if (shell.isRoot() && !cmdResult(shell, lib + " sh -c '" + lib + " true'")) {
             // This happens ONLY on some older Samsung devices
-            if (fastCmdResult(shell, "[ -x $(magisk --path)/busybox/busybox ]")) {
+            if (cmdResult(shell, "[ -x $(magisk --path)/busybox/busybox ]")) {
                 // Modern Magisk installed, use that instead
                 job.add("exec $(magisk --path)/busybox/busybox sh");
             } else {
                 // Copy busybox to somewhere outside of /data
-                Context de = Utils.getDeContext(context);
+                Context de = getDeContext(context);
                 SharedPreferences prefs = de.getSharedPreferences(LIBSU_PREF, Context.MODE_PRIVATE);
                 String uuid = prefs.getString(BB_UUID, null);
                 if (uuid == null) {
@@ -87,7 +93,7 @@ public class BusyBoxInstaller extends Shell.Initializer {
                 }
                 String tmp = "/dev/busybox-" + uuid;
                 File link = new File(de.getCacheDir(), "libbusybox.so");
-                if (!fastCmdResult(shell, "[ -x " + link + " ]")) {
+                if (!cmdResult(shell, "[ -x " + link + " ]")) {
                     link.delete();
                     symlink(tmp, link.getPath());
                     job.add(
