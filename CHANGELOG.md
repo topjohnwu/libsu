@@ -1,3 +1,26 @@
+## 5.0.0
+
+Check the updated Javadoc and the `example` app for details on how to use the remote file system in the new `nio` module.
+
+### New Features
+
+- Introduce a new module: `nio`
+  - Includes file system implementations for local and remote processes
+  - New `FileSystemManager` class to access either local or remote file system implementations
+  - New `ExtendedFile` class to extend functionality of the old Java `File` API
+- [core] New API `Shell.isAppGrantedRoot()` returns a nullable `Boolean`:
+  - `true` if a root shell has been created
+  - `false` if it has been determined that root access is impossible to get
+  - `null` if the library has not, or could not determine the current root grant state. Future invocations of this method may return a non-null value if the library gained more information during shell creation.
+- [core] New API `Shell.Builder.setContext(context)`: allow the developer to explicitly provide a `Context` object
+- [io] `SuFile` is updated to also extend `ExtendedFile`, which adds some new features and APIs
+
+### Deprecation
+
+- Version `5.0.0` will be the final release of the `busybox` module. If you cannot remove the usage of the module, you can pin the `busybox` module to version `5.0.0`, as it is updated to be fully self contained, making it guaranteed to work with future `libsu` versions.
+- Usage of `SuFile`/`SuFileOutputStream`/`SuFileInputStream`/`SuRandomAccessFile` is discouraged. Although these APIs will remain for the foreseeable future, please migrate to use `RootService` + the `nio` module for all root I/O operations.
+- `Shell.rootAccess()` is deprecated. Please switch to use the more accurate `Shell.isAppGrantedRoot()` API
+
 ## 4.0.3
 
 ### Improvements
