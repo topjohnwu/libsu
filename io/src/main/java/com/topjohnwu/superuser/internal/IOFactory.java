@@ -22,6 +22,8 @@ import com.topjohnwu.superuser.io.SuFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class IOFactory {
@@ -49,12 +51,12 @@ public final class IOFactory {
         return new RAFWrapper(file, mode);
     }
 
-    public static FifoInputStream fifoIn(SuFile file) throws FileNotFoundException {
-        return new FifoInputStream(file);
+    public static InputStream fifoIn(SuFile file) throws FileNotFoundException {
+        return ShellPipeStream.openReadStream(file);
     }
 
-    public static FifoOutputStream fifoOut(SuFile file, boolean append)
+    public static OutputStream fifoOut(SuFile file, boolean append)
             throws FileNotFoundException {
-        return new FifoOutputStream(file, append);
+        return ShellPipeStream.openWriteStream(file, append);
     }
 }
