@@ -127,12 +127,14 @@ public abstract class ExtendedFile extends File {
      * Opens an InputStream with the matching file system backend of the file.
      * @see FileInputStream#FileInputStream(File)
      */
+    @NonNull
     public abstract InputStream newInputStream() throws IOException;
 
     /**
      * Opens an OutputStream with the matching file system backend of the file.
      * @see FileOutputStream#FileOutputStream(File)
      */
+    @NonNull
     public final OutputStream newOutputStream() throws IOException {
         return newOutputStream(false);
     }
@@ -141,6 +143,7 @@ public abstract class ExtendedFile extends File {
      * Opens an OutputStream with the matching file system backend of the file.
      * @see FileOutputStream#FileOutputStream(File, boolean)
      */
+    @NonNull
     public abstract OutputStream newOutputStream(boolean append) throws IOException;
 
     /**

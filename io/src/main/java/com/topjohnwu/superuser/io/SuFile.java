@@ -642,11 +642,13 @@ public class SuFile extends ExtendedFile {
         return files.toArray(new SuFile[0]);
     }
 
+    @NonNull
     @Override
     public InputStream newInputStream() throws IOException {
         return IOFactory.fifoIn(this);
     }
 
+    @NonNull
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
         return IOFactory.fifoOut(this, append);

@@ -334,6 +334,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
         }
     }
 
+    @NonNull
     @Override
     public InputStream newInputStream() throws IOException {
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
@@ -348,6 +349,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
         return new ParcelFileDescriptor.AutoCloseInputStream(pipe[0]);
     }
 
+    @NonNull
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();

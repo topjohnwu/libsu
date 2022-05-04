@@ -105,11 +105,13 @@ class LocalFile extends FileImpl<LocalFile> {
         }
     }
 
+    @NonNull
     @Override
     public InputStream newInputStream() throws IOException {
         return new FileInputStream(this);
     }
 
+    @NonNull
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
         return new FileOutputStream(this, append);
