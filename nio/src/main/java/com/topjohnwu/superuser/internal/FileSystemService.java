@@ -16,8 +16,11 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static android.system.OsConstants.O_APPEND;
+import static android.system.OsConstants.O_CREAT;
 import static android.system.OsConstants.O_NONBLOCK;
 import static android.system.OsConstants.O_RDONLY;
+import static android.system.OsConstants.O_TRUNC;
 import static android.system.OsConstants.O_WRONLY;
 import static android.system.OsConstants.SEEK_CUR;
 import static android.system.OsConstants.SEEK_END;
@@ -25,33 +28,21 @@ import static android.system.OsConstants.SEEK_SET;
 
 import android.annotation.SuppressLint;
 import android.os.Binder;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.system.ErrnoException;
-import android.system.Int64Ref;
 import android.system.Os;
 import android.system.OsConstants;
-import android.system.StructStat;
 import android.util.LruCache;
-import android.util.MutableLong;
-import android.util.SparseArray;
 
-import androidx.annotation.NonNull;
-
-import java.io.Closeable;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 class FileSystemService extends IFileSystemService.Stub {
 
-    // This is only for testing purpose
-    private static final boolean FORCE_NO_SPLICE = false;
-
-    private static final int PIPE_CAPACITY = 16 * 4096;
+    static final int PIPE_CAPACITY = 16 * 4096;
 
     private final LruCache<String, File> mCache = new LruCache<String, File>(100) {
         @Override
@@ -220,110 +211,8 @@ class FileSystemService extends IFileSystemService.Stub {
 
     // I/O APIs
 
-    static class FileHolder implements Closeable {
-        FileDescriptor fd;
-        FileDescriptor read;
-        FileDescriptor write;
-
-        private ByteBuffer buf;
-        private StructStat st;
-
-        @Override
-        public void close() {
-            if (fd != null) {
-                try { Os.close(fd); } catch (ErrnoException ignored) {}
-                fd = null;
-            }
-            if (read != null) {
-                try { Os.close(read); } catch (ErrnoException ignored) {}
-                read = null;
-            }
-            if (write != null) {
-                try { Os.close(write); } catch (ErrnoException ignored) {}
-                write = null;
-            }
-        }
-
-        void ensureOpen() throws ClosedChannelException {
-            if (fd == null || read == null || write == null)
-                throw new ClosedChannelException();
-        }
-
-        synchronized ByteBuffer getBuf() {
-            if (buf == null)
-                buf = ByteBuffer.allocateDirect(PIPE_CAPACITY);
-            buf.clear();
-            return buf;
-        }
-
-        synchronized StructStat getStat() throws ErrnoException {
-            if (st == null)
-                st = Os.fstat(fd);
-            return st;
-        }
-    }
-
-    static class FileContainer {
-
-        private final static String ERROR_MSG = "Requested file was not opened!";
-
-        private int nextHandle = 0;
-        // pid -> handle -> holder
-        private final SparseArray<SparseArray<FileHolder>> files = new SparseArray<>();
-
-        @NonNull
-        synchronized FileHolder get(int handle) throws IOException {
-            int pid = Binder.getCallingPid();
-            SparseArray<FileHolder> pidFiles = files.get(pid);
-            if (pidFiles == null)
-                throw new IOException(ERROR_MSG);
-            FileHolder h = pidFiles.get(handle);
-            if (h == null)
-                throw new IOException(ERROR_MSG);
-            return h;
-        }
-
-        synchronized int put(FileHolder h) {
-            int pid = Binder.getCallingPid();
-            SparseArray<FileHolder> pidFiles = files.get(pid);
-            if (pidFiles == null) {
-                pidFiles = new SparseArray<>();
-                files.put(pid, pidFiles);
-            }
-            int handle = nextHandle++;
-            pidFiles.append(handle, h);
-            return handle;
-        }
-
-        synchronized void remove(int handle) {
-            int pid = Binder.getCallingPid();
-            SparseArray<FileHolder> pidFiles = files.get(pid);
-            if (pidFiles == null)
-                return;
-            FileHolder h = pidFiles.get(handle);
-            if (h == null)
-                return;
-            pidFiles.remove(handle);
-            synchronized (h) {
-                h.close();
-            }
-        }
-
-        synchronized void pidDied(int pid) {
-            SparseArray<FileHolder> pidFiles = files.get(pid);
-            if (pidFiles == null)
-                return;
-            files.remove(pid);
-            for (int i = 0; i < pidFiles.size(); ++i) {
-                FileHolder h = pidFiles.valueAt(i);
-                synchronized (h) {
-                    h.close();
-                }
-            }
-        }
-    }
-
     private final FileContainer openFiles = new FileContainer();
+    private final ExecutorService ioPool = Executors.newCachedThreadPool();
 
     @Override
     public void register(IBinder client) {
@@ -335,7 +224,7 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @SuppressWarnings("OctalInteger")
     @Override
-    public ParcelValues open(String path, int mode, String fifo) {
+    public ParcelValues openChannel(String path, int mode, String fifo) {
         ParcelValues values = new ParcelValues();
         values.add(null);
         FileHolder h = new FileHolder();
@@ -344,6 +233,58 @@ class FileSystemService extends IFileSystemService.Stub {
             h.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
             h.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
             values.add(openFiles.put(h));
+        } catch (ErrnoException e) {
+            values.set(0, e);
+            h.close();
+        }
+        return values;
+    }
+
+    @Override
+    public ParcelValues openReadStream(String path, String fifo) {
+        ParcelValues values = new ParcelValues();
+        values.add(null);
+        FileHolder h = new FileHolder();
+        try {
+            h.fd = Os.open(path, O_RDONLY, 0);
+            ioPool.execute(() -> {
+                synchronized (h) {
+                    try {
+                        h.write = Os.open(fifo, O_WRONLY, 0);
+                        while (h.pread(PIPE_CAPACITY, -1) > 0);
+                    } catch (ErrnoException | IOException ignored) {
+                    } finally {
+                        h.close();
+                    }
+                }
+            });
+        } catch (ErrnoException e) {
+            values.set(0, e);
+            h.close();
+        }
+        return values;
+    }
+
+    @SuppressWarnings("OctalInteger")
+    @Override
+    public ParcelValues openWriteStream(String path, String fifo, boolean append) {
+        ParcelValues values = new ParcelValues();
+        values.add(null);
+        FileHolder h = new FileHolder();
+        try {
+            int mode = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
+            h.fd = Os.open(path, mode, 0666);
+            ioPool.execute(() -> {
+                synchronized (h) {
+                    try {
+                        h.read = Os.open(fifo, O_RDONLY, 0);
+                        while (h.pwrite(PIPE_CAPACITY, -1, false) > 0);
+                    } catch (ErrnoException | IOException ignored) {
+                    } finally {
+                        h.close();
+                    }
+                }
+            });
         } catch (ErrnoException e) {
             values.set(0, e);
             h.close();
@@ -362,37 +303,9 @@ class FileSystemService extends IFileSystemService.Stub {
         values.add(null);
         try {
             final FileHolder h = openFiles.get(handle);
-            final long result;
             synchronized (h) {
-                h.ensureOpen();
-                if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
-                    Int64Ref inOff = offset < 0 ? null : new Int64Ref(offset);
-                    result = FileUtils.splice(h.fd, inOff, h.write, null, len, 0);
-                } else {
-                    StructStat st = h.getStat();
-                    if (OsConstants.S_ISREG(st.st_mode) || OsConstants.S_ISBLK(st.st_mode)) {
-                        // sendfile only supports reading from mmap-able files
-                        MutableLong inOff = offset < 0 ? null : new MutableLong(offset);
-                        result = FileUtils.sendfile(h.write, h.fd, inOff, len);
-                    } else {
-                        // Fallback to copy into internal buffer
-                        ByteBuffer buf = h.getBuf();
-                        buf.limit(Math.min(len, buf.capacity()));
-                        if (offset < 0) {
-                            Os.read(h.fd, buf);
-                        } else {
-                            Os.pread(h.fd, buf, offset);
-                        }
-                        buf.flip();
-                        result = buf.remaining();
-                        // Need to write all bytes
-                        for (int sz = (int) result; sz > 0;) {
-                            sz -= Os.write(h.write, buf);
-                        }
-                    }
-                }
+                values.add(h.pread(len, offset));
             }
-            values.add((int) result);
         } catch (IOException | ErrnoException e) {
             values.set(0, e);
         }
@@ -406,35 +319,7 @@ class FileSystemService extends IFileSystemService.Stub {
         try {
             final FileHolder h = openFiles.get(handle);
             synchronized (h) {
-                h.ensureOpen();
-                if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
-                    Int64Ref outOff = offset < 0 ? null : new Int64Ref(offset);
-                    int sz = len;
-                    while (sz > 0) {
-                        // Need to write exactly len bytes
-                        sz -= FileUtils.splice(h.read, null, h.fd, outOff, sz, 0);
-                    }
-                } else {
-                    // Unfortunately, sendfile does not allow reading from pipes.
-                    // Manually read into an internal buffer then write to output.
-                    ByteBuffer buf = h.getBuf();
-                    int sz = 0;
-                    buf.limit(len);
-                    // Need to read and write exactly len bytes
-                    while (len > sz) {
-                        sz += Os.read(h.read, buf);
-                    }
-                    buf.flip();
-                    while (sz > 0) {
-                        if (offset < 0) {
-                            sz -= Os.write(h.fd, buf);
-                        } else {
-                            int w = Os.pwrite(h.fd, buf, offset);
-                            sz -= w;
-                            offset += w;
-                        }
-                    }
-                }
+                h.pwrite(len, offset, true);
             }
         } catch (IOException | ErrnoException e) {
             values.set(0, e);

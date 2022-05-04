@@ -31,10 +31,12 @@ interface IFileSystemService {
 
     // I/O APIs
     oneway void register(IBinder client);
-    /* (err, int) */ ParcelValues open(String path, int mode, String fifo);
+    /* (err, int) */ ParcelValues openChannel(String path, int mode, String fifo);
+    /* (err) */ ParcelValues openReadStream(String path, String fifo);
+    /* (err) */ ParcelValues openWriteStream(String path, String fifo, boolean append);
     oneway void close(int handle);
     /* (err, int) */ ParcelValues pread(int handle, int len, long offset);
-    /* (err, int) */ ParcelValues pwrite(int handle, int len, long offset);
+    /* (err) */ ParcelValues pwrite(int handle, int len, long offset);
     /* (err, long) */ ParcelValues lseek(int handle, long offset, int whence);
     /* (err, long) */ ParcelValues size(int handle);
     /* (err) */ ParcelValues ftruncate(int handle, long length);

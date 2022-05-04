@@ -16,22 +16,18 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static android.os.ParcelFileDescriptor.MODE_APPEND;
-import static android.os.ParcelFileDescriptor.MODE_CREATE;
-import static android.os.ParcelFileDescriptor.MODE_READ_ONLY;
-import static android.os.ParcelFileDescriptor.MODE_TRUNCATE;
-import static android.os.ParcelFileDescriptor.MODE_WRITE_ONLY;
-
 import android.os.RemoteException;
+import android.system.ErrnoException;
 import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.Channels;
 
 class RemoteFile extends FileImpl<RemoteFile> {
 
@@ -342,16 +338,33 @@ class RemoteFile extends FileImpl<RemoteFile> {
 
     @Override
     public InputStream newInputStream() throws IOException {
-        return Channels.newInputStream(new RemoteFileChannel(fs, this, MODE_READ_ONLY));
+        File fifo = null;
+        try {
+            fifo = FileUtils.createTempFIFO();
+            FileUtils.checkException(fs.openReadStream(getPath(), fifo.getPath()));
+            return new FileInputStream(fifo);
+        } catch (RemoteException | ErrnoException e) {
+            throw new IOException(e);
+        } finally {
+            // Once both sides opened the pipe, it can be unlinked
+            if (fifo != null)
+                fifo.delete();
+        }
     }
 
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
-        int mode = MODE_WRITE_ONLY | MODE_CREATE;
-        if (append)
-            mode |= MODE_APPEND;
-        else
-            mode |= MODE_TRUNCATE;
-        return Channels.newOutputStream(new RemoteFileChannel(fs, this, mode));
+        File fifo = null;
+        try {
+            fifo = FileUtils.createTempFIFO();
+            FileUtils.checkException(fs.openWriteStream(getPath(), fifo.getPath(), append));
+            return new FileOutputStream(fifo);
+        } catch (RemoteException | ErrnoException e) {
+            throw new IOException(e);
+        } finally {
+            // Once both sides opened the pipe, it can be unlinked
+            if (fifo != null)
+                fifo.delete();
+        }
     }
 }

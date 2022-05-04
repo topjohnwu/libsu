@@ -23,8 +23,8 @@ import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY;
 import android.util.Log;
 
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.internal.Utils;
 import com.topjohnwu.superuser.io.SuFile;
+import com.topjohnwu.superuser.io.SuRandomAccessFile;
 import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
@@ -41,7 +41,12 @@ import java.util.Random;
 
 public class StressTest {
 
+    interface FileCallback {
+        void onFile(ExtendedFile file) throws Exception;
+    }
+
     private static final String TEST_DIR= "/system/app";
+    private static final int BUFFER_SIZE = 512 * 1024;
     private static final Random r = new Random();
     private static final MessageDigest md;
 
@@ -59,17 +64,17 @@ public class StressTest {
     private static FileCallback callback;
     private static Map<String, byte[]> hashes;
 
-    interface FileCallback {
-        void onFile(ExtendedFile file) throws Exception;
-    }
-
     public static void perform(FileSystemManager fs) {
         remoteFS = fs;
         Shell.EXECUTOR.execute(() -> {
             try {
                 collectHashes();
-                testShellIO();
-                testRemoteIO();
+                // Test I/O streams
+                testShellStream();
+                testRemoteStream();
+                // Test random I/O
+                testShellRandomIO();
+                testRemoteChannel();
             } catch (Exception e){
                 Log.d(TAG, "", e);
             } finally {
@@ -91,38 +96,66 @@ public class StressTest {
 
         // Collect checksums of all files in test dir and use it as a reference
         // to verify the correctness of the several I/O implementations.
-        OutputStream out = new OutputStream() {
-            @Override
-            public void write(int b) {
-                md.update((byte) b);
-            }
-            @Override
-            public void write(byte[] b, int off, int len) {
-                md.update(b, off, len);
-            }
-        };
         Map<String, byte[]> map = new HashMap<>();
+        byte[] buf = new byte[BUFFER_SIZE];
         callback = file -> {
             try (InputStream in = file.newInputStream()) {
-                Utils.pump(in, out);
+                for (;;) {
+                    int read = in.read(buf);
+                    if (read <= 0)
+                        break;
+                    md.update(buf, 0, read);
+                }
             }
             map.put(file.getPath(), md.digest());
+        };
+        traverse(root);
+        hashes = map;
+    }
+
+    private static void testShellStream() throws Exception {
+        SuFile root = new SuFile(TEST_DIR);
+        SuFile outFile = new SuFile("/dev/null");
+        testIOStream(root, outFile);
+    }
+
+    private static void testRemoteStream() throws Exception {
+        ExtendedFile root = remoteFS.getFile(TEST_DIR);
+        ExtendedFile outFile = remoteFS.getFile("/dev/null");
+        testIOStream(root, outFile);
+    }
+
+    private static void testIOStream(ExtendedFile root, ExtendedFile outFile) throws Exception {
+        OutputStream out = outFile.newOutputStream();
+        byte[] buf = new byte[BUFFER_SIZE];
+        callback = file -> {
+            Log.d(TAG, file.getClass().getSimpleName() + " stream: " + file.getPath());
+            try (InputStream in = file.newInputStream()) {
+                for (;;) {
+                    int read = in.read(buf);
+                    if (read <= 0)
+                        break;
+                    out.write(buf, 0, read);
+                    md.update(buf, 0, read);
+                }
+                out.flush();
+            }
         };
         try {
             traverse(root);
         } finally {
             out.close();
         }
-        hashes = map;
     }
 
-    private static void testShellIO() throws Exception {
+    private static void testShellRandomIO() throws Exception {
         SuFile root = new SuFile(TEST_DIR);
 
         OutputStream out = new SuFile("/dev/null").newOutputStream();
-        byte[] buf = new byte[64 * 1024];
+        byte[] buf = new byte[BUFFER_SIZE];
         callback = file -> {
-            try (InputStream in = file.newInputStream()) {
+            Log.d(TAG, "SuRandomAccessFile: " + file.getPath());
+            try (SuRandomAccessFile in = SuRandomAccessFile.open(file, "r")) {
                 for (;;) {
                     // Randomize read/write length to test unaligned I/O
                     int len = r.nextInt(buf.length);
@@ -142,13 +175,13 @@ public class StressTest {
         }
     }
 
-    private static void testRemoteIO() throws Exception {
+    private static void testRemoteChannel() throws Exception {
         ExtendedFile root = remoteFS.getFile(TEST_DIR);
 
         FileChannel out = remoteFS.openChannel("/dev/null", MODE_WRITE_ONLY);
-        ByteBuffer buf = ByteBuffer.allocateDirect(512 * 1024);
+        ByteBuffer buf = ByteBuffer.allocateDirect(BUFFER_SIZE);
         callback = file -> {
-            Log.d(TAG, file.getPath());
+            Log.d(TAG, "RemoteFileChannel: " + file.getPath());
             try (FileChannel src = remoteFS.openChannel(file, MODE_READ_ONLY)) {
                 for (;;) {
                     // Randomize read/write length

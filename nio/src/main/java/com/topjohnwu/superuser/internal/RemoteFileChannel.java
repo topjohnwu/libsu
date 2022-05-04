@@ -65,7 +65,7 @@ class RemoteFileChannel extends FileChannel {
 
             // Open the file on the remote process
             int posixMode = FileUtils.modeToPosix(mode);
-            handle = FileUtils.tryAndGet(fs.open(file.getAbsolutePath(), posixMode, fifo.getPath()));
+            handle = FileUtils.tryAndGet(fs.openChannel(file.getAbsolutePath(), posixMode, fifo.getPath()));
 
             // Since we do not have the machinery to interrupt native pthreads, we
             // have to make sure none of our I/O can block in all operations.
