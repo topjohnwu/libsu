@@ -1,3 +1,9 @@
+## 5.0.1
+
+- [nio] Update the remote file system's I/O stream implementation with stream specific optimizations. The throughput is about 2.5x larger.
+- [nio] Properly annotate nullability of `ExtendedFile`'s `newInputStream()`/`newOutputStream(...)`
+- The `busybox` module is removed. Pin the `busybox` module to version `5.0.0` if you cannot remove its usage immediately
+
 ## 5.0.0
 
 Check the updated Javadoc and the `example` app for details on how to use the remote file system in the new `nio` module.
