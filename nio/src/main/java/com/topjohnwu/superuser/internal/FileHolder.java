@@ -87,7 +87,7 @@ class FileHolder implements Closeable {
             throw new ClosedChannelException();
     }
 
-    int pread(int len, long offset) throws ErrnoException, IOException {
+    int fdToPipe(int len, long offset) throws ErrnoException, IOException {
         if (fd == null || write == null)
             throw new ClosedChannelException();
         final long result;
@@ -120,7 +120,7 @@ class FileHolder implements Closeable {
         return (int) result;
     }
 
-    int pwrite(int len, long offset, boolean exact) throws ErrnoException, IOException {
+    int pipeToFd(int len, long offset, boolean exact) throws ErrnoException, IOException {
         if (fd == null || read == null)
             throw new ClosedChannelException();
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {

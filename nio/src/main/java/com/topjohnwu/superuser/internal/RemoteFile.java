@@ -16,15 +16,13 @@
 
 package com.topjohnwu.superuser.internal;
 
+import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
-import android.system.ErrnoException;
 import android.system.OsConstants;
 
 import androidx.annotation.NonNull;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -338,33 +336,29 @@ class RemoteFile extends FileImpl<RemoteFile> {
 
     @Override
     public InputStream newInputStream() throws IOException {
-        File fifo = null;
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         try {
-            fifo = FileUtils.createTempFIFO();
-            FileUtils.checkException(fs.openReadStream(getPath(), fifo.getPath()));
-            return new FileInputStream(fifo);
-        } catch (RemoteException | ErrnoException e) {
+            FileUtils.checkException(fs.openReadStream(getPath(), pipe[1]));
+        } catch (RemoteException e) {
+            pipe[0].close();
             throw new IOException(e);
         } finally {
-            // Once both sides opened the pipe, it can be unlinked
-            if (fifo != null)
-                fifo.delete();
+            pipe[1].close();
         }
+        return new ParcelFileDescriptor.AutoCloseInputStream(pipe[0]);
     }
 
     @Override
     public OutputStream newOutputStream(boolean append) throws IOException {
-        File fifo = null;
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         try {
-            fifo = FileUtils.createTempFIFO();
-            FileUtils.checkException(fs.openWriteStream(getPath(), fifo.getPath(), append));
-            return new FileOutputStream(fifo);
-        } catch (RemoteException | ErrnoException e) {
+            FileUtils.checkException(fs.openWriteStream(getPath(), pipe[0], append));
+        } catch (RemoteException e) {
+            pipe[1].close();
             throw new IOException(e);
         } finally {
-            // Once both sides opened the pipe, it can be unlinked
-            if (fifo != null)
-                fifo.delete();
+            pipe[0].close();
         }
+        return new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]);
     }
 }

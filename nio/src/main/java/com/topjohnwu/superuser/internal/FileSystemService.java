@@ -29,6 +29,7 @@ import static android.system.OsConstants.SEEK_SET;
 import android.annotation.SuppressLint;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -241,21 +242,19 @@ class FileSystemService extends IFileSystemService.Stub {
     }
 
     @Override
-    public ParcelValues openReadStream(String path, String fifo) {
+    public ParcelValues openReadStream(String path, ParcelFileDescriptor fd) {
         ParcelValues values = new ParcelValues();
         values.add(null);
         FileHolder h = new FileHolder();
         try {
             h.fd = Os.open(path, O_RDONLY, 0);
             ioPool.execute(() -> {
-                synchronized (h) {
-                    try {
-                        h.write = Os.open(fifo, O_WRONLY, 0);
-                        while (h.pread(PIPE_CAPACITY, -1) > 0);
-                    } catch (ErrnoException | IOException ignored) {
-                    } finally {
-                        h.close();
-                    }
+                try {
+                    h.write = FileUtils.createFileDescriptor(fd.detachFd());
+                    while (h.fdToPipe(PIPE_CAPACITY, -1) > 0);
+                } catch (ErrnoException | IOException ignored) {
+                } finally {
+                    h.close();
                 }
             });
         } catch (ErrnoException e) {
@@ -267,7 +266,7 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @SuppressWarnings("OctalInteger")
     @Override
-    public ParcelValues openWriteStream(String path, String fifo, boolean append) {
+    public ParcelValues openWriteStream(String path, ParcelFileDescriptor fd, boolean append) {
         ParcelValues values = new ParcelValues();
         values.add(null);
         FileHolder h = new FileHolder();
@@ -275,14 +274,12 @@ class FileSystemService extends IFileSystemService.Stub {
             int mode = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
             h.fd = Os.open(path, mode, 0666);
             ioPool.execute(() -> {
-                synchronized (h) {
-                    try {
-                        h.read = Os.open(fifo, O_RDONLY, 0);
-                        while (h.pwrite(PIPE_CAPACITY, -1, false) > 0);
-                    } catch (ErrnoException | IOException ignored) {
-                    } finally {
-                        h.close();
-                    }
+                try {
+                    h.read = FileUtils.createFileDescriptor(fd.detachFd());
+                    while (h.pipeToFd(PIPE_CAPACITY, -1, false) > 0);
+                } catch (ErrnoException | IOException ignored) {
+                } finally {
+                    h.close();
                 }
             });
         } catch (ErrnoException e) {
@@ -304,7 +301,7 @@ class FileSystemService extends IFileSystemService.Stub {
         try {
             final FileHolder h = openFiles.get(handle);
             synchronized (h) {
-                values.add(h.pread(len, offset));
+                values.add(h.fdToPipe(len, offset));
             }
         } catch (IOException | ErrnoException e) {
             values.set(0, e);
@@ -319,7 +316,7 @@ class FileSystemService extends IFileSystemService.Stub {
         try {
             final FileHolder h = openFiles.get(handle);
             synchronized (h) {
-                h.pwrite(len, offset, true);
+                h.pipeToFd(len, offset, true);
             }
         } catch (IOException | ErrnoException e) {
             values.set(0, e);

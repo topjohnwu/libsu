@@ -32,8 +32,8 @@ interface IFileSystemService {
     // I/O APIs
     oneway void register(IBinder client);
     /* (err, int) */ ParcelValues openChannel(String path, int mode, String fifo);
-    /* (err) */ ParcelValues openReadStream(String path, String fifo);
-    /* (err) */ ParcelValues openWriteStream(String path, String fifo, boolean append);
+    /* (err) */ ParcelValues openReadStream(String path, in ParcelFileDescriptor fd);
+    /* (err) */ ParcelValues openWriteStream(String path, in ParcelFileDescriptor fd, boolean append);
     oneway void close(int handle);
     /* (err, int) */ ParcelValues pread(int handle, int len, long offset);
     /* (err) */ ParcelValues pwrite(int handle, int len, long offset);

@@ -30,6 +30,7 @@ import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_WRITE;
 import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_TRUNCATE;
 import static com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.system.ErrnoException;
 import android.system.Int64Ref;
@@ -42,12 +43,16 @@ import androidx.annotation.RequiresApi;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
 
+@SuppressWarnings({"ConstantConditions", "JavaReflectionMemberAccess"})
+@SuppressLint("DiscouragedPrivateApi")
 class FileUtils {
 
     private static final String REMOTE_ERR_MSG = "Exception thrown on remote process";
@@ -55,6 +60,7 @@ class FileUtils {
     private static Object os;
     private static Method splice;
     private static Method sendfile;
+    private static AccessibleObject setFd;
 
     static class Flag {
         boolean read;
@@ -212,5 +218,31 @@ class FileUtils {
         fifo.delete();
         Os.mkfifo(fifo.getPath(), 0644);
         return fifo;
+    }
+
+    static FileDescriptor createFileDescriptor(int fd) {
+        if (setFd == null) {
+            try {
+                // Available API 24+
+                setFd = FileDescriptor.class.getDeclaredConstructor(int.class);
+            } catch (NoSuchMethodException e) {
+                // This is actually how the Android framework sets the fd internally
+                try {
+                    setFd = FileDescriptor.class.getDeclaredMethod("setInt$", int.class);
+                } catch (NoSuchMethodException ignored) {}
+            }
+            setFd.setAccessible(true);
+        }
+        try {
+            if (setFd instanceof Constructor) {
+                return (FileDescriptor) ((Constructor<?>) setFd).newInstance(fd);
+            } else {
+                FileDescriptor f = new FileDescriptor();
+                ((Method) setFd).invoke(f, fd);
+                return f;
+            }
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
     }
 }
