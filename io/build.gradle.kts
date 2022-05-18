@@ -5,6 +5,7 @@ plugins {
 group="com.github.topjohnwu.libsu"
 
 android {
+    namespace = "com.topjohnwu.superuser.io"
     defaultConfig {
         minSdk = 21
     }

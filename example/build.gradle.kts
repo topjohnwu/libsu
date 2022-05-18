@@ -3,6 +3,8 @@ plugins {
 }
 
 android {
+    namespace = "com.topjohnwu.libsuexample"
+
     defaultConfig {
         minSdk = 21
         applicationId = "com.topjohnwu.libsuexample"

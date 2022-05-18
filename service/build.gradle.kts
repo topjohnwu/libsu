@@ -10,6 +10,10 @@ plugins {
 
 group="com.github.topjohnwu.libsu"
 
+android {
+    namespace = "com.topjohnwu.superuser.ipc"
+}
+
 android.libraryVariants.all {
     val jarTask = tasks.register("create${name.capitalize()}MainJar") {
         doLast {

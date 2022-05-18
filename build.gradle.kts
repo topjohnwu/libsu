@@ -15,7 +15,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.1.3")
+        classpath("com.android.tools.build:gradle:7.2.0")
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -95,13 +95,13 @@ subprojects {
 
     afterEvaluate {
         android {
-            compileSdkVersion(31)
-            buildToolsVersion = "31.0.0"
+            compileSdkVersion(32)
+            buildToolsVersion = "32.0.0"
 
             defaultConfig {
                 if (minSdkVersion == null)
                     minSdk = 19
-                targetSdk = 31
+                targetSdk = 32
             }
 
             compileOptions {
