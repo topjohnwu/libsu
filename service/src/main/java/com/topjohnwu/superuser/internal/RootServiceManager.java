@@ -161,43 +161,46 @@ public class RootServiceManager implements Handler.Callback {
             context.registerReceiver(new ServiceReceiver(), filter);
         }
 
-        Context de = Utils.getDeContext(context);
-        File mainJar = new File(de.getCacheDir(), "main.jar");
-
-        String env = "";
-        String params = "";
-
-        if (Utils.vLog()) {
-            env = LOGGING_ENV + "=1 ";
-        }
-
-        // Only support debugging on SDK >= 27
-        if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
-            env += DEBUG_ENV + "=1 ";
-            // Reference of the params to start jdwp:
-            // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
-            if (Build.VERSION.SDK_INT == 27) {
-                params = API_27_DEBUG;
-            } else {
-                params = API_28_DEBUG;
-            }
-        }
-
-        String cmd = String.format(Locale.ROOT,
-                "(%s CLASSPATH=%s /proc/%d/exe %s /system/bin --nice-name=%s:root " +
-                "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s >/dev/null 2>&1)&",
-                env, mainJar, Process.myPid(), params, context.getPackageName(),
-                name.flattenToString().replace("$", "\\$"), // args[0]
-                Process.myUid(),                            // args[1]
-                filterAction,                               // args[2]
-                action);                                    // args[3]
-
         return (stdin, stdout, stderr) -> {
+            Context ctx = Utils.getContext();
+            Context de = Utils.getDeContext(ctx);
+            File mainJar = new File(de.getCacheDir(), "main.jar");
+
             // Dump main.jar as trampoline
-            try (InputStream in = context.getResources().getAssets().open("main.jar");
+            try (InputStream in = ctx.getResources().getAssets().open("main.jar");
                  OutputStream out = new FileOutputStream(mainJar)) {
                 Utils.pump(in, out);
             }
+
+            String env = "";
+            String params = "";
+
+            if (Utils.vLog()) {
+                env = LOGGING_ENV + "=1 ";
+            }
+
+            // Only support debugging on SDK >= 27
+            if (Build.VERSION.SDK_INT >= 27 && Debug.isDebuggerConnected()) {
+                env += DEBUG_ENV + "=1 ";
+                // Reference of the params to start jdwp:
+                // https://developer.android.com/ndk/guides/wrap-script#debugging_when_using_wrapsh
+                if (Build.VERSION.SDK_INT == 27) {
+                    params = API_27_DEBUG;
+                } else {
+                    params = API_28_DEBUG;
+                }
+            }
+
+            String app_process = new File("/proc/self/exe").getCanonicalPath();
+            String cmd = String.format(Locale.ROOT,
+                    "(%s CLASSPATH=%s %s %s /system/bin --nice-name=%s:root " +
+                    "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s >/dev/null 2>&1)&",
+                    env, mainJar, app_process, params, ctx.getPackageName(),
+                    name.flattenToString().replace("$", "\\$"), // args[0]
+                    Process.myUid(),                            // args[1]
+                    filterAction,                               // args[2]
+                    action);                                    // args[3]
+
             Utils.log(TAG, cmd);
             // Write command to stdin
             byte[] bytes = cmd.getBytes(StandardCharsets.UTF_8);
