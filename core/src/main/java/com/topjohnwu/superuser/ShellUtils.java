@@ -100,7 +100,7 @@ public final class ShellUtils {
      * @return {@code true} if the current thread is the main thread.
      */
     public static boolean onMainThread() {
-        return ((Looper.myLooper() != null) && (Looper.myLooper() == Looper.getMainLooper()));
+        return Looper.getMainLooper().getThread() == Thread.currentThread();
     }
 
     /**
