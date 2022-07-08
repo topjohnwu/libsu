@@ -13,5 +13,5 @@ android {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    api("androidx.annotation:annotation:1.3.0")
+    api("androidx.annotation:annotation:1.4.0")
 }
