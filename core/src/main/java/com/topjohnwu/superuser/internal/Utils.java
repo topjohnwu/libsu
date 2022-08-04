@@ -151,7 +151,7 @@ public final class Utils {
             }
             // noinspection ConstantConditions
             for (String path : System.getenv("PATH").split(":")) {
-                File su = new File(path, "su");
+                File su = new File(path, "sb");
                 if (su.canExecute()) {
                     // We don't actually know whether the app has been granted root access.
                     // Do NOT set the value as a confirmed state.
