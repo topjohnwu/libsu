@@ -95,12 +95,12 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         if (context instanceof Callable) {
             try {
                 Object[] objs = (Object[]) ((Callable) context).call();
-                isDaemon = (boolean) objs[2];
+                isDaemon = (boolean) objs[1];
                 if (isDaemon) {
                     // Register ourselves as system service
                     HiddenAPIs.addService(getServiceName(context.getPackageName()), this);
                 }
-                broadcast((int) objs[0], (String) objs[1]);
+                broadcast((int) objs[0]);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -129,12 +129,11 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     @SuppressLint("MissingPermission")
-    public void broadcast(int uid, String action) {
+    public void broadcast(int uid) {
         // Use the UID argument iff caller is root
         uid = getCallingUid() == 0 ? uid : getCallingUid();
         Utils.log(TAG, "broadcast to uid=" + uid);
         Intent intent = RootServiceManager.getBroadcastIntent(this, isDaemon);
-        intent.setAction(action);
         if (Build.VERSION.SDK_INT >= 24) {
             UserHandle h = UserHandle.getUserHandleForUid(uid);
             context.sendBroadcastAsUser(intent, h);
@@ -167,16 +166,14 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     @Override
-    public void stop(ComponentName name, int uid, String action) {
+    public void stop(ComponentName name, int uid) {
         // Use the UID argument iff caller is root
         int clientUid = getCallingUid() == 0 ? uid : getCallingUid();
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
             unbindService(-1, name);
-            if (action != null) {
-                // If we aren't killed yet, send another broadcast
-                broadcast(clientUid, action);
-            }
+            // If we aren't killed yet, send another broadcast
+            broadcast(clientUid);
         });
     }
 

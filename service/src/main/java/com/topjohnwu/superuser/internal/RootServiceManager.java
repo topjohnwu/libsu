@@ -21,6 +21,7 @@ import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_SERV
 import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_STOP_SERVICE;
 import static com.topjohnwu.superuser.ipc.RootService.CATEGORY_DAEMON_MODE;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -58,7 +59,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -75,6 +75,7 @@ public class RootServiceManager implements Handler.Callback {
     private static final String BUNDLE_BINDER_KEY = "binder";
     private static final String INTENT_BUNDLE_KEY = "extra.bundle";
     private static final String INTENT_DAEMON_KEY = "extra.daemon";
+    private static final String RECEIVER_BROADCAST = "com.topjohnwu.libsu.RECEIVER_BROADCAST";
     private static final String API_27_DEBUG =
             "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y " +
             "-Xcompiler-option --debuggable";
@@ -91,6 +92,7 @@ public class RootServiceManager implements Handler.Callback {
 
     private static final int REMOTE_EN_ROUTE = 1 << 0;
     private static final int DAEMON_EN_ROUTE = 1 << 1;
+    private static final int RECEIVER_REGISTERED = 1 << 2;
 
     public static RootServiceManager getInstance() {
         if (mInstance == null) {
@@ -103,7 +105,7 @@ public class RootServiceManager implements Handler.Callback {
     static Intent getBroadcastIntent(IBinder binder, boolean isDaemon) {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
-        return new Intent()
+        return new Intent(RECEIVER_BROADCAST)
                 .setPackage(Utils.context.getPackageName())
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
                 .putExtra(INTENT_DAEMON_KEY, isDaemon)
@@ -138,7 +140,6 @@ public class RootServiceManager implements Handler.Callback {
     private RemoteProcess mRemote;
     private RemoteProcess mDaemon;
 
-    private String filterAction;
     private int flags = 0;
 
     private final List<BindTask> pendingTasks = new ArrayList<>();
@@ -147,6 +148,7 @@ public class RootServiceManager implements Handler.Callback {
 
     private RootServiceManager() {}
 
+    @SuppressLint("InlinedApi")
     private Shell.Task startRootProcess(ComponentName name, String action) {
         Context context = Utils.getContext();
 
@@ -154,11 +156,22 @@ public class RootServiceManager implements Handler.Callback {
             Log.e(TAG, JVMTI_ERROR);
         }
 
-        if (filterAction == null) {
-            filterAction = UUID.randomUUID().toString();
+        if ((flags & RECEIVER_REGISTERED) == 0) {
             // Register receiver to receive binder from root process
-            IntentFilter filter = new IntentFilter(filterAction);
+            IntentFilter filter = new IntentFilter(RECEIVER_BROADCAST);
+            // Guard the receiver behind permission BROADCAST_PACKAGE_REMOVED. This permission
+            // is not obtainable by normal apps, making the receiver effectively non-exported.
+            // On Android 13+, we can also rely on the flag RECEIVER_NOT_EXPORTED.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.registerReceiver(new ServiceReceiver(), filter,
+                        Manifest.permission.BROADCAST_PACKAGE_REMOVED, null,
+                        Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                context.registerReceiver(new ServiceReceiver(), filter,
+                        Manifest.permission.BROADCAST_PACKAGE_REMOVED, null);
+            }
             context.registerReceiver(new ServiceReceiver(), filter);
+            flags |= RECEIVER_REGISTERED;
         }
 
         return (stdin, stdout, stderr) -> {
@@ -194,12 +207,11 @@ public class RootServiceManager implements Handler.Callback {
             String app_process = new File("/proc/self/exe").getCanonicalPath();
             String cmd = String.format(Locale.ROOT,
                     "(%s CLASSPATH=%s %s %s /system/bin --nice-name=%s:root " +
-                    "com.topjohnwu.superuser.internal.RootServerMain %s %d %s %s >/dev/null 2>&1)&",
+                    "com.topjohnwu.superuser.internal.RootServerMain '%s' %d %s >/dev/null 2>&1)&",
                     env, mainJar, app_process, params, ctx.getPackageName(),
-                    name.flattenToString().replace("$", "\\$"), // args[0]
-                    Process.myUid(),                            // args[1]
-                    filterAction,                               // args[2]
-                    action);                                    // args[3]
+                    name.flattenToString(),   // args[0]
+                    Process.myUid(),          // args[1]
+                    action);                  // args[2]
 
             Utils.log(TAG, cmd);
             // Write command to stdin
@@ -316,7 +328,7 @@ public class RootServiceManager implements Handler.Callback {
 
         stopInternal(key);
         try {
-            p.sm.stop(key.first, -1, null);
+            p.sm.stop(key.first, -1);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
         }
