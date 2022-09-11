@@ -203,11 +203,25 @@ public class RootServiceManager implements Handler.Callback {
                 }
             }
 
+            final String niceNameCmd;
+            switch (action) {
+                case CMDLINE_START_SERVICE:
+                    niceNameCmd = String.format(Locale.ROOT, "--nice-name=%s:root:%d",
+                            ctx.getPackageName(), Process.myUid() / 100000);
+                    break;
+                case CMDLINE_START_DAEMON:
+                    niceNameCmd = "--nice-name=" + ctx.getPackageName() + ":root:daemon";
+                    break;
+                default:
+                    niceNameCmd = "";
+                    break;
+            }
+
             String app_process = new File("/proc/self/exe").getCanonicalPath();
             String cmd = String.format(Locale.ROOT,
-                    "(%s CLASSPATH=%s %s %s /system/bin --nice-name=%s:root " +
+                    "(%s CLASSPATH=%s %s %s /system/bin %s " +
                     "com.topjohnwu.superuser.internal.RootServerMain '%s' %d %s >/dev/null 2>&1)&",
-                    env, mainJar, app_process, params, ctx.getPackageName(),
+                    env, mainJar, app_process, params, niceNameCmd,
                     name.flattenToString(),   // args[0]
                     Process.myUid(),          // args[1]
                     action);                  // args[2]
