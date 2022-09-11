@@ -128,7 +128,8 @@ public final class ShellUtils {
         for (int i = 0; i < len; ++i) {
             char c = s.charAt(i);
             if (c == SINGLE_QUOTE) {
-                sb.append('\\');
+                sb.append("'\\''");
+                continue;
             }
             sb.append(c);
         }
