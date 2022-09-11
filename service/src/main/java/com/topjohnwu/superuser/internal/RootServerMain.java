@@ -89,7 +89,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         System.out.close();
         System.err.close();
         if (args.length < 3)
-            System.exit(0);
+            System.exit(1);
 
         Looper.prepareMainLooper();
 
@@ -102,7 +102,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         // Main thread event loop
         Looper.loop();
-        System.exit(0);
+        System.exit(1);
     }
 
     private final int uid;

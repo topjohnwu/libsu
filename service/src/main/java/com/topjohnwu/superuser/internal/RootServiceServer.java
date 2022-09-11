@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class RootServiceServer extends IRootServiceManager.Stub {
+public class RootServiceServer extends IRootServiceManager.Stub implements Runnable {
 
     private static RootServiceServer mInstance;
 
@@ -107,6 +107,18 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         } else {
             throw new IllegalArgumentException("Expected Context to be Callable");
         }
+
+        if (!isDaemon) {
+            // Terminate the process if idle for 10 seconds,
+            UiThreadHandler.handler.postDelayed(this, 10 * 1000);
+        }
+    }
+
+    @Override
+    public void run() {
+        if (clients.size() == 0) {
+            exit("No active clients");
+        }
     }
 
     @Override
@@ -122,9 +134,9 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         try {
             c = new ClientProcess(binder, uid);
             clients.put(c.mUid, c);
+            UiThreadHandler.handler.removeCallbacks(this);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
-            return;
         }
     }
 
@@ -255,8 +267,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
             }
         }
         if (activeServices.isEmpty()) {
-            // Terminate root process
-            System.exit(0);
+            exit("No active services");
         }
     }
 
@@ -281,6 +292,11 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         }
     }
 
+    private void exit(String reason) {
+        Utils.log(TAG, "Terminate process: " + reason);
+        System.exit(0);
+    }
+
     class AppObserver extends FileObserver {
 
         private final String name;
@@ -295,11 +311,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         public void onEvent(int event, @Nullable String path) {
             // App APK update, force close the root process
             if (event == DELETE_SELF || name.equals(path)) {
-                UiThreadHandler.run(() -> {
-                    Utils.log(TAG, "App updated, terminate");
-                    unbindServices(-1);
-                    System.exit(0);
-                });
+                exit("Package updated");
             }
         }
     }
