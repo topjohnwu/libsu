@@ -173,8 +173,8 @@ public final class Utils {
         currentRootState = value ? 2 : 0;
     }
 
-    public static boolean isRootPossible() {
-        return !Objects.equals(isAppGrantedRoot(), Boolean.FALSE);
+    public static boolean isRootImpossible() {
+        return Objects.equals(isAppGrantedRoot(), Boolean.FALSE);
     }
 
     public static boolean isMainShellRoot() {
