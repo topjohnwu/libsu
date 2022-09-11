@@ -75,7 +75,7 @@ public class RootServiceManager implements Handler.Callback {
     private static final String BUNDLE_BINDER_KEY = "binder";
     private static final String INTENT_BUNDLE_KEY = "extra.bundle";
     private static final String INTENT_DAEMON_KEY = "extra.daemon";
-    private static final String RECEIVER_BROADCAST = "com.topjohnwu.libsu.RECEIVER_BROADCAST";
+    private static final String RECEIVER_BROADCAST = "com.topjohnwu.superuser.RECEIVER_BROADCAST";
     private static final String API_27_DEBUG =
             "-Xrunjdwp:transport=dt_android_adb,suspend=n,server=y " +
             "-Xcompiler-option --debuggable";
@@ -170,7 +170,6 @@ public class RootServiceManager implements Handler.Callback {
                 context.registerReceiver(new ServiceReceiver(), filter,
                         Manifest.permission.BROADCAST_PACKAGE_REMOVED, null);
             }
-            context.registerReceiver(new ServiceReceiver(), filter);
             flags |= RECEIVER_REGISTERED;
         }
 
