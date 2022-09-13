@@ -52,6 +52,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+/**
+ * Runs in the root (server) process.
+ *
+ * Manages the lifecycle of RootServices and the root process.
+ */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public class RootServiceServer extends IRootServiceManager.Stub implements Runnable {
 
@@ -66,7 +71,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
 
     @SuppressWarnings("FieldCanBeLocal")
     private final FileObserver observer;  /* A strong reference is required */
-    private final Map<ComponentName, ServiceContainer> activeServices = new ArrayMap<>();
+    private final Map<ComponentName, ServiceRecord> services = new ArrayMap<>();
     private final SparseArray<ClientProcess> clients = new SparseArray<>();
     private final boolean isDaemon;
 
@@ -128,12 +133,10 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
     }
 
     private void connectInternal(int uid, IBinder binder) {
-        ClientProcess c = clients.get(uid);
-        if (c != null)
+        if (clients.get(uid) != null)
             return;
         try {
-            c = new ClientProcess(binder, uid);
-            clients.put(c.mUid, c);
+            clients.put(uid, new ClientProcess(binder, uid));
             UiThreadHandler.handler.removeCallbacks(this);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
@@ -197,8 +200,8 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
     }
 
     public void register(RootService service) {
-        ServiceContainer s = new ServiceContainer(service);
-        activeServices.put(service.getComponentName(), s);
+        ServiceRecord s = new ServiceRecord(service);
+        services.put(service.getComponentName(), s);
     }
 
     private IBinder bindInternal(int uid, Intent intent) throws Exception {
@@ -208,7 +211,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
 
         ComponentName name = intent.getComponent();
 
-        ServiceContainer s = activeServices.get(name);
+        ServiceRecord s = services.get(name);
         if (s == null) {
             Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
@@ -216,7 +219,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
             HiddenAPIs.attachBaseContext(ctor.newInstance(), context);
 
             // RootService should be registered after attachBaseContext
-            s = activeServices.get(name);
+            s = services.get(name);
             if (s == null) {
                 return null;
             }
@@ -236,7 +239,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         return s.binder;
     }
 
-    private void unbindInternal(ServiceContainer s, int uid, Runnable onDestroy) {
+    private void unbindInternal(ServiceRecord s, int uid, Runnable onDestroy) {
         boolean hadUsers = !s.users.isEmpty();
         s.users.remove(uid);
         if (uid < 0 || s.users.isEmpty()) {
@@ -266,23 +269,23 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
                 }
             }
         }
-        if (activeServices.isEmpty()) {
+        if (services.isEmpty()) {
             exit("No active services");
         }
     }
 
     private void unbindService(int uid, ComponentName name) {
-        ServiceContainer s = activeServices.get(name);
+        ServiceRecord s = services.get(name);
         if (s == null)
             return;
-        unbindInternal(s, uid, () -> activeServices.remove(name));
+        unbindInternal(s, uid, () -> services.remove(name));
     }
 
     private void unbindServices(int uid) {
-        Iterator<Map.Entry<ComponentName, ServiceContainer>> it =
-                activeServices.entrySet().iterator();
+        Iterator<Map.Entry<ComponentName, ServiceRecord>> it =
+                services.entrySet().iterator();
         while (it.hasNext()) {
-            ServiceContainer s = it.next().getValue();
+            ServiceRecord s = it.next().getValue();
             if (uid < 0) {
                 // App is updated/deleted, all clients will get killed anyways,
                 // no need to notify anyone.
@@ -297,7 +300,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         System.exit(0);
     }
 
-    class AppObserver extends FileObserver {
+    private class AppObserver extends FileObserver {
 
         private final String name;
 
@@ -316,34 +319,33 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         }
     }
 
-    class ClientProcess extends BinderHolder {
+    private class ClientProcess extends BinderHolder {
 
         final Messenger m;
-        final int mUid;
+        final int uid;
 
         ClientProcess(IBinder b, int uid) throws RemoteException {
             super(b);
             m = new Messenger(b);
-            mUid = uid;
+            this.uid = uid;
         }
 
         @Override
         protected void onBinderDied() {
-            Utils.log(TAG, "Client process terminated, uid=" + mUid);
-            clients.remove(mUid);
-            unbindServices(mUid);
+            Utils.log(TAG, "Client process terminated, uid=" + uid);
+            clients.remove(uid);
+            unbindServices(uid);
         }
     }
 
-    static class ServiceContainer {
+    private static class ServiceRecord {
         final RootService service;
         final Set<Integer> users = newArraySet();
-
         Intent intent;
         IBinder binder;
         boolean rebind;
 
-        ServiceContainer(RootService s) {
+        ServiceRecord(RootService s) {
             service = s;
         }
     }
