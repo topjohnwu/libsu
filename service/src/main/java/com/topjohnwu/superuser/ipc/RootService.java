@@ -107,7 +107,7 @@ public abstract class RootService extends ContextWrapper {
             @NonNull Intent intent,
             @NonNull Executor executor,
             @NonNull ServiceConnection conn) {
-        if (!Utils.isRootPossible())
+        if (Utils.isRootImpossible())
             return;
         Shell.Task task = bindOrTask(intent, executor, conn);
         if (task != null) {
@@ -168,7 +168,7 @@ public abstract class RootService extends ContextWrapper {
      */
     @MainThread
     public static void stop(@NonNull Intent intent) {
-        if (!Utils.isRootPossible())
+        if (Utils.isRootImpossible())
             return;
         Shell.Task task = stopOrTask(intent);
         if (task != null) {

@@ -42,8 +42,7 @@ just like it was launched in a non-root environment.
 Expected command-line args:
 args[0]: client service component name
 args[1]: client UID
-args[2]: client broadcast receiver intent filter
-args[3]: CMDLINE_START_SERVICE, CMDLINE_START_DAEMON, or CMDLINE_STOP_SERVICE
+args[2]: CMDLINE_START_SERVICE, CMDLINE_START_DAEMON, or CMDLINE_STOP_SERVICE
 */
 class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
@@ -89,8 +88,8 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         // Close STDOUT/STDERR since it belongs to the parent shell
         System.out.close();
         System.err.close();
-        if (args.length < 4)
-            System.exit(0);
+        if (args.length < 3)
+            System.exit(1);
 
         Looper.prepareMainLooper();
 
@@ -103,19 +102,17 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         // Main thread event loop
         Looper.loop();
-        System.exit(0);
+        System.exit(1);
     }
 
     private final int uid;
-    private final String filter;
     private final boolean isDaemon;
 
     @Override
     public Object[] call() {
-        Object[] objs = new Object[3];
+        Object[] objs = new Object[2];
         objs[0] = uid;
-        objs[1] = filter;
-        objs[2] = isDaemon;
+        objs[1] = isDaemon;
         return objs;
     }
 
@@ -124,8 +121,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         ComponentName name = ComponentName.unflattenFromString(args[0]);
         uid = Integer.parseInt(args[1]);
-        filter = args[2];
-        String action = args[3];
+        String action = args[2];
         boolean stop = false;
 
         switch (action) {
@@ -135,9 +131,11 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
             case CMDLINE_START_DAEMON:
                 isDaemon = true;
                 break;
-            default:
+            case CMDLINE_START_SERVICE:
                 isDaemon = false;
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown action");
         }
 
         if (isDaemon) daemon: try {
@@ -148,9 +146,9 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
                 break daemon;
 
             if (stop) {
-                m.stop(name, uid, filter);
+                m.stop(name, uid);
             } else {
-                m.broadcast(uid, filter);
+                m.broadcast(uid);
                 // Terminate process if broadcast went through without exception
                 System.exit(0);
             }

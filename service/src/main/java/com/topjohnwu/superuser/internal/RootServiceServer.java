@@ -52,8 +52,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+/**
+ * Runs in the root (server) process.
+ *
+ * Manages the lifecycle of RootServices and the root process.
+ */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class RootServiceServer extends IRootServiceManager.Stub {
+public class RootServiceServer extends IRootServiceManager.Stub implements Runnable {
 
     private static RootServiceServer mInstance;
 
@@ -66,7 +71,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
     @SuppressWarnings("FieldCanBeLocal")
     private final FileObserver observer;  /* A strong reference is required */
-    private final Map<ComponentName, ServiceContainer> activeServices = new ArrayMap<>();
+    private final Map<ComponentName, ServiceRecord> services = new ArrayMap<>();
     private final SparseArray<ClientProcess> clients = new SparseArray<>();
     private final boolean isDaemon;
 
@@ -95,17 +100,29 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         if (context instanceof Callable) {
             try {
                 Object[] objs = (Object[]) ((Callable) context).call();
-                isDaemon = (boolean) objs[2];
+                isDaemon = (boolean) objs[1];
                 if (isDaemon) {
                     // Register ourselves as system service
                     HiddenAPIs.addService(getServiceName(context.getPackageName()), this);
                 }
-                broadcast((int) objs[0], (String) objs[1]);
+                broadcast((int) objs[0]);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else {
             throw new IllegalArgumentException("Expected Context to be Callable");
+        }
+
+        if (!isDaemon) {
+            // Terminate the process if idle for 10 seconds,
+            UiThreadHandler.handler.postDelayed(this, 10 * 1000);
+        }
+    }
+
+    @Override
+    public void run() {
+        if (clients.size() == 0) {
+            exit("No active clients");
         }
     }
 
@@ -116,25 +133,22 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     private void connectInternal(int uid, IBinder binder) {
-        ClientProcess c = clients.get(uid);
-        if (c != null)
+        if (clients.get(uid) != null)
             return;
         try {
-            c = new ClientProcess(binder, uid);
-            clients.put(c.mUid, c);
+            clients.put(uid, new ClientProcess(binder, uid));
+            UiThreadHandler.handler.removeCallbacks(this);
         } catch (RemoteException e) {
             Utils.err(TAG, e);
-            return;
         }
     }
 
     @SuppressLint("MissingPermission")
-    public void broadcast(int uid, String action) {
+    public void broadcast(int uid) {
         // Use the UID argument iff caller is root
         uid = getCallingUid() == 0 ? uid : getCallingUid();
         Utils.log(TAG, "broadcast to uid=" + uid);
         Intent intent = RootServiceManager.getBroadcastIntent(this, isDaemon);
-        intent.setAction(action);
         if (Build.VERSION.SDK_INT >= 24) {
             UserHandle h = UserHandle.getUserHandleForUid(uid);
             context.sendBroadcastAsUser(intent, h);
@@ -167,16 +181,14 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     @Override
-    public void stop(ComponentName name, int uid, String action) {
+    public void stop(ComponentName name, int uid) {
         // Use the UID argument iff caller is root
         int clientUid = getCallingUid() == 0 ? uid : getCallingUid();
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
             unbindService(-1, name);
-            if (action != null) {
-                // If we aren't killed yet, send another broadcast
-                broadcast(clientUid, action);
-            }
+            // If we aren't killed yet, send another broadcast
+            broadcast(clientUid);
         });
     }
 
@@ -188,8 +200,8 @@ public class RootServiceServer extends IRootServiceManager.Stub {
     }
 
     public void register(RootService service) {
-        ServiceContainer s = new ServiceContainer(service);
-        activeServices.put(service.getComponentName(), s);
+        ServiceRecord s = new ServiceRecord(service);
+        services.put(service.getComponentName(), s);
     }
 
     private IBinder bindInternal(int uid, Intent intent) throws Exception {
@@ -199,7 +211,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
 
         ComponentName name = intent.getComponent();
 
-        ServiceContainer s = activeServices.get(name);
+        ServiceRecord s = services.get(name);
         if (s == null) {
             Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
@@ -207,7 +219,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
             HiddenAPIs.attachBaseContext(ctor.newInstance(), context);
 
             // RootService should be registered after attachBaseContext
-            s = activeServices.get(name);
+            s = services.get(name);
             if (s == null) {
                 return null;
             }
@@ -227,7 +239,7 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         return s.binder;
     }
 
-    private void unbindInternal(ServiceContainer s, int uid, Runnable onDestroy) {
+    private void unbindInternal(ServiceRecord s, int uid, Runnable onDestroy) {
         boolean hadUsers = !s.users.isEmpty();
         s.users.remove(uid);
         if (uid < 0 || s.users.isEmpty()) {
@@ -257,24 +269,23 @@ public class RootServiceServer extends IRootServiceManager.Stub {
                 }
             }
         }
-        if (activeServices.isEmpty()) {
-            // Terminate root process
-            System.exit(0);
+        if (services.isEmpty()) {
+            exit("No active services");
         }
     }
 
     private void unbindService(int uid, ComponentName name) {
-        ServiceContainer s = activeServices.get(name);
+        ServiceRecord s = services.get(name);
         if (s == null)
             return;
-        unbindInternal(s, uid, () -> activeServices.remove(name));
+        unbindInternal(s, uid, () -> services.remove(name));
     }
 
     private void unbindServices(int uid) {
-        Iterator<Map.Entry<ComponentName, ServiceContainer>> it =
-                activeServices.entrySet().iterator();
+        Iterator<Map.Entry<ComponentName, ServiceRecord>> it =
+                services.entrySet().iterator();
         while (it.hasNext()) {
-            ServiceContainer s = it.next().getValue();
+            ServiceRecord s = it.next().getValue();
             if (uid < 0) {
                 // App is updated/deleted, all clients will get killed anyways,
                 // no need to notify anyone.
@@ -284,7 +295,12 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         }
     }
 
-    class AppObserver extends FileObserver {
+    private void exit(String reason) {
+        Utils.log(TAG, "Terminate process: " + reason);
+        System.exit(0);
+    }
+
+    private class AppObserver extends FileObserver {
 
         private final String name;
 
@@ -298,43 +314,38 @@ public class RootServiceServer extends IRootServiceManager.Stub {
         public void onEvent(int event, @Nullable String path) {
             // App APK update, force close the root process
             if (event == DELETE_SELF || name.equals(path)) {
-                UiThreadHandler.run(() -> {
-                    Utils.log(TAG, "App updated, terminate");
-                    unbindServices(-1);
-                    System.exit(0);
-                });
+                exit("Package updated");
             }
         }
     }
 
-    class ClientProcess extends BinderHolder {
+    private class ClientProcess extends BinderHolder {
 
         final Messenger m;
-        final int mUid;
+        final int uid;
 
         ClientProcess(IBinder b, int uid) throws RemoteException {
             super(b);
             m = new Messenger(b);
-            mUid = uid;
+            this.uid = uid;
         }
 
         @Override
         protected void onBinderDied() {
-            Utils.log(TAG, "Client process terminated, uid=" + mUid);
-            clients.remove(mUid);
-            unbindServices(mUid);
+            Utils.log(TAG, "Client process terminated, uid=" + uid);
+            clients.remove(uid);
+            unbindServices(uid);
         }
     }
 
-    static class ServiceContainer {
+    private static class ServiceRecord {
         final RootService service;
         final Set<Integer> users = newArraySet();
-
         Intent intent;
         IBinder binder;
         boolean rebind;
 
-        ServiceContainer(RootService s) {
+        ServiceRecord(RootService s) {
             service = s;
         }
     }

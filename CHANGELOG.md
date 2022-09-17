@@ -1,3 +1,8 @@
+## 5.0.3
+
+- [core] Fix `ShellUtils.escapedString(String)`
+- [service] Prevent root process leaks when client process crashed before establishing connection
+
 ## 5.0.2
 
 - [service] Resolve `/proc/self/exe` to possibly fix some old Samsung kernel restrictions
