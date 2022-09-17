@@ -31,7 +31,7 @@ class PendingJob extends JobImpl {
     private boolean retry;
 
     PendingJob(boolean su) {
-        isSU = "02su";
+        isSU = su;
         retry = true;
         to(NOPList.getInstance());
     }
