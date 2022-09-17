@@ -79,8 +79,10 @@ public final class MainShell {
     public static ShellImpl getCached() {
         synchronized (mainShell) {
             ShellImpl s = mainShell[0];
-            if (s != null && s.getStatus() < 0)
+            if (s != null && s.getStatus() < 0) {
                 mainShell[0] = null;
+                return null;
+            }
             return s;
         }
     }

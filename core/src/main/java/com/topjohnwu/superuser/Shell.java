@@ -25,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.internal.BuilderImpl;
+import com.topjohnwu.superuser.internal.FallbackShell;
 import com.topjohnwu.superuser.internal.MainShell;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
 import com.topjohnwu.superuser.internal.Utils;
@@ -164,10 +165,35 @@ public abstract class Shell implements Closeable {
      * returns immediately.
      * @return the cached/created main shell instance.
      * @see Builder#build()
+     * @throws NoShellException impossible to construct {@link Shell} instance, or
+     * initialization failed when using the configured {@link Initializer}s.
      */
     @NonNull
     public static Shell getShell() {
         return MainShell.get();
+    }
+
+    /**
+     * Get the main shell instance but get the fallback shell if the main shell in unavailable.
+     * <p>
+     * If {@link #getCachedShellFallback()} returns null, the default {@link Builder} will be
+     * used to construct a new {@code Shell}, if initializing main shell fails,
+     * a non-root {@link Builder} will be used to initialize the fallback shell.
+     * <p>
+     * Unless already cached, this method blocks until the main shell is created.
+     * The process could take a very long time (e.g. root permission request prompt),
+     * so be extra careful when calling this method from the main thread!
+     * <p>
+     * A good practice is to "preheat" the main shell during app initialization
+     * (e.g. the splash screen) by either calling this method in a background thread or
+     * calling {@link #getShellFallback(GetShellCallback)} so subsequent calls to this function
+     * returns immediately.
+     * @return the cached/created main shell instance.
+     * @see Builder#build()
+     */
+    @NonNull
+    public static Shell getShellFallback() {
+        return FallbackShell.get();
     }
 
     /**
@@ -180,6 +206,20 @@ public abstract class Shell implements Closeable {
      */
     public static void getShell(@NonNull GetShellCallback callback) {
         MainShell.get(UiThreadHandler.executor, callback);
+    }
+
+    /**
+     * Get the main shell instance but get the fallback shell if the main shell in unavailable
+     * asynchronously via a callback.
+     * <p>
+     * If {@link #getCachedShellFallback()} returns null, the default {@link Builder} will be
+     * used to construct a new {@code Shell} in a background thread, if initializing main shell
+     * fails, a non-root {@link Builder} will be used to initialize the fallback shell.
+     * The cached/created shell instance is returned to the callback on the main thread.
+     * @param callback invoked when a shell is acquired.
+     */
+    public static void getShellFallback(@NonNull GetShellCallback callback) {
+        FallbackShell.get(UiThreadHandler.executor, callback);
     }
 
     /**
@@ -197,6 +237,22 @@ public abstract class Shell implements Closeable {
     }
 
     /**
+     * Get the main shell instance but get the fallback shell if the main shell in unavailable
+     * asynchronously via a callback.
+     * <p>
+     * If {@link #getCachedShellFallback()} returns null, the default {@link Builder} will be
+     * used to construct a new {@code Shell} in a background thread, if initializing main shell
+     * fails, a non-root {@link Builder} will be used to initialize the fallback shell.
+     * The cached/created shell instance is returned to the callback executed by provided executor.
+     * @param executor the executor used to handle the result callback event.
+     *                 If {@code null} is passed, the callback can run on any thread.
+     * @param callback invoked when a shell is acquired.
+     */
+    public static void getShellFallback(@Nullable Executor executor, @NonNull GetShellCallback callback) {
+        MainShell.get(executor, callback);
+    }
+
+    /**
      * Get the cached main shell.
      * @return a {@code Shell} instance. {@code null} can be returned either when
      * no main shell has been cached, or the cached shell is no longer active.
@@ -204,6 +260,16 @@ public abstract class Shell implements Closeable {
     @Nullable
     public static Shell getCachedShell() {
         return MainShell.getCached();
+    }
+
+    /**
+     * Get the cached main shell, or return the cached fallback shell if available.
+     * @return a {@code Shell} instance. {@code null} can be returned either when
+     * no main and fallback shell has been cached, or all cached shells are no longer active.
+     */
+    @Nullable
+    public static Shell getCachedShellFallback() {
+        return FallbackShell.getCached();
     }
 
     /**

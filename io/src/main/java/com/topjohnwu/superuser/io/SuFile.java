@@ -143,7 +143,7 @@ public class SuFile extends ExtendedFile {
     }
 
     public Shell getShell() {
-        return mShell == null ? Shell.getShell() : mShell;
+        return mShell == null ? Shell.getShellFallback() : mShell;
     }
 
     /**
