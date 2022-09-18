@@ -109,7 +109,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Normal root shell
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
-                shell = build("02sb");
+                shell = build("suu");
                 if (!shell.isRoot()) {
                     shell = null;
                 }
