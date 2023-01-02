@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -179,5 +180,25 @@ public final class Utils {
 
     public static boolean isMainShellRoot() {
         return MainShell.get().isRoot();
+    }
+
+    @SuppressLint("DiscouragedPrivateApi")
+    public static boolean isProcess64Bit() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return Process.is64Bit();
+        }
+        try {
+            Class<?> classVMRuntime = Class.forName("dalvik.system.VMRuntime");
+            Method getRuntime = classVMRuntime.getDeclaredMethod("getRuntime");
+            getRuntime.setAccessible(true);
+            Object runtime = getRuntime.invoke(null);
+            Method is64Bit = classVMRuntime.getDeclaredMethod("is64Bit");
+            is64Bit.setAccessible(true);
+            // noinspection ConstantConditions
+            return (boolean) is64Bit.invoke(runtime);
+        } catch (ReflectiveOperationException e) {
+            err(e);
+            return false;
+        }
     }
 }
