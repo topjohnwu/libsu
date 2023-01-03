@@ -20,12 +20,17 @@ import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.res.AssetManager;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
@@ -116,6 +121,8 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         return objs;
     }
 
+    @SuppressWarnings("JavaReflectionMemberAccess")
+    @SuppressLint("DiscouragedPrivateApi")
     public RootServerMain(String[] args) throws Exception {
         super(null);
 
@@ -159,8 +166,39 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         }
 
         Context systemContext = getSystemContext();
+
+        // Calling createPackageContext crashes on LG ROM so hook it to prevent the crash
+        Resources systemRes = Resources.getSystem();
+        Field systemResField = null;
+        try {
+            // This class exists only on LG ROM
+            Class.forName("com.lge.systemservice.core.integrity.IntegrityManager");
+
+            Method getImpl = Resources.class.getDeclaredMethod("getImpl");
+            getImpl.setAccessible(true);
+            Object systemResImpl = getImpl.invoke(systemRes);
+            Method setImpl = Resources.class.getDeclaredMethod("setImpl",
+                    systemResImpl.getClass());
+            setImpl.setAccessible(true);
+            Resources foo = new LGWorkaroundResources(systemRes.getAssets(),
+                    systemRes.getDisplayMetrics(), systemRes.getConfiguration());
+            setImpl.invoke(foo, systemResImpl);
+            systemResField = Resources.class.getDeclaredField("mSystem");
+            systemResField.setAccessible(true);
+            systemResField.set(null, foo);
+        } catch (Exception ignored) {
+        }
+
         Context context = systemContext.createPackageContext(name.getPackageName(),
                 Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+
+        if (systemResField != null) {
+            try {
+                systemResField.set(null, systemRes);
+            } catch (Exception ignored) {
+            }
+        }
+
         attachBaseContext(context);
 
         // Use classloader from the package context to run everything
@@ -169,5 +207,20 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         Constructor<?> ctor = clz.getDeclaredConstructor();
         ctor.setAccessible(true);
         attachBaseContext.invoke(ctor.newInstance(), this);
+    }
+
+    static class LGWorkaroundResources extends Resources {
+        public LGWorkaroundResources(AssetManager assets, DisplayMetrics metrics,
+                                     Configuration config) {
+            super(assets, metrics, config);
+        }
+
+        @Override public boolean getBoolean(int id) throws NotFoundException {
+            try {
+                return super.getBoolean(id);
+            } catch (NotFoundException e) {
+                return false;
+            }
+        }
     }
 }
