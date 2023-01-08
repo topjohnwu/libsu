@@ -20,12 +20,14 @@ import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.util.Log;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
@@ -116,6 +118,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         return objs;
     }
 
+    @SuppressLint("DiscouragedPrivateApi")
     public RootServerMain(String[] args) throws Exception {
         super(null);
 
@@ -159,8 +162,31 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         }
 
         Context systemContext = getSystemContext();
+
+        // Calling createPackageContext crashes on LG ROM
+        // Override the system resources object to prevent crashing
+        Resources systemRes = Resources.getSystem();
+        Field systemResField = null;
+        try {
+            // This class only exists on LG ROMs with broken implementations
+            Class.forName("com.lge.systemservice.core.integrity.IntegrityManager");
+            // If control flow goes here, we need the resource hack
+            Resources wrapper = new ResourcesWrapper(systemRes);
+            systemResField = Resources.class.getDeclaredField("mSystem");
+            systemResField.setAccessible(true);
+            systemResField.set(null, wrapper);
+        } catch (ReflectiveOperationException ignored) {}
+
         Context context = systemContext.createPackageContext(name.getPackageName(),
                 Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+
+        // Restore the system resources object after context creation
+        if (systemResField != null) {
+            try {
+                systemResField.set(null, systemRes);
+            } catch (ReflectiveOperationException ignored) {}
+        }
+
         attachBaseContext(context);
 
         // Use classloader from the package context to run everything
@@ -169,5 +195,29 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         Constructor<?> ctor = clz.getDeclaredConstructor();
         ctor.setAccessible(true);
         attachBaseContext.invoke(ctor.newInstance(), this);
+    }
+
+    static class ResourcesWrapper extends Resources {
+
+        @SuppressWarnings("JavaReflectionMemberAccess")
+        @SuppressLint("DiscouragedPrivateApi")
+        public ResourcesWrapper(Resources res) throws ReflectiveOperationException {
+            super(res.getAssets(), res.getDisplayMetrics(), res.getConfiguration());
+            Method getImpl = Resources.class.getDeclaredMethod("getImpl");
+            getImpl.setAccessible(true);
+            Method setImpl = Resources.class.getDeclaredMethod("setImpl", getImpl.getReturnType());
+            setImpl.setAccessible(true);
+            Object impl = getImpl.invoke(res);
+            setImpl.invoke(this, impl);
+        }
+
+        @Override
+        public boolean getBoolean(int id) {
+            try {
+                return super.getBoolean(id);
+            } catch (NotFoundException e) {
+                return false;
+            }
+        }
     }
 }
