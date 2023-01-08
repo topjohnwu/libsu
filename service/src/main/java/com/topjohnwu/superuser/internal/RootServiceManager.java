@@ -216,7 +216,10 @@ public class RootServiceManager implements Handler.Callback {
             }
 
             // We cannot readlink /proc/self/exe on old kernels
-            String app_process = "/system/bin/app_process" + (Utils.isProcess64Bit() ? "64" : "32");
+            String app_process = "/system/bin/app_process";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                app_process += Utils.isProcess64Bit() ? "64" : "32";
+            }
             String cmd = String.format(Locale.ROOT,
                     "(%s CLASSPATH=%s %s %s /system/bin %s " +
                     "com.topjohnwu.superuser.internal.RootServerMain '%s' %d %s >/dev/null 2>&1)&",

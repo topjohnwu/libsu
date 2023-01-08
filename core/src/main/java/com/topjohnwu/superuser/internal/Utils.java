@@ -187,6 +187,9 @@ public final class Utils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return Process.is64Bit();
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return false;
+        }
         try {
             Class<?> classVMRuntime = Class.forName("dalvik.system.VMRuntime");
             Method getRuntime = classVMRuntime.getDeclaredMethod("getRuntime");
