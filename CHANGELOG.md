@@ -1,3 +1,8 @@
+## 5.0.4
+
+- [service] Fix incompatibility with old Linux kernels
+- [service] Workaround broken framework implementations in some LG ROMs
+
 ## 5.0.3
 
 - [core] Fix `ShellUtils.escapedString(String)`
