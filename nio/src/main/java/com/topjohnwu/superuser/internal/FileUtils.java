@@ -55,8 +55,6 @@ import java.util.Set;
 @SuppressLint("DiscouragedPrivateApi")
 class FileUtils {
 
-    private static final String REMOTE_ERR_MSG = "Exception thrown on remote process";
-
     private static Object os;
     private static Method splice;
     private static Method sendfile;
@@ -198,18 +196,6 @@ class FileUtils {
                 throw new ErrnoException("sendfile", ENOSYS);
             }
         }
-    }
-
-    static void checkException(ParcelValues values) throws IOException {
-        Throwable err = values.getTyped(0);
-        if (err != null) {
-            throw new IOException(REMOTE_ERR_MSG, err);
-        }
-    }
-
-    static <T> T tryAndGet(ParcelValues values) throws IOException {
-        checkException(values);
-        return values.getTyped(1);
     }
 
     @SuppressWarnings("OctalInteger")

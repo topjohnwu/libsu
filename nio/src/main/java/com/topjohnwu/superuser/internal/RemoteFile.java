@@ -61,7 +61,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @NonNull
     public String getCanonicalPath() throws IOException {
         try {
-            return FileUtils.tryAndGet(fs.getCanonicalPath(getPath()));
+            return fs.getCanonicalPath(getPath()).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -188,7 +188,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewFile() throws IOException {
         try {
-            return FileUtils.tryAndGet(fs.createNewFile(getPath()));
+            return fs.createNewFile(getPath()).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -197,7 +197,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewLink(String existing) throws IOException {
         try {
-            return FileUtils.tryAndGet(fs.createLink(getPath(), existing, false));
+            return fs.createLink(getPath(), existing, false).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -206,7 +206,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     @Override
     public boolean createNewSymlink(String target) throws IOException {
         try {
-            return FileUtils.tryAndGet(fs.createLink(getPath(), target, true));
+            return fs.createLink(getPath(), target, true).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -339,7 +339,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     public InputStream newInputStream() throws IOException {
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         try {
-            FileUtils.checkException(fs.openReadStream(getPath(), pipe[1]));
+            fs.openReadStream(getPath(), pipe[1]).checkException();
         } catch (RemoteException e) {
             pipe[0].close();
             throw new IOException(e);
@@ -354,7 +354,7 @@ class RemoteFile extends FileImpl<RemoteFile> {
     public OutputStream newOutputStream(boolean append) throws IOException {
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         try {
-            FileUtils.checkException(fs.openWriteStream(getPath(), pipe[0], append));
+            fs.openWriteStream(getPath(), pipe[0], append).checkException();
         } catch (RemoteException e) {
             pipe[1].close();
             throw new IOException(e);

@@ -16,6 +16,10 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static android.system.OsConstants.SEEK_CUR;
+import static android.system.OsConstants.SEEK_END;
+import static android.system.OsConstants.SEEK_SET;
+
 import android.os.Build;
 import android.system.ErrnoException;
 import android.system.Int64Ref;
@@ -30,9 +34,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
-class FileHolder implements Closeable {
-
-    // All methods in this class has to be synchronized
+class OpenFile implements Closeable {
 
     // This is only for testing purpose
     private static final boolean FORCE_NO_SPLICE = false;
@@ -57,37 +59,61 @@ class FileHolder implements Closeable {
         return st;
     }
 
+    private void ensureOpen() throws ClosedChannelException {
+        if (fd == null)
+            throw new ClosedChannelException();
+    }
+
     @Override
-    public void close() {
+    synchronized public void close() {
         if (fd != null) {
             try {
                 Os.close(fd);
-            } catch (ErrnoException ignored) {
-            }
+            } catch (ErrnoException ignored) {}
             fd = null;
         }
         if (read != null) {
             try {
                 Os.close(read);
-            } catch (ErrnoException ignored) {
-            }
+            } catch (ErrnoException ignored) {}
             read = null;
         }
         if (write != null) {
             try {
                 Os.close(write);
-            } catch (ErrnoException ignored) {
-            }
+            } catch (ErrnoException ignored) {}
             write = null;
         }
     }
 
-    void ensureOpen() throws ClosedChannelException {
-        if (fd == null)
-            throw new ClosedChannelException();
+    synchronized long lseek(long offset, int whence) throws ErrnoException, IOException {
+        ensureOpen();
+        return Os.lseek(fd, offset, whence);
     }
 
-    int fdToPipe(int len, long offset) throws ErrnoException, IOException {
+    synchronized long size() throws ErrnoException, IOException {
+        ensureOpen();
+        long cur = Os.lseek(fd, 0, SEEK_CUR);
+        Os.lseek(fd, 0, SEEK_END);
+        long sz = Os.lseek(fd, 0, SEEK_CUR);
+        Os.lseek(fd, cur, SEEK_SET);
+        return sz;
+    }
+
+    synchronized void ftruncate(long length) throws ErrnoException, IOException {
+        ensureOpen();
+        Os.ftruncate(fd, length);
+    }
+
+    synchronized void sync(boolean metadata) throws ErrnoException, IOException {
+        ensureOpen();
+        if (metadata)
+            Os.fsync(fd);
+        else
+            Os.fdatasync(fd);
+    }
+
+    synchronized int pread(int len, long offset) throws ErrnoException, IOException {
         if (fd == null || write == null)
             throw new ClosedChannelException();
         final long result;
@@ -120,7 +146,7 @@ class FileHolder implements Closeable {
         return (int) result;
     }
 
-    int pipeToFd(int len, long offset, boolean exact) throws ErrnoException, IOException {
+    synchronized int pwrite(int len, long offset, boolean exact) throws ErrnoException, IOException {
         if (fd == null || read == null)
             throw new ClosedChannelException();
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {

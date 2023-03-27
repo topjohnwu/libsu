@@ -95,7 +95,7 @@ public final class NIOFactory {
 
     public static FileSystemManager createRemote(IBinder b) throws RemoteException {
         IFileSystemService fs = IFileSystemService.Stub.asInterface(b);
-        if (fs == null || !IFileSystemService.DESCRIPTOR.equals(b.getInterfaceDescriptor()))
+        if (fs == null)
             throw new IllegalArgumentException("The IBinder provided is invalid");
 
         fs.register(new Binder());

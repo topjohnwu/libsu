@@ -1,17 +1,17 @@
 // IFileSystemService.aidl
 package com.topjohnwu.superuser.internal;
 
-parcelable ParcelValues;
+parcelable IOResult;
 
 interface IFileSystemService {
     // File APIs
-    /* (err, String) */ ParcelValues getCanonicalPath(String path);
+    /* (err, String) */ IOResult getCanonicalPath(String path);
     boolean isDirectory(String path);
     boolean isFile(String path);
     boolean isHidden(String path);
     long lastModified(String path);
     long length(String path);
-    /* (err, bool) */ ParcelValues createNewFile(String path);
+    /* (err, bool) */ IOResult createNewFile(String path);
     boolean delete(String path);
     String[] list(String path);
     boolean mkdir(String path);
@@ -27,18 +27,18 @@ interface IFileSystemService {
     long getFreeSpace(String path);
     long getUsableSpace(String path);
     int getMode(String path);
-    /* (err, bool) */ ParcelValues createLink(String link, String target, boolean soft);
+    /* (err, bool) */ IOResult createLink(String link, String target, boolean soft);
 
     // I/O APIs
     oneway void register(IBinder client);
-    /* (err, int) */ ParcelValues openChannel(String path, int mode, String fifo);
-    /* (err) */ ParcelValues openReadStream(String path, in ParcelFileDescriptor fd);
-    /* (err) */ ParcelValues openWriteStream(String path, in ParcelFileDescriptor fd, boolean append);
+    /* (err, int) */ IOResult openChannel(String path, int mode, String fifo);
+    /* (err) */ IOResult openReadStream(String path, in ParcelFileDescriptor fd);
+    /* (err) */ IOResult openWriteStream(String path, in ParcelFileDescriptor fd, boolean append);
     oneway void close(int handle);
-    /* (err, int) */ ParcelValues pread(int handle, int len, long offset);
-    /* (err) */ ParcelValues pwrite(int handle, int len, long offset);
-    /* (err, long) */ ParcelValues lseek(int handle, long offset, int whence);
-    /* (err, long) */ ParcelValues size(int handle);
-    /* (err) */ ParcelValues ftruncate(int handle, long length);
-    /* (err) */ ParcelValues sync(int handle, boolean metaData);
+    /* (err, int) */ IOResult pread(int handle, int len, long offset);
+    /* (err) */ IOResult pwrite(int handle, int len, long offset);
+    /* (err, long) */ IOResult lseek(int handle, long offset, int whence);
+    /* (err, long) */ IOResult size(int handle);
+    /* (err) */ IOResult ftruncate(int handle, long length);
+    /* (err) */ IOResult sync(int handle, boolean metadata);
 }

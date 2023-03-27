@@ -22,9 +22,6 @@ import static android.system.OsConstants.O_NONBLOCK;
 import static android.system.OsConstants.O_RDONLY;
 import static android.system.OsConstants.O_TRUNC;
 import static android.system.OsConstants.O_WRONLY;
-import static android.system.OsConstants.SEEK_CUR;
-import static android.system.OsConstants.SEEK_END;
-import static android.system.OsConstants.SEEK_SET;
 
 import android.annotation.SuppressLint;
 import android.os.Binder;
@@ -53,17 +50,12 @@ class FileSystemService extends IFileSystemService.Stub {
     };
 
     @Override
-    public ParcelValues getCanonicalPath(String path) {
-        ParcelValues p = new ParcelValues();
+    public IOResult getCanonicalPath(String path) {
         try {
-            String v = mCache.get(path).getCanonicalPath();
-            p.add(null);
-            p.add(v);
+            return new IOResult(mCache.get(path).getCanonicalPath());
         } catch (IOException e) {
-            p.add(e);
-            p.add(null);
+            return new IOResult(e);
         }
-        return p;
     }
 
     @Override
@@ -92,17 +84,12 @@ class FileSystemService extends IFileSystemService.Stub {
     }
 
     @Override
-    public ParcelValues createNewFile(String path) {
-        ParcelValues p = new ParcelValues();
+    public IOResult createNewFile(String path) {
         try {
-            boolean v = mCache.get(path).createNewFile();
-            p.add(null);
-            p.add(v);
+            return new IOResult(mCache.get(path).createNewFile());
         } catch (IOException e) {
-            p.add(e);
-            p.add(null);
+            return new IOResult(e);
         }
-        return p;
     }
 
     @Override
@@ -190,30 +177,26 @@ class FileSystemService extends IFileSystemService.Stub {
     }
 
     @Override
-    public ParcelValues createLink(String link, String target, boolean soft) {
-        ParcelValues p = new ParcelValues();
+    public IOResult createLink(String link, String target, boolean soft) {
         try {
             if (soft)
                 Os.symlink(target, link);
             else
                 Os.link(target, link);
-            p.add(null);
-            p.add(true);
+            return new IOResult(true);
         } catch (ErrnoException e) {
             if (e.errno == OsConstants.EEXIST) {
-                p.add(null);
+                return new IOResult(false);
             } else {
-                p.add(e);
+                return new IOResult(e);
             }
-            p.add(false);
         }
-        return p;
     }
 
     // I/O APIs
 
     private final FileContainer openFiles = new FileContainer();
-    private final ExecutorService ioPool = Executors.newCachedThreadPool();
+    private final ExecutorService streamPool = Executors.newCachedThreadPool();
 
     @Override
     public void register(IBinder client) {
@@ -225,68 +208,55 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @SuppressWarnings("OctalInteger")
     @Override
-    public ParcelValues openChannel(String path, int mode, String fifo) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
-        FileHolder h = new FileHolder();
+    public IOResult openChannel(String path, int mode, String fifo) {
+        OpenFile f = new OpenFile();
         try {
-            h.fd = Os.open(path, mode | O_NONBLOCK, 0666);
-            h.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
-            h.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
-            values.add(openFiles.put(h));
+            f.fd = Os.open(path, mode | O_NONBLOCK, 0666);
+            f.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
+            f.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
+            return new IOResult(openFiles.put(f));
         } catch (ErrnoException e) {
-            values.set(0, e);
-            h.close();
+            f.close();
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues openReadStream(String path, ParcelFileDescriptor fd) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
-        FileHolder h = new FileHolder();
+    public IOResult openReadStream(String path, ParcelFileDescriptor fd) {
+        OpenFile f = new OpenFile();
         try {
-            h.fd = Os.open(path, O_RDONLY, 0);
-            ioPool.execute(() -> {
-                try {
-                    h.write = FileUtils.createFileDescriptor(fd.detachFd());
-                    while (h.fdToPipe(PIPE_CAPACITY, -1) > 0);
-                } catch (ErrnoException | IOException ignored) {
-                } finally {
-                    h.close();
-                }
+            f.fd = Os.open(path, O_RDONLY, 0);
+            streamPool.execute(() -> {
+                try (OpenFile of = f) {
+                    of.write = FileUtils.createFileDescriptor(fd.detachFd());
+                    while (of.pread(PIPE_CAPACITY, -1) > 0);
+                } catch (ErrnoException | IOException ignored) {}
             });
+            return new IOResult();
         } catch (ErrnoException e) {
-            values.set(0, e);
-            h.close();
+            f.close();
+            return new IOResult(e);
         }
-        return values;
     }
 
     @SuppressWarnings("OctalInteger")
     @Override
-    public ParcelValues openWriteStream(String path, ParcelFileDescriptor fd, boolean append) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
-        FileHolder h = new FileHolder();
+    public IOResult openWriteStream(String path, ParcelFileDescriptor fd, boolean append) {
+        OpenFile f = new OpenFile();
         try {
             int mode = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
-            h.fd = Os.open(path, mode, 0666);
-            ioPool.execute(() -> {
-                try {
-                    h.read = FileUtils.createFileDescriptor(fd.detachFd());
-                    while (h.pipeToFd(PIPE_CAPACITY, -1, false) > 0);
-                } catch (ErrnoException | IOException ignored) {
-                } finally {
-                    h.close();
-                }
+            f.fd = Os.open(path, mode, 0666);
+            streamPool.execute(() -> {
+                try (OpenFile of = f) {
+                    of.read = FileUtils.createFileDescriptor(fd.detachFd());
+                    while (of.pwrite(PIPE_CAPACITY, -1, false) > 0);
+                } catch (ErrnoException | IOException ignored) {}
             });
+            return new IOResult();
         } catch (ErrnoException e) {
-            values.set(0, e);
-            h.close();
+            f.close();
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
@@ -295,102 +265,59 @@ class FileSystemService extends IFileSystemService.Stub {
     }
 
     @Override
-    public ParcelValues pread(int handle, int len, long offset) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult pread(int handle, int len, long offset) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                values.add(h.fdToPipe(len, offset));
-            }
+            return new IOResult(openFiles.get(handle).pread(len, offset));
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues pwrite(int handle, int len, long offset) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult pwrite(int handle, int len, long offset) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                h.pipeToFd(len, offset, true);
-            }
+            openFiles.get(handle).pwrite(len, offset, true);
+            return new IOResult();
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues lseek(int handle, long offset, int whence) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult lseek(int handle, long offset, int whence) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                h.ensureOpen();
-                values.add(Os.lseek(h.fd, offset, whence));
-            }
+            return new IOResult(openFiles.get(handle).lseek(offset, whence));
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues size(int handle) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult size(int handle) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                h.ensureOpen();
-                long cur = Os.lseek(h.fd, 0, SEEK_CUR);
-                Os.lseek(h.fd, 0, SEEK_END);
-                values.add(Os.lseek(h.fd, 0, SEEK_CUR));
-                Os.lseek(h.fd, cur, SEEK_SET);
-            }
+            return new IOResult(openFiles.get(handle).size());
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues ftruncate(int handle, long length) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult ftruncate(int handle, long length) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                h.ensureOpen();
-                Os.ftruncate(h.fd, length);
-            }
+            openFiles.get(handle).ftruncate(length);
+            return new IOResult();
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 
     @Override
-    public ParcelValues sync(int handle, boolean metaData) {
-        ParcelValues values = new ParcelValues();
-        values.add(null);
+    public IOResult sync(int handle, boolean metadata) {
         try {
-            final FileHolder h = openFiles.get(handle);
-            synchronized (h) {
-                h.ensureOpen();
-                if (metaData)
-                    Os.fsync(h.fd);
-                else
-                    Os.fdatasync(h.fd);
-            }
+            openFiles.get(handle).sync(metadata);
+            return new IOResult();
         } catch (IOException | ErrnoException e) {
-            values.set(0, e);
+            return new IOResult(e);
         }
-        return values;
     }
 }

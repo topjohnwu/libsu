@@ -29,23 +29,23 @@ class FileContainer {
 
     private int nextHandle = 0;
     // pid -> handle -> holder
-    private final SparseArray<SparseArray<FileHolder>> files = new SparseArray<>();
+    private final SparseArray<SparseArray<OpenFile>> files = new SparseArray<>();
 
     @NonNull
-    synchronized FileHolder get(int handle) throws IOException {
+    synchronized OpenFile get(int handle) throws IOException {
         int pid = Binder.getCallingPid();
-        SparseArray<FileHolder> pidFiles = files.get(pid);
+        SparseArray<OpenFile> pidFiles = files.get(pid);
         if (pidFiles == null)
             throw new IOException(ERROR_MSG);
-        FileHolder h = pidFiles.get(handle);
+        OpenFile h = pidFiles.get(handle);
         if (h == null)
             throw new IOException(ERROR_MSG);
         return h;
     }
 
-    synchronized int put(FileHolder h) {
+    synchronized int put(OpenFile h) {
         int pid = Binder.getCallingPid();
-        SparseArray<FileHolder> pidFiles = files.get(pid);
+        SparseArray<OpenFile> pidFiles = files.get(pid);
         if (pidFiles == null) {
             pidFiles = new SparseArray<>();
             files.put(pid, pidFiles);
@@ -57,10 +57,10 @@ class FileContainer {
 
     synchronized void remove(int handle) {
         int pid = Binder.getCallingPid();
-        SparseArray<FileHolder> pidFiles = files.get(pid);
+        SparseArray<OpenFile> pidFiles = files.get(pid);
         if (pidFiles == null)
             return;
-        FileHolder h = pidFiles.get(handle);
+        OpenFile h = pidFiles.get(handle);
         if (h == null)
             return;
         pidFiles.remove(handle);
@@ -70,15 +70,12 @@ class FileContainer {
     }
 
     synchronized void pidDied(int pid) {
-        SparseArray<FileHolder> pidFiles = files.get(pid);
+        SparseArray<OpenFile> pidFiles = files.get(pid);
         if (pidFiles == null)
             return;
         files.remove(pid);
         for (int i = 0; i < pidFiles.size(); ++i) {
-            FileHolder h = pidFiles.valueAt(i);
-            synchronized (h) {
-                h.close();
-            }
+            pidFiles.valueAt(i).close();
         }
     }
 }

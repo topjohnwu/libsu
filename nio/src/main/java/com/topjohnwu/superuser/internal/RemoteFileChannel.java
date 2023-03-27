@@ -65,7 +65,7 @@ class RemoteFileChannel extends FileChannel {
 
             // Open the file on the remote process
             int posixMode = FileUtils.modeToPosix(mode);
-            handle = FileUtils.tryAndGet(fs.openChannel(file.getAbsolutePath(), posixMode, fifo.getPath()));
+            handle = fs.openChannel(file.getAbsolutePath(), posixMode, fifo.getPath()).tryAndGet();
 
             // Since we do not have the machinery to interrupt native pthreads, we
             // have to make sure none of our I/O can block in all operations.
@@ -117,7 +117,7 @@ class RemoteFileChannel extends FileChannel {
                 synchronized (fdLock) {
                     if (!isOpen() || Thread.interrupted())
                         return -1;
-                    len = FileUtils.tryAndGet(fs.pread(handle, limit - pos, offset));
+                    len = fs.pread(handle, limit - pos, offset).tryAndGet();
                     if (len == 0)
                         break;
                     dst.limit(pos + len);
@@ -174,7 +174,7 @@ class RemoteFileChannel extends FileChannel {
                     if (!isOpen() || Thread.interrupted())
                         return -1;
                     len = Os.write(write, src);
-                    FileUtils.checkException(fs.pwrite(handle, len, offset));
+                    fs.pwrite(handle, len, offset).checkException();
                 }
                 if (offset >= 0) {
                     offset += len;
@@ -216,7 +216,7 @@ class RemoteFileChannel extends FileChannel {
     public long position() throws IOException {
         ensureOpen();
         try {
-            return FileUtils.tryAndGet(fs.lseek(handle, 0, OsConstants.SEEK_CUR));
+            return fs.lseek(handle, 0, OsConstants.SEEK_CUR).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -228,7 +228,7 @@ class RemoteFileChannel extends FileChannel {
         if (newPosition < 0)
             throw new IllegalArgumentException();
         try {
-            FileUtils.checkException(fs.lseek(handle, newPosition, OsConstants.SEEK_SET));
+            fs.lseek(handle, newPosition, OsConstants.SEEK_SET).checkException();
             return this;
         } catch (RemoteException e) {
             throw new IOException(e);
@@ -239,7 +239,7 @@ class RemoteFileChannel extends FileChannel {
     public long size() throws IOException {
         ensureOpen();
         try {
-            return FileUtils.tryAndGet(fs.size(handle));
+            return fs.size(handle).tryAndGet();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
@@ -253,7 +253,7 @@ class RemoteFileChannel extends FileChannel {
         if (!writable())
             throw new NonWritableChannelException();
         try {
-            FileUtils.checkException(fs.ftruncate(handle, size));
+            fs.ftruncate(handle, size).checkException();
             return this;
         } catch (RemoteException e) {
             throw new IOException(e);
@@ -264,7 +264,7 @@ class RemoteFileChannel extends FileChannel {
     public void force(boolean metaData) throws IOException {
         ensureOpen();
         try {
-            FileUtils.checkException(fs.sync(handle, metaData));
+            fs.sync(handle, metaData).checkException();
         } catch (RemoteException e) {
             throw new IOException(e);
         }
