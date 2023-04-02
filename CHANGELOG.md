@@ -1,3 +1,7 @@
+## 5.0.5
+
+- [nio] Optimize internal implementation
+
 ## 5.0.4
 
 - [service] Fix incompatibility with old Linux kernels
@@ -14,7 +18,7 @@
 
 ## 5.0.1
 
-- [nio] Update the remote file system's I/O stream implementation with stream specific optimizations. The throughput is about 2.5x larger.
+- [nio] Update the remote file system's I/O stream implementation with stream specific optimizations. The throughput is improved 2.5x.
 - [nio] Properly annotate nullability of `ExtendedFile`'s `newInputStream()`/`newOutputStream(...)`
 - The `busybox` module is removed. Pin the `busybox` module to version `5.0.0` if you cannot remove its usage immediately
 

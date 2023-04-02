@@ -15,7 +15,7 @@ An Android library providing a complete solution for apps using root permissions
 ```groovy
 android {
     compileOptions {
-        // This library uses Java 8 features, this is required
+        // The library uses Java 8 features
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
