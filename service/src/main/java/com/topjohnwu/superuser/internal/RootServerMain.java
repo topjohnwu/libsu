@@ -161,9 +161,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
                 System.exit(0);
         }
 
-        Context systemContext = getSystemContext();
-
-        // Calling createPackageContext crashes on LG ROM
+        // Calling many system APIs can crash on some LG ROMs
         // Override the system resources object to prevent crashing
         Resources systemRes = Resources.getSystem();
         Field systemResField = null;
@@ -177,20 +175,21 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
             systemResField.set(null, wrapper);
         } catch (ReflectiveOperationException ignored) {}
 
+        Context systemContext = getSystemContext();
         Context context = systemContext.createPackageContext(name.getPackageName(),
                 Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+        attachBaseContext(context);
 
-        // Restore the system resources object after context creation
+        // Use classloader from the package context to run everything
+        ClassLoader cl = context.getClassLoader();
+
+        // Restore the system resources object after classloader is available
         if (systemResField != null) {
             try {
                 systemResField.set(null, systemRes);
             } catch (ReflectiveOperationException ignored) {}
         }
 
-        attachBaseContext(context);
-
-        // Use classloader from the package context to run everything
-        ClassLoader cl = context.getClassLoader();
         Class<?> clz = cl.loadClass(name.getClassName());
         Constructor<?> ctor = clz.getDeclaredConstructor();
         ctor.setAccessible(true);
