@@ -24,6 +24,7 @@ import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.util.Log;
 
 import java.lang.reflect.Constructor;
@@ -176,8 +177,18 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         } catch (ReflectiveOperationException ignored) {}
 
         Context systemContext = getSystemContext();
-        Context context = systemContext.createPackageContext(name.getPackageName(),
-                Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+        Context context;
+        int userId = uid / 100000; // UserHandler.getUserId
+        int flags = Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY;
+        try {
+            UserHandle userHandle = (UserHandle) UserHandle.class.getDeclaredMethod("of", int.class).invoke(null, userId);
+            Method createPackageContextAsUser = systemContext.getClass().getDeclaredMethod("createPackageContextAsUser",
+                    String.class, int.class, UserHandle.class);
+            context = (Context) createPackageContextAsUser.invoke(systemContext, name.getPackageName(), flags, userHandle);
+        } catch (Throwable e) {
+            Log.w("IPC", "Failed to create package context as user: " + userId, e);
+            context = systemContext.createPackageContext(name.getPackageName(), flags);
+        }
         attachBaseContext(context);
 
         // Use classloader from the package context to run everything
