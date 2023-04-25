@@ -12,6 +12,19 @@ An Android library providing a complete solution for apps using root permissions
 
 ## Download
 
+Add jitpack in **settings.gradle**
+```groovy
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+Add components you want to use in **build.gradle**
 ```groovy
 android {
     compileOptions {
@@ -19,12 +32,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-}
-repositories {
-    maven { url 'https://jitpack.io' }
-}
+    
 dependencies {
-    def libsuVersion = '5.0.4'
+    def libsuVersion = '5.0.5'
 
     // The core module that provides APIs to a shell
     implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
