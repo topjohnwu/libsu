@@ -1,4 +1,5 @@
 import com.android.build.gradle.BaseExtension
+import com.android.build.gradle.LibraryExtension
 import java.io.ByteArrayOutputStream
 import java.net.URL
 
@@ -15,7 +16,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.4.2")
+        classpath("com.android.tools.build:gradle:8.0.1")
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -78,6 +79,9 @@ publishing {
 fun Project.android(configuration: BaseExtension.() -> Unit) =
     extensions.getByName<BaseExtension>("android").configuration()
 
+fun Project.androidLibrary(configuration: LibraryExtension.() -> Unit) =
+    extensions.getByName<LibraryExtension>("android").configuration()
+
 subprojects {
     buildscript {
         repositories {
@@ -96,7 +100,7 @@ subprojects {
     afterEvaluate {
         android {
             compileSdkVersion(33)
-            buildToolsVersion = "33.0.1"
+            buildToolsVersion = "33.0.2"
 
             defaultConfig {
                 if (minSdkVersion == null)
@@ -113,8 +117,8 @@ subprojects {
         if (plugins.hasPlugin("com.android.library")) {
             apply(plugin = "maven-publish")
 
-            android {
-                buildFeatures.apply {
+            androidLibrary {
+                buildFeatures {
                     buildConfig = false
                 }
 
@@ -126,19 +130,20 @@ subprojects {
                     classpath += configurations.getByName("javadocDeps")
                 }
 
-                val sourcesJar = tasks.register("sourcesJar", Jar::class) {
-                    archiveClassifier.set("sources")
-                    from(sources)
+                publishing {
+                    singleVariant("release") {
+                        withSourcesJar()
+                        withJavadocJar()
+                    }
                 }
 
                 afterEvaluate {
                     publishing {
                         publications {
-                            create<MavenPublication>("maven") {
+                            register<MavenPublication>("maven") {
                                 from(components["release"])
                                 groupId = "com.github.topjohnwu"
                                 artifactId = project.name
-                                artifact(sourcesJar)
                             }
                         }
                     }

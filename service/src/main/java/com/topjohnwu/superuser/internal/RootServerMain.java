@@ -181,10 +181,12 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         int userId = uid / 100000; // UserHandler.getUserId
         int flags = Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY;
         try {
-            UserHandle userHandle = (UserHandle) UserHandle.class.getDeclaredMethod("of", int.class).invoke(null, userId);
-            Method createPackageContextAsUser = systemContext.getClass().getDeclaredMethod("createPackageContextAsUser",
-                    String.class, int.class, UserHandle.class);
-            context = (Context) createPackageContextAsUser.invoke(systemContext, name.getPackageName(), flags, userHandle);
+            UserHandle userHandle = (UserHandle) UserHandle.class
+                    .getDeclaredMethod("of", int.class).invoke(null, userId);
+            context = (Context) systemContext.getClass()
+                    .getDeclaredMethod("createPackageContextAsUser",
+                            String.class, int.class, UserHandle.class)
+                    .invoke(systemContext, name.getPackageName(), flags, userHandle);
         } catch (Throwable e) {
             Log.w("IPC", "Failed to create package context as user: " + userId, e);
             context = systemContext.createPackageContext(name.getPackageName(), flags);

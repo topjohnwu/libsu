@@ -1,7 +1,7 @@
+import com.android.tools.r8.R8
 import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
-import com.android.tools.r8.R8
 import java.util.stream.Collectors
 
 plugins {
@@ -12,6 +12,9 @@ group="com.github.topjohnwu.libsu"
 
 android {
     namespace = "com.topjohnwu.superuser.ipc"
+    buildFeatures {
+        aidl = true
+    }
 }
 
 android.libraryVariants.all {
