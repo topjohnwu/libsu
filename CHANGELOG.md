@@ -1,3 +1,9 @@
+## 5.1.0
+
+- [core] New API `Shell.Job.enqueue()` which returns `Future<Shell.Result>` in case you need to retrive asynchronous results without using callbacks
+- [services] Workaround more broken LG system framework
+- [services] Properly support multiuser/work profile
+
 ## 5.0.5
 
 - [nio] Optimize internal implementation
