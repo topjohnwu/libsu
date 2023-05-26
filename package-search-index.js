@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"com.topjohnwu.superuser"},{"l":"com.topjohnwu.superuser.io"},{"l":"com.topjohnwu.superuser.ipc"},{"l":"com.topjohnwu.superuser.nio"}]
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.topjohnwu.superuser"},{"l":"com.topjohnwu.superuser.io"},{"l":"com.topjohnwu.superuser.ipc"},{"l":"com.topjohnwu.superuser.nio"}];updateSearchResults();
