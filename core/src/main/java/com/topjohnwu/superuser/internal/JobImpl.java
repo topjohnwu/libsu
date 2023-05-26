@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 class JobImpl extends Shell.Job implements Closeable {
 
@@ -79,6 +81,14 @@ class JobImpl extends Shell.Job implements Closeable {
     @Override
     public Shell.Result exec() {
         return exec0();
+    }
+
+    @NonNull
+    @Override
+    public Future<Shell.Result> enqueue() {
+        FutureTask<Shell.Result> future = new FutureTask<>(this::exec0);
+        shell.executor.execute(future);
+        return future;
     }
 
     @Override

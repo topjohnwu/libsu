@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -235,8 +236,8 @@ public abstract class Shell implements Closeable {
      * {@link Job#to(List)} or {@link Job#to(List, List)}.
      * <p>
      * The main shell will NOT be requested until the developer invokes either
-     * {@link Job#exec()} or {@code Job.submit(...)}. This makes it possible to
-     * construct {@link Job}s before the program has created any root shell.
+     * {@link Job#exec()}, {@link Job#enqueue()}, or {@code Job.submit(...)}. This makes it
+     * possible to construct {@link Job}s before the program has created any root shell.
      * @return a job that the developer can execute or submit later.
      * @see Job#add(String...)
      */
@@ -255,8 +256,8 @@ public abstract class Shell implements Closeable {
      * {@link Job#to(List)} or {@link Job#to(List, List)}.
      * <p>
      * The main shell will NOT be requested until the developer invokes either
-     * {@link Job#exec()} or {@code Job.submit(...)}. This makes it possible to
-     * construct {@link Job}s before the program has created any root shell.
+     * {@link Job#exec()}, {@link Job#enqueue()}, or {@code Job.submit(...)}. This makes it
+     * possible to construct {@link Job}s before the program has created any root shell.
      * @see Job#add(InputStream)
      */
     @NonNull
@@ -585,7 +586,7 @@ public abstract class Shell implements Closeable {
          * Submit the job to an internal queue to run in the background.
          * The result will be omitted.
          */
-        public void submit() {
+        public final void submit() {
             submit(null);
         }
 
@@ -594,7 +595,7 @@ public abstract class Shell implements Closeable {
          * The result will be returned with a callback running on the main thread.
          * @param cb the callback to receive the result of the job.
          */
-        public void submit(@Nullable ResultCallback cb) {
+        public final void submit(@Nullable ResultCallback cb) {
             submit(UiThreadHandler.executor, cb);
         }
 
@@ -606,6 +607,13 @@ public abstract class Shell implements Closeable {
          * @param cb the callback to receive the result of the job.
          */
         public abstract void submit(@Nullable Executor executor, @Nullable ResultCallback cb);
+
+        /**
+         * Submit the job to an internal queue to run in the background.
+         * @return a {@link Future} to get the result of the job later.
+         */
+        @NonNull
+        public abstract Future<Result> enqueue();
     }
 
     /**
