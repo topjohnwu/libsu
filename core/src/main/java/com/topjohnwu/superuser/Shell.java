@@ -77,15 +77,15 @@ public abstract class Shell implements Closeable {
      */
     public static final int ROOT_SHELL = 1;
     /**
-     * Shell status: Root shell with mount master enabled.
-     * One possible result of {@link #getStatus()}.
+     * @deprecated Not used anymore.
      * <p>
      * Constant value {@value}.
      */
+    @Deprecated
     public static final int ROOT_MOUNT_MASTER = 2;
 
     @Retention(SOURCE)
-    @IntDef({UNKNOWN, NON_ROOT_SHELL, ROOT_SHELL, ROOT_MOUNT_MASTER})
+    @IntDef({UNKNOWN, NON_ROOT_SHELL, ROOT_SHELL})
     @interface Status {}
 
     /**
@@ -304,8 +304,7 @@ public abstract class Shell implements Closeable {
     /**
      * Get the status of the shell.
      * @return the status of the shell.
-     *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, {@link #ROOT_SHELL}, or
-     *         {@link #ROOT_MOUNT_MASTER}
+     *         Value is either {@link #UNKNOWN}, {@link #NON_ROOT_SHELL}, or {@link #ROOT_SHELL}
      */
     @Status
     public abstract int getStatus();
