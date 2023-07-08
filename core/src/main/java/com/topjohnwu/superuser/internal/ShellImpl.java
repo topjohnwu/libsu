@@ -156,17 +156,6 @@ class ShellImpl extends Shell {
                 STDIN.write(("cd " + cwd + "\n").getBytes(UTF_8));
                 STDIN.flush();
             }
-
-            if (status == ROOT_SHELL) {
-                STDIN.write(("readlink /proc/self/ns/mnt\n").getBytes(UTF_8));
-                STDIN.flush();
-                s = br.readLine();
-                STDIN.write(("readlink /proc/1/ns/mnt\n").getBytes(UTF_8));
-                STDIN.flush();
-                String s2 = br.readLine();
-                if (!TextUtils.isEmpty(s) && !TextUtils.isEmpty(s2) && TextUtils.equals(s, s2))
-                    status = ROOT_MOUNT_MASTER;
-            }
         }
         return status;
     }
