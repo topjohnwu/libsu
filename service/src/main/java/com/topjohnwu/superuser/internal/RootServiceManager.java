@@ -111,7 +111,7 @@ public class RootServiceManager implements Handler.Callback {
         Bundle bundle = new Bundle();
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
         return new Intent(RECEIVER_BROADCAST)
-                .setPackage(Utils.context.getPackageName())
+                .setPackage(Utils.getContext().getPackageName())
                 .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
                 .putExtra(INTENT_DAEMON_KEY, isDaemon)
                 .putExtra(INTENT_BUNDLE_KEY, bundle);
@@ -172,9 +172,8 @@ public class RootServiceManager implements Handler.Callback {
         }
 
         return (stdin, stdout, stderr) -> {
-            Context ctx = Utils.getContext();
-            Context de = Utils.getDeContext(ctx);
-            File mainJar = new File(de.getCacheDir(), "main.jar");
+            Context ctx = Utils.getDeContext();
+            File mainJar = new File(ctx.getCacheDir(), "main.jar");
 
             // Dump main.jar as trampoline
             try (InputStream in = ctx.getResources().getAssets().open("main.jar");

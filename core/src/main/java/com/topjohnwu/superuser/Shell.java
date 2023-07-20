@@ -76,13 +76,8 @@ public abstract class Shell implements Closeable {
      * Constant value {@value}.
      */
     public static final int ROOT_SHELL = 1;
-    /**
-     * @deprecated Not used anymore.
-     * <p>
-     * Constant value {@value}.
-     */
-    @Deprecated
-    public static final int ROOT_MOUNT_MASTER = 2;
+
+    /* Preserve 2 due to historical reasons */
 
     @Retention(SOURCE)
     @IntDef({UNKNOWN, NON_ROOT_SHELL, ROOT_SHELL})
@@ -382,7 +377,7 @@ public abstract class Shell implements Closeable {
         @SafeVarargs
         @NonNull
         public final Builder setInitializers(@NonNull Class<? extends Initializer>... classes) {
-            ((BuilderImpl) this).createInitializers(classes);
+            ((BuilderImpl) this).setInitializersImpl(classes);
             return this;
         }
 
@@ -413,12 +408,11 @@ public abstract class Shell implements Closeable {
         /**
          * Set the {@link Context} to use when creating a shell.
          * <p>
-         * The {@link Context} instance provided here will not be directly passed to
-         * {@link Initializer#onInit(Context, Shell)}; the raw ContextImpl of the application
-         * will be obtained through the provided context, and that will be used instead.
+         * The ContextImpl of the application will be obtained through the provided context,
+         * and that will be passed to {@link Initializer#onInit(Context, Shell)}.
          * <p>
          * Calling this method is not usually necessary but recommended, as the library can
-         * obtain the current application through Android internal APIs. However, if your
+         * obtain the current application context through Android internal APIs. However, if your
          * application uses {@link android.R.attr#sharedUserId}, or a shell/root service can be
          * created during the application attach process, then setting a Context explicitly
          * using this method is required.
@@ -426,7 +420,10 @@ public abstract class Shell implements Closeable {
          * @return this Builder object for chaining of calls.
          */
         @NonNull
-        public abstract Builder setContext(@NonNull Context context);
+        public final Builder setContext(@NonNull Context context) {
+            Utils.setContext(context);
+            return this;
+        }
 
         /**
          * Combine all of the options that have been set and build a new {@code Shell} instance
@@ -682,6 +679,12 @@ public abstract class Shell implements Closeable {
     /* ***********
      * Deprecated
      * ***********/
+
+    /**
+     * @deprecated Not used anymore
+     */
+    @Deprecated
+    public static final int ROOT_MOUNT_MASTER = 2;
 
     /**
      * @deprecated use {@link #cmd(String...)}

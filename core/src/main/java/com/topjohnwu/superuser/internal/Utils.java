@@ -52,7 +52,7 @@ public final class Utils {
     private static int currentRootState = -1;
 
     @SuppressLint("StaticFieldLeak")
-    static Context context;
+    private static Context context;
 
     public static void log(Object log) {
         log(TAG, log);
@@ -80,6 +80,20 @@ public final class Utils {
         return Shell.enableVerboseLogging;
     }
 
+    public static void setContext(Context c) {
+        // Get the ContextImpl first so that getApplicationContext cannot be overridden
+        c = Utils.getContextImpl(c);
+        // Then get the application context, as the provided context could be from
+        // a provider, receiver, service, or activity.
+        Context app = c.getApplicationContext();
+        // getApplicationContext() could return null if the context is provided
+        // during the Application's attach or some other non-standard situation.
+        if (app != null)
+            c = app;
+        // Finally, get the raw ContextImpl of the app.
+        context = Utils.getContextImpl(c);
+    }
+
     @SuppressLint("PrivateApi")
     public static Context getContext() {
         if (context == null) {
@@ -89,7 +103,7 @@ public final class Utils {
                 Context c = (Context) Class.forName("android.app.ActivityThread")
                         .getMethod("currentApplication")
                         .invoke(null);
-                context = getContextImpl(c);
+                context = Utils.getContextImpl(c);
             } catch (Exception e) {
                 // Shall never happen
                 Utils.err(e);
@@ -98,8 +112,9 @@ public final class Utils {
         return context;
     }
 
-    public static Context getDeContext(Context context) {
-        return Build.VERSION.SDK_INT >= 24 ? context.createDeviceProtectedStorageContext() : context;
+    public static Context getDeContext() {
+        Context ctx = getContext();
+        return Build.VERSION.SDK_INT >= 24 ? ctx.createDeviceProtectedStorageContext() : ctx;
     }
 
     public static Context getContextImpl(Context context) {

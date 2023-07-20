@@ -21,7 +21,6 @@ import static com.topjohnwu.superuser.internal.RootServiceManager.DEBUG_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;
 import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
-import static com.topjohnwu.superuser.internal.Utils.context;
 import static com.topjohnwu.superuser.internal.Utils.newArraySet;
 
 import android.annotation.SuppressLint;
@@ -78,7 +77,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
     @SuppressWarnings("rawtypes")
     private RootServiceServer(Context context) {
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
-        Utils.context = Utils.getContextImpl(context);
+        Utils.setContext(context);
 
         // Wait for debugger to attach if needed
         if (System.getenv(DEBUG_ENV) != null) {
@@ -151,9 +150,9 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         Intent intent = RootServiceManager.getBroadcastIntent(this, isDaemon);
         if (Build.VERSION.SDK_INT >= 24) {
             UserHandle h = UserHandle.getUserHandleForUid(uid);
-            context.sendBroadcastAsUser(intent, h);
+            Utils.getContext().sendBroadcastAsUser(intent, h);
         } else {
-            context.sendBroadcast(intent);
+            Utils.getContext().sendBroadcast(intent);
         }
     }
 
@@ -213,6 +212,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
 
         ServiceRecord s = services.get(name);
         if (s == null) {
+            Context context = Utils.getContext();
             Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
