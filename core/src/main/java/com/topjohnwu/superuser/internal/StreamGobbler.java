@@ -16,8 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.TaskImpl.END_UUID;
-import static com.topjohnwu.superuser.internal.TaskImpl.UUID_LEN;
+import static com.topjohnwu.superuser.internal.JobImpl.END_UUID;
+import static com.topjohnwu.superuser.internal.JobImpl.UUID_LEN;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
