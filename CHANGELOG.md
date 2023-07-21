@@ -1,3 +1,7 @@
+## 5.2.0
+
+- [core] Shell status code `Shell.ROOT_MOUNT_MASTER` is no longer returned as there is no way to reliably determine this information.
+
 ## 5.1.0
 
 - [core] New API `Shell.Job.enqueue()` which returns `Future<Shell.Result>` in case you need to retrive asynchronous results without using callbacks
