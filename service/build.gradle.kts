@@ -64,6 +64,6 @@ android.libraryVariants.all {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    compileOnly("androidx.annotation:annotation:1.6.0")
     api(project(":core"))
 }

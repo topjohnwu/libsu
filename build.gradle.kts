@@ -3,24 +3,10 @@ import com.android.build.gradle.LibraryExtension
 import java.io.ByteArrayOutputStream
 import java.net.URL
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("maven-publish")
     id("java")
-}
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.1.1")
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-    }
+    id("maven-publish")
+    id("com.android.library") version "8.1.1" apply false
 }
 
 val dlPackageList by tasks.registering {
@@ -77,35 +63,22 @@ publishing {
 }
 
 fun Project.android(configuration: BaseExtension.() -> Unit) =
-    extensions.getByName<BaseExtension>("android").configuration()
+        extensions.getByName<BaseExtension>("android").configuration()
 
 fun Project.androidLibrary(configuration: LibraryExtension.() -> Unit) =
-    extensions.getByName<LibraryExtension>("android").configuration()
+        extensions.getByName<LibraryExtension>("android").configuration()
 
 subprojects {
-    buildscript {
-        repositories {
-            google()
-            mavenCentral()
-        }
-    }
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-
     configurations.create("javadocDeps")
-
     afterEvaluate {
         android {
-            compileSdkVersion(33)
-            buildToolsVersion = "33.0.2"
+            compileSdkVersion(34)
+            buildToolsVersion = "34.0.0"
 
             defaultConfig {
                 if (minSdkVersion == null)
                     minSdk = 19
-                targetSdk = 33
+                targetSdk = 34
             }
 
             compileOptions {
@@ -136,16 +109,16 @@ subprojects {
                         withJavadocJar()
                     }
                 }
+            }
 
-                afterEvaluate {
-                    this.publishing {
-                        publications {
-                            register<MavenPublication>("maven") {
-                                from(components["release"])
-                                groupId = "com.github.topjohnwu"
-                                artifactId = project.name
-                            }
+            publishing {
+                publications {
+                    register<MavenPublication>("libsu") {
+                        afterEvaluate {
+                            from(components["release"])
                         }
+                        groupId = "com.github.topjohnwu.libsu"
+                        artifactId = project.name
                     }
                 }
             }
