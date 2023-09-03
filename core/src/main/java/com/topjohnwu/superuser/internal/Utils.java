@@ -52,7 +52,7 @@ public final class Utils {
     private static int currentRootState = -1;
 
     @SuppressLint("StaticFieldLeak")
-    private static Context context;
+    public static Context context;
 
     public static void log(Object log) {
         log(TAG, log);

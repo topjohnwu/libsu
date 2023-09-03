@@ -77,7 +77,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
     @SuppressWarnings("rawtypes")
     private RootServiceServer(Context context) {
         Shell.enableVerboseLogging = System.getenv(LOGGING_ENV) != null;
-        Utils.setContext(context);
+        Utils.context = context;
 
         // Wait for debugger to attach if needed
         if (System.getenv(DEBUG_ENV) != null) {
@@ -150,9 +150,9 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         Intent intent = RootServiceManager.getBroadcastIntent(this, isDaemon);
         if (Build.VERSION.SDK_INT >= 24) {
             UserHandle h = UserHandle.getUserHandleForUid(uid);
-            Utils.getContext().sendBroadcastAsUser(intent, h);
+            Utils.context.sendBroadcastAsUser(intent, h);
         } else {
-            Utils.getContext().sendBroadcast(intent);
+            Utils.context.sendBroadcast(intent);
         }
     }
 
@@ -212,7 +212,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
 
         ServiceRecord s = services.get(name);
         if (s == null) {
-            Context context = Utils.getContext();
+            Context context = Utils.context;
             Class<?> clz = context.getClassLoader().loadClass(name.getClassName());
             Constructor<?> ctor = clz.getDeclaredConstructor();
             ctor.setAccessible(true);
