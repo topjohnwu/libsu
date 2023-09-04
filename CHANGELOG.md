@@ -1,3 +1,7 @@
+## 5.2.1
+
+- [service] Fix issue on OnePlus devices when using `Context` internally.
+
 ## 5.2.0
 
 - [core] Shell status code `Shell.ROOT_MOUNT_MASTER` is no longer returned as there is no way to reliably determine this information.
@@ -5,8 +9,8 @@
 ## 5.1.0
 
 - [core] New API `Shell.Job.enqueue()` which returns `Future<Shell.Result>` in case you need to retrive asynchronous results without using callbacks
-- [services] Workaround more broken LG system framework
-- [services] Properly support multiuser/work profile
+- [service] Workaround more broken LG system framework
+- [service] Properly support multiuser/work profile
 
 ## 5.0.5
 
