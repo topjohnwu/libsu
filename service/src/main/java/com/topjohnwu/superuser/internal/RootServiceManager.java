@@ -200,6 +200,10 @@ public class RootServiceManager implements Handler.Callback {
                 }
             }
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                params += " -Xnoimage-dex2oat";
+            }
+
             final String niceNameCmd;
             switch (action) {
                 case CMDLINE_START_SERVICE:
