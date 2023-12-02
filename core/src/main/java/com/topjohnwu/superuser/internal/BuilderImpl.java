@@ -34,6 +34,7 @@ import java.lang.reflect.Constructor;
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class BuilderImpl extends Shell.Builder {
     private static final String TAG = "BUILDER";
+    static String SU_FILE = "su";
 
     long timeout = 20;
     private int flags = 0;
@@ -54,6 +55,13 @@ public final class BuilderImpl extends Shell.Builder {
     @Override
     public Shell.Builder setTimeout(long t) {
         timeout = t;
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public Shell.Builder setSuFile(String s) {
+        SU_FILE = s;
         return this;
     }
 
@@ -78,7 +86,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Root mount master
         if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
             try {
-                shell = build("su", "--mount-master");
+                shell = build(SU_FILE, "--mount-master");
                 if (!shell.isRoot())
                     shell = null;
             } catch (NoShellException ignore) {}
@@ -87,7 +95,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Normal root shell
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
-                shell = build("su");
+                shell = build(SU_FILE);
                 if (!shell.isRoot()) {
                     shell = null;
                 }

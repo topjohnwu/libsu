@@ -406,6 +406,14 @@ public abstract class Shell implements Closeable {
         public abstract Builder setTimeout(long timeout);
 
         /**
+         * Set the su file when creating a shell.
+         * @param file The su file name.
+         * @return this Builder object for chaining of calls.
+         */
+        @NonNull
+        public abstract Builder setSuFile(String file);
+
+        /**
          * Set the {@link Context} to use when creating a shell.
          * <p>
          * The ContextImpl of the application will be obtained through the provided context,
