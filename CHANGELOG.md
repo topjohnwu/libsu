@@ -1,3 +1,7 @@
+## 5.2.2
+
+- [service] Disable `dex2oat` when loading trampoline JAR
+
 ## 5.2.1
 
 - [service] Fix issue on OnePlus devices when using `Context` internally.
