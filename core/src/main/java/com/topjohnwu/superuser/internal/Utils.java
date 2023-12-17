@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -156,6 +157,12 @@ public final class Utils {
         } else {
             return new HashSet<>();
         }
+    }
+
+    public static String[] appendToStringArray(String[] array, String element) {
+        ArrayList<String> arrayList = new ArrayList<>(java.util.Arrays.asList(array));
+        arrayList.add(element);
+        return arrayList.toArray(new String[0]);
     }
 
     public synchronized static Boolean isAppGrantedRoot() {

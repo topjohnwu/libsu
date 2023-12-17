@@ -406,12 +406,14 @@ public abstract class Shell implements Closeable {
         public abstract Builder setTimeout(long timeout);
 
         /**
-         * Set the su file when creating a shell.
-         * @param file The su file name.
+         * Set the custom su file and su args when creating a shell.
+         *
+         * @param file The su file name for {@link Utils#isAppGrantedRoot()}.
+         * @param argv The su argument list.
          * @return this Builder object for chaining of calls.
          */
         @NonNull
-        public abstract Builder setSuFile(String file);
+        public abstract Builder setCustomSu(String file, String[] argv);
 
         /**
          * Set the {@link Context} to use when creating a shell.

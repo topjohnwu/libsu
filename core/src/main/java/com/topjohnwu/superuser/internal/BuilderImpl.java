@@ -35,6 +35,7 @@ import java.lang.reflect.Constructor;
 public final class BuilderImpl extends Shell.Builder {
     private static final String TAG = "BUILDER";
     static String SU_FILE = "su";
+    static String[] SU_ARGV = {"su"};
 
     long timeout = 20;
     private int flags = 0;
@@ -60,8 +61,9 @@ public final class BuilderImpl extends Shell.Builder {
 
     @NonNull
     @Override
-    public Shell.Builder setSuFile(String s) {
-        SU_FILE = s;
+    public Shell.Builder setCustomSu(String f, String[] a) {
+        SU_FILE = f;
+        SU_ARGV = a;
         return this;
     }
 
@@ -86,7 +88,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Root mount master
         if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
             try {
-                shell = build(SU_FILE, "--mount-master");
+                shell = build(Utils.appendToStringArray(SU_ARGV, "--mount-master"));
                 if (!shell.isRoot())
                     shell = null;
             } catch (NoShellException ignore) {}
@@ -95,7 +97,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Normal root shell
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
-                shell = build(SU_FILE);
+                shell = build(SU_ARGV);
                 if (!shell.isRoot()) {
                     shell = null;
                 }
