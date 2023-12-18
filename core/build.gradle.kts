@@ -7,7 +7,11 @@ group="com.github.topjohnwu.libsu"
 android {
     namespace = "com.topjohnwu.superuser"
     defaultConfig {
-        consumerProguardFiles("proguard-rules.pro")
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+        consumerProguardFiles("consumer-rules.pro")
     }
 }
 
