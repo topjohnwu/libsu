@@ -84,7 +84,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Root mount master
         if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
             try {
-                shell = exec("su", "--mount-master");
+                shell = exec("suu", "--mount-master");
                 if (!shell.isRoot())
                     shell = null;
             } catch (NoShellException ignore) {}
@@ -93,7 +93,7 @@ public final class BuilderImpl extends Shell.Builder {
         // Normal root shell
         if (shell == null && !hasFlags(FLAG_NON_ROOT_SHELL)) {
             try {
-                shell = exec("su");
+                shell = exec("suu");
                 if (!shell.isRoot()) {
                     shell = null;
                 }
