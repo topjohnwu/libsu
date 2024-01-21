@@ -1,10 +1,30 @@
-# libsu
+# libsuu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
+[![](https://jitpack.io/v/4accccc/libsu.svg)](https://jitpack.io/#4accccc/libsu)
+
+# How to build your own Magisk(suu)?
+
+# 1.Open /app/build.gradle.kts
+
+# 2.Change
+
+    `val vLibsu = "5.2.2"
+    implementation("com.github.topjohnwu.libsu:core:${vLibsu}")
+    implementation("com.github.topjohnwu.libsu:service:${vLibsu}")
+    implementation("com.github.topjohnwu.libsu:nio:${vLibsu}")`
+    
+#    to
+   
+    `val vLibsu = "5.2.2"
+    implementation("com.github.4accccc.libsu:core:${vLibsu}")
+    implementation("com.github.4accccc.libsu:service:${vLibsu}")
+    implementation("com.github.4accccc.libsu:nio:${vLibsu}")`
+
+# 3.Build Magisk with build.py
 
 An Android library providing a complete solution for apps using root permissions.
 
-`libsu` comes with 2 main components: the `core` module handles the creation of the Unix (root) shell process and wraps it with high level, robust Java APIs; the `service` module handles the launching, binding, and management of root services over IPC, allowing you to run Java/Kotlin and C/C++ code (via JNI) with root permissions.
+`libsuu` comes with 2 main components: the `core` module handles the creation of the Unix (root) shell process and wraps it with high level, robust Java APIs; the `service` module handles the launching, binding, and management of root services over IPC, allowing you to run Java/Kotlin and C/C++ code (via JNI) with root permissions.
 
 ## [Changelog](./CHANGELOG.md)
 
@@ -24,16 +44,16 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    def libsuVersion = '5.2.2'
+    def libsuVersion = '5.2.1'
 
     // The core module that provides APIs to a shell
-    implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
+    implementation "com.github.4accccc.libsu:core:${libsuVersion}"
 
     // Optional: APIs for creating root services. Depends on ":core"
-    implementation "com.github.topjohnwu.libsu:service:${libsuVersion}"
+    implementation "com.github.4accccc.libsu:service:${libsuVersion}"
 
     // Optional: Provides remote file system support
-    implementation "com.github.topjohnwu.libsu:nio:${libsuVersion}"
+    implementation "com.github.4accccc.libsu:nio:${libsuVersion}"
 }
 ```
 
@@ -136,7 +156,7 @@ builder.setInitializers(ExampleInitializer.class);
 
 ### Root Services
 
-If interacting with a root shell is too limited for your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). For more details, please read the full Javadoc of `RootService` and check out the example app for more details. Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
+If interacting with a root shell is too limited for your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). For more details, please read the full Javadoc of `RootService` and check out the example app for more details. Add `com.github.4accccc.libsu:service` as a dependency to access `RootService`:
 
 ```java
 public class RootConnection implements ServiceConnection { ... }
@@ -157,7 +177,7 @@ If the application process creating the root service has a debugger attached, th
 
 ### I/O
 
-Add `com.github.topjohnwu.libsu:nio` as a dependency to access remote file system APIs:
+Add `com.github.4accccc.libsu:nio` as a dependency to access remote file system APIs:
 
 ```java
 // Create the file system service in the root process
