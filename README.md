@@ -1,6 +1,6 @@
 # libsu
 
-[![](https://jitpack.io/v/topjohnwu/libsu.svg)](https://jitpack.io/#topjohnwu/libsu)
+[![](https://jitpack.io/v/cxz92/libsu.svg)](https://jitpack.io/#cxz92/libsu)
 
 An Android library providing a complete solution for apps using root permissions.
 
@@ -8,7 +8,7 @@ An Android library providing a complete solution for apps using root permissions
 
 ## [Changelog](./CHANGELOG.md)
 
-## [Javadoc](https://topjohnwu.github.io/libsu/)
+## [Javadoc](https://cxz92.github.io/libsu/)
 
 ## Download
 
@@ -27,13 +27,13 @@ dependencies {
     def libsuVersion = '5.2.2'
 
     // The core module that provides APIs to a shell
-    implementation "com.github.topjohnwu.libsu:core:${libsuVersion}"
+    implementation "com.github.cxz92.libsu:core:${libsuVersion}"
 
     // Optional: APIs for creating root services. Depends on ":core"
-    implementation "com.github.topjohnwu.libsu:service:${libsuVersion}"
+    implementation "com.github.cxz92.libsu:service:${libsuVersion}"
 
     // Optional: Provides remote file system support
-    implementation "com.github.topjohnwu.libsu:nio:${libsuVersion}"
+    implementation "com.github.cxz92.libsu:nio:${libsuVersion}"
 }
 ```
 
@@ -136,7 +136,7 @@ builder.setInitializers(ExampleInitializer.class);
 
 ### Root Services
 
-If interacting with a root shell is too limited for your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). For more details, please read the full Javadoc of `RootService` and check out the example app for more details. Add `com.github.topjohnwu.libsu:service` as a dependency to access `RootService`:
+If interacting with a root shell is too limited for your needs, you can also implement a root service to run complex code. A root service is similar to [Bound Services](https://developer.android.com/guide/components/bound-services) but running in a root process. `libsu` uses Android's native IPC mechanism, binder, for communication between your root service and the main application process. In addition to running Java/Kotlin code, loading native libraries with JNI is also supported (`android:extractNativeLibs=false` **is** allowed). For more details, please read the full Javadoc of `RootService` and check out the example app for more details. Add `com.github.cxz92.libsu:service` as a dependency to access `RootService`:
 
 ```java
 public class RootConnection implements ServiceConnection { ... }
@@ -157,7 +157,7 @@ If the application process creating the root service has a debugger attached, th
 
 ### I/O
 
-Add `com.github.topjohnwu.libsu:nio` as a dependency to access remote file system APIs:
+Add `com.github.cxz92.libsu:nio` as a dependency to access remote file system APIs:
 
 ```java
 // Create the file system service in the root process
