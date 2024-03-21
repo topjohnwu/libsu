@@ -181,8 +181,14 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         int userId = uid / 100000; // UserHandler.getUserId
         int flags = Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY;
         try {
-            UserHandle userHandle = (UserHandle) UserHandle.class
-                    .getDeclaredMethod("of", int.class).invoke(null, userId);
+            UserHandle userHandle;
+            try {
+                userHandle = (UserHandle) UserHandle.class
+                           .getDeclaredMethod("of", int.class).invoke(null, userId);
+            } catch (NoSuchMethodException e) {
+                userHandle = UserHandle.class
+                           .getDeclaredConstructor(int.class).newInstance(userId);
+            }
             context = (Context) systemContext.getClass()
                     .getDeclaredMethod("createPackageContextAsUser",
                             String.class, int.class, UserHandle.class)
