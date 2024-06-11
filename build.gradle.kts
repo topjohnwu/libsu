@@ -6,7 +6,7 @@ import java.net.URL
 plugins {
     id("java")
     id("maven-publish")
-    id("com.android.library") version "8.1.1" apply false
+    id("com.android.library") version "8.4.2" apply false
 }
 
 val dlPackageList by tasks.registering {
@@ -24,8 +24,8 @@ val dlPackageList by tasks.registering {
         // Strip out empty lines
         val packageList = bos.toString("UTF-8").replace("\n+".toRegex(), "\n")
 
-        rootProject.buildDir.mkdirs()
-        File(rootProject.buildDir, "package-list").outputStream().use {
+        rootProject.layout.buildDirectory.asFile.get().mkdirs()
+        rootProject.layout.buildDirectory.file("package-list").get().asFile.outputStream().use {
             it.writer().write(packageList)
             it.write("\n".toByteArray())
         }
@@ -39,11 +39,12 @@ val javadoc = (tasks["javadoc"] as Javadoc).apply {
     exclude("**/internal/**")
     (options as StandardJavadocDocletOptions).apply {
         linksOffline = listOf(JavadocOfflineLink(
-            "https://developer.android.com/reference/", rootProject.buildDir.path))
+            "https://developer.android.com/reference/",
+            rootProject.layout.buildDirectory.asFile.get().path))
         isNoDeprecated = true
         addBooleanOption("-ignore-source-errors").value = true
     }
-    setDestinationDir(File(rootProject.buildDir, "javadoc"))
+    setDestinationDir(rootProject.layout.buildDirectory.dir("javadoc").get().asFile)
 }
 
 val javadocJar by tasks.registering(Jar::class) {
