@@ -164,14 +164,13 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         // Calling many system APIs can crash on some LG ROMs
         // Override the system resources object to prevent crashing
-        Resources systemRes = Resources.getSystem();
-        Field systemResField = null;
         try {
             // This class only exists on LG ROMs with broken implementations
             Class.forName("com.lge.systemservice.core.integrity.IntegrityManager");
             // If control flow goes here, we need the resource hack
+            Resources systemRes = Resources.getSystem();
             Resources wrapper = new ResourcesWrapper(systemRes);
-            systemResField = Resources.class.getDeclaredField("mSystem");
+            Field systemResField = Resources.class.getDeclaredField("mSystem");
             systemResField.setAccessible(true);
             systemResField.set(null, wrapper);
         } catch (ReflectiveOperationException ignored) {}
@@ -201,13 +200,6 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         // Use classloader from the package context to run everything
         ClassLoader cl = context.getClassLoader();
-
-        // Restore the system resources object after classloader is available
-        if (systemResField != null) {
-            try {
-                systemResField.set(null, systemRes);
-            } catch (ReflectiveOperationException ignored) {}
-        }
 
         Class<?> clz = cl.loadClass(name.getClassName());
         Constructor<?> ctor = clz.getDeclaredConstructor();
