@@ -41,8 +41,8 @@ public final class MainShell {
 
     private MainShell() {}
 
-    public static synchronized Shell get() {
-        Shell shell = getCached();
+    public static synchronized ShellImpl get() {
+        ShellImpl shell = getCached();
         if (shell == null) {
             isInitMain = true;
             if (mainBuilder == null)
@@ -76,7 +76,7 @@ public final class MainShell {
         }
     }
 
-    public static Shell getCached() {
+    public static ShellImpl getCached() {
         synchronized (mainShell) {
             ShellImpl s = mainShell[0];
             if (s != null && s.getStatus() < 0)

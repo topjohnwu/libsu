@@ -78,8 +78,8 @@ public final class BuilderImpl extends Shell.Builder {
         }
     }
 
-    private Shell start() {
-        Shell shell = null;
+    private ShellImpl start() {
+        ShellImpl shell = null;
 
         // Root mount master
         if (!hasFlags(FLAG_NON_ROOT_SHELL) && hasFlags(FLAG_MOUNT_MASTER)) {
@@ -111,7 +111,7 @@ public final class BuilderImpl extends Shell.Builder {
         return shell;
     }
 
-    private Shell exec(String... commands) {
+    private ShellImpl exec(String... commands) {
         try {
             Utils.log(TAG, "exec " + TextUtils.join(" ", commands));
             Process process = Runtime.getRuntime().exec(commands);
@@ -124,7 +124,7 @@ public final class BuilderImpl extends Shell.Builder {
 
     @NonNull
     @Override
-    public Shell build(Process process) {
+    public ShellImpl build(Process process) {
         ShellImpl shell;
         try {
             shell = new ShellImpl(this, process);
@@ -147,7 +147,7 @@ public final class BuilderImpl extends Shell.Builder {
 
     @NonNull
     @Override
-    public Shell build() {
+    public ShellImpl build() {
         if (command != null) {
             return exec(command);
         } else {
