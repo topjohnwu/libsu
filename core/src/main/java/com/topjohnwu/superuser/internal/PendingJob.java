@@ -29,10 +29,7 @@ import java.util.concurrent.Future;
 
 class PendingJob extends JobTask {
 
-    private final boolean isSU;
-
-    PendingJob(boolean su) {
-        isSU = su;
+    PendingJob() {
         to(NOPList.getInstance());
     }
 
@@ -41,10 +38,6 @@ class PendingJob extends JobTask {
         try {
             shell = MainShell.get();
         } catch (NoShellException e) {
-            close();
-            return ResultImpl.INSTANCE;
-        }
-        if (isSU && !shell.isRoot()) {
             close();
             return ResultImpl.INSTANCE;
         }
@@ -94,11 +87,6 @@ class PendingJob extends JobTask {
 
     private void submit0() {
         MainShell.get(null, s -> {
-            if (isSU && !s.isRoot()) {
-                close();
-                ResultImpl.INSTANCE.callback(callbackExecutor, callback);
-                return;
-            }
             ShellImpl shell = (ShellImpl) s;
             shell.submitTask(this);
         });

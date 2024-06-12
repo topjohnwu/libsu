@@ -237,7 +237,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job cmd(@NonNull String... commands) {
-        return MainShell.newJob(false, commands);
+        return MainShell.newJob(commands);
     }
 
     /**
@@ -256,7 +256,7 @@ public abstract class Shell implements Closeable {
      */
     @NonNull
     public static Job cmd(@NonNull InputStream in) {
-        return MainShell.newJob(false, in);
+        return MainShell.newJob(in);
     }
 
     /* ***************
@@ -698,42 +698,6 @@ public abstract class Shell implements Closeable {
      */
     @Deprecated
     public static final int ROOT_MOUNT_MASTER = 2;
-
-    /**
-     * @deprecated use {@link #cmd(String...)}
-     */
-    @Deprecated
-    @NonNull
-    public static Job su(@NonNull String... commands) {
-        return MainShell.newJob(true, commands);
-    }
-
-    /**
-     * @deprecated use {@link #cmd(String...)}
-     */
-    @Deprecated
-    @NonNull
-    public static Job sh(@NonNull String... commands) {
-        return MainShell.newJob(false, commands);
-    }
-
-    /**
-     * @deprecated use {@link #cmd(InputStream)}
-     */
-    @Deprecated
-    @NonNull
-    public static Job su(@NonNull InputStream in) {
-        return MainShell.newJob(true, in);
-    }
-
-    /**
-     * @deprecated use {@link #cmd(InputStream)}
-     */
-    @Deprecated
-    @NonNull
-    public static Job sh(@NonNull InputStream in) {
-        return MainShell.newJob(false, in);
-    }
 
     /**
      * Whether the application has access to root.

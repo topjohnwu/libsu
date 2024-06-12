@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,11 +102,11 @@ public final class MainShell {
         mainBuilder = (BuilderImpl) builder;
     }
 
-    public static Shell.Job newJob(boolean su, InputStream in) {
-        return new PendingJob(su).add(in);
+    public static Shell.Job newJob(InputStream in) {
+        return new PendingJob().add(in);
     }
 
-    public static Shell.Job newJob(boolean su, String... cmds) {
-        return new PendingJob(su).add(cmds);
+    public static Shell.Job newJob(String... cmds) {
+        return new PendingJob().add(cmds);
     }
 }
