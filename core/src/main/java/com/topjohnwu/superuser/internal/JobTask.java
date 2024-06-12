@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
 
@@ -75,10 +75,13 @@ abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
             result.err = list;
         }
 
-        try {
-            Future<Integer> outGobbler = EXECUTOR.submit(new StreamGobbler.OUT(stdout, result.out));
-            Future<Void> errGobbler = EXECUTOR.submit(new StreamGobbler.ERR(stderr, result.err));
+        FutureTask<Integer> outGobbler =
+                new FutureTask<>(new StreamGobbler.OUT(stdout, result.out));
+        FutureTask<Void> errGobbler = new FutureTask<>(new StreamGobbler.ERR(stderr, result.err));
+        EXECUTOR.execute(outGobbler);
+        EXECUTOR.execute(errGobbler);
 
+        try {
             for (ShellInputSource src : sources)
                 src.serve(stdin);
             stdin.write(END_CMD);

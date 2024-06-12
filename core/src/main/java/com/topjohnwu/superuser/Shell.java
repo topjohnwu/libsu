@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import java.lang.annotation.Retention;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -120,13 +119,13 @@ public abstract class Shell implements Closeable {
     @interface ConfigFlags {}
 
     /**
-     * The {@link ExecutorService} that manages all worker threads used in {@code libsu}.
+     * The {@link Executor} that manages all worker threads used in {@code libsu}.
      * <p>
-     * Note: If the developer decides to replace the default ExecutorService, keep in mind that
+     * Note: If the developer decides to replace the default Executor, keep in mind that
      * each {@code Shell} instance requires at least 3 threads to operate properly.
      */
     @NonNull
-    public static ExecutorService EXECUTOR = Executors.newCachedThreadPool();
+    public static Executor EXECUTOR = Executors.newCachedThreadPool();
 
 
     /**
