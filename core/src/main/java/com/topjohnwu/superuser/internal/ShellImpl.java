@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayDeque;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -47,14 +47,15 @@ class ShellTerminatedException extends IOException {
 }
 
 class ShellImpl extends Shell {
-    private int status;
+    private volatile int status;
 
-    final ExecutorService executor;
-    final boolean redirect;
+    private final boolean redirect;
     private final Process proc;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
     private final NoCloseInputStream STDERR;
+    private final ArrayDeque<Task> tasks = new ArrayDeque<>();
+    private boolean runningTasks = false;
 
     private static class NoCloseInputStream extends FilterInputStream {
 
@@ -98,10 +99,10 @@ class ShellImpl extends Shell {
         STDIN = new NoCloseOutputStream(process.getOutputStream());
         STDOUT = new NoCloseInputStream(process.getInputStream());
         STDERR = new NoCloseInputStream(process.getErrorStream());
-        executor = new SerialExecutorService();
 
         // Shell checks might get stuck indefinitely
-        Future<Integer> check = executor.submit(this::shellCheck);
+        FutureTask<Integer> check = new FutureTask<>(this::shellCheck);
+        EXECUTOR.execute(check);
         try {
             try {
                 status = check.get(builder.timeout, TimeUnit.SECONDS);
@@ -118,7 +119,6 @@ class ShellImpl extends Shell {
                 throw new IOException("Shell check interrupted", e);
             }
         } catch (IOException e) {
-            executor.shutdownNow();
             release();
             throw e;
         }
@@ -172,21 +172,26 @@ class ShellImpl extends Shell {
     public boolean waitAndClose(long timeout, @NonNull TimeUnit unit) throws InterruptedException {
         if (status < 0)
             return true;
-        executor.shutdown();
-        if (executor.awaitTermination(timeout, unit)) {
-            release();
-            return true;
-        } else {
-            status = UNKNOWN;
-            return false;
+
+        synchronized (tasks) {
+            if (runningTasks) {
+                tasks.clear();
+                tasks.wait(unit.toMillis(timeout));
+            }
+            if (!runningTasks) {
+                release();
+                return true;
+            }
         }
+
+        status = UNKNOWN;
+        return false;
     }
 
     @Override
     public void close() {
         if (status < 0)
             return;
-        executor.shutdownNow();
         release();
     }
 
@@ -211,8 +216,7 @@ class ShellImpl extends Shell {
         }
     }
 
-    @Override
-    public synchronized void execTask(@NonNull Task task) throws IOException {
+    private synchronized void exec0(Task task) throws IOException {
         if (status < 0)
             throw new ShellTerminatedException();
 
@@ -227,13 +231,56 @@ class ShellImpl extends Shell {
             throw new ShellTerminatedException();
         }
 
+        if (task instanceof JobTask) {
+            ((JobTask) task).redirect = redirect;
+        }
+
         task.run(STDIN, STDOUT, STDERR);
+    }
+
+    private void processTasks() {
+        Task task;
+        for (;;) {
+            synchronized (tasks) {
+                if ((task = tasks.poll()) == null) {
+                    runningTasks = false;
+                    tasks.notifyAll();
+                    return;
+                }
+            }
+            try {
+                exec0(task);
+            } catch (IOException ignored) {}
+        }
+    }
+
+    void submitTask(Task task) {
+        synchronized (tasks) {
+            tasks.offer(task);
+            if (!runningTasks) {
+                runningTasks = true;
+                EXECUTOR.execute(this::processTasks);
+            }
+        }
+    }
+
+    @Override
+    public void execTask(@NonNull Task task) throws IOException {
+        synchronized (tasks) {
+            while (runningTasks) {
+                // Wait until all existing tasks are done
+                try {
+                    tasks.wait();
+                } catch (InterruptedException ignored) {}
+            }
+        }
+        exec0(task);
     }
 
     @NonNull
     @Override
     public Job newJob() {
-        return new JobImpl(this);
+        return new ShellJob(this);
     }
 
 }

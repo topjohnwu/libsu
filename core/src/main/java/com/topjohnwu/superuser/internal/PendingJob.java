@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,23 +22,22 @@ import androidx.annotation.Nullable;
 import com.topjohnwu.superuser.NoShellException;
 import com.topjohnwu.superuser.Shell;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
-class PendingJob extends JobImpl {
+class PendingJob extends JobTask {
 
     private final boolean isSU;
-    private boolean retry;
 
     PendingJob(boolean su) {
         isSU = su;
-        retry = true;
         to(NOPList.getInstance());
     }
 
-    @NonNull
-    @Override
-    public Shell.Result exec() {
+    private Shell.Result exec0(ResultHolder h) {
+        ShellImpl shell;
         try {
             shell = MainShell.get();
         } catch (NoShellException e) {
@@ -49,37 +48,80 @@ class PendingJob extends JobImpl {
             close();
             return ResultImpl.INSTANCE;
         }
+        try {
+            shell.execTask(this);
+        } catch (IOException ignored) { /* JobTask does not throw */ }
+        return h.result;
+    }
+
+    @NonNull
+    @Override
+    public Shell.Result exec() {
+        ResultHolder h = new ResultHolder();
+        callback = h;
+        callbackExecutor = null;
         if (out instanceof NOPList)
             out = new ArrayList<>();
-        Shell.Result res = super.exec();
-        if (retry && res == ResultImpl.SHELL_ERR) {
+
+        Shell.Result r = exec0(h);
+        if (r == ResultImpl.SHELL_ERR) {
             // The cached shell is terminated, try to re-run this task
-            retry = false;
-            return exec();
+            return exec0(h);
         }
-        return res;
+        return r;
+    }
+
+    private class RetryCallback implements Shell.ResultCallback {
+
+        private final Shell.ResultCallback base;
+        private boolean retry = true;
+
+        RetryCallback(Shell.ResultCallback b) {
+            base = b;
+        }
+
+        @Override
+        public void onResult(@NonNull Shell.Result out) {
+            if (retry && out == ResultImpl.SHELL_ERR) {
+                // The cached shell is terminated, try to re-schedule this task
+                retry = false;
+                submit0();
+            } else if (base != null) {
+                base.onResult(out);
+            }
+        }
+    }
+
+    private void submit0() {
+        MainShell.get(null, s -> {
+            if (isSU && !s.isRoot()) {
+                close();
+                ResultImpl.INSTANCE.callback(callbackExecutor, callback);
+                return;
+            }
+            ShellImpl shell = (ShellImpl) s;
+            shell.submitTask(this);
+        });
+    }
+
+    @NonNull
+    @Override
+    public Future<Shell.Result> enqueue() {
+        ResultFuture f = new ResultFuture();
+        callback = new RetryCallback(f);
+        callbackExecutor = null;
+        if (out instanceof NOPList)
+            out = new ArrayList<>();
+        submit0();
+        return f;
     }
 
     @Override
     public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
-        MainShell.get(null, s -> {
-            if (isSU && !s.isRoot()) {
-                close();
-                ResultImpl.INSTANCE.callback(executor, cb);
-                return;
-            }
-            if (out instanceof NOPList)
-                out = (cb == null) ? null : new ArrayList<>();
-            shell = (ShellImpl) s;
-            super.submit(executor, res -> {
-                if (retry && res == ResultImpl.SHELL_ERR) {
-                    // The cached shell is terminated, try to re-schedule this task
-                    retry = false;
-                    submit(executor, cb);
-                } else if (cb != null) {
-                    cb.onResult(res);
-                }
-            });
-        });
+        callbackExecutor = executor;
+        callback = new RetryCallback(cb);
+        if (out instanceof NOPList)
+            out = (cb == null) ? null : new ArrayList<>();
+        submit0();
     }
 }

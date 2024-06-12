@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static com.topjohnwu.superuser.Shell.EXECUTOR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
@@ -36,56 +35,36 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
-class JobImpl extends Shell.Job implements Shell.Task, Closeable {
+abstract class JobTask extends Shell.Job implements Shell.Task, Closeable {
 
-    private static final List<String> UNSET_ERR = new ArrayList<>(0);
     static final String END_UUID = UUID.randomUUID().toString();
-    static final byte[] END_CMD = String
+    static final int UUID_LEN = 36;
+    private static final byte[] END_CMD = String
             .format("__RET=$?;echo %1$s;echo %1$s >&2;echo $__RET;unset __RET\n", END_UUID)
             .getBytes(UTF_8);
-    static final int UUID_LEN = 36;
+
+    private static final List<String> UNSET_ERR = new ArrayList<>(0);
 
     private final List<ShellInputSource> sources = new ArrayList<>();
-    private final ResultImpl result = new ResultImpl();
+
+    boolean redirect;
 
     protected List<String> out;
     protected List<String> err = UNSET_ERR;
-    protected ShellImpl shell;
-
-    JobImpl() {}
-
-    JobImpl(ShellImpl s) {
-        shell = s;
-    }
+    protected Executor callbackExecutor;
+    protected Shell.ResultCallback callback;
 
     @Override
     public void run(@NonNull OutputStream stdin,
                     @NonNull InputStream stdout,
-                    @NonNull InputStream stderr) throws IOException {
-        Future<Integer> outGobbler = EXECUTOR.submit(new StreamGobbler.OUT(stdout, result.out));
-        Future<Void> errGobbler = EXECUTOR.submit(new StreamGobbler.ERR(stderr, result.err));
-
-        for (ShellInputSource src : sources)
-            src.serve(stdin);
-        stdin.write(END_CMD);
-        stdin.flush();
-
-        try {
-            result.code = outGobbler.get();
-            errGobbler.get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw (InterruptedIOException) new InterruptedIOException().initCause(e);
-        }
-    }
-
-    private ResultImpl exec0() {
+                    @NonNull InputStream stderr) {
         boolean noErr = err == UNSET_ERR;
+        ResultImpl result = new ResultImpl();
 
         result.out = out;
         result.err = noErr ? null : err;
-        if (noErr && shell.redirect)
+        if (noErr && redirect)
             result.err = out;
 
         if (result.out != null && result.out == result.err && !Utils.isSynchronized(result.out)) {
@@ -97,39 +76,33 @@ class JobImpl extends Shell.Job implements Shell.Task, Closeable {
         }
 
         try {
-            shell.execTask(this);
+            Future<Integer> outGobbler = EXECUTOR.submit(new StreamGobbler.OUT(stdout, result.out));
+            Future<Void> errGobbler = EXECUTOR.submit(new StreamGobbler.ERR(stderr, result.err));
+
+            for (ShellInputSource src : sources)
+                src.serve(stdin);
+            stdin.write(END_CMD);
+            stdin.flush();
+
+            try {
+                result.code = outGobbler.get();
+                errGobbler.get();
+                result.out = out;
+                result.err = noErr ? null : err;
+            } catch (ExecutionException | InterruptedException e) {
+                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
+            }
         } catch (IOException e) {
             if (e instanceof ShellTerminatedException) {
-                return ResultImpl.SHELL_ERR;
+                result = ResultImpl.SHELL_ERR;
             } else {
                 Utils.err(e);
-                return ResultImpl.INSTANCE;
+                result = ResultImpl.INSTANCE;
             }
         } finally {
             close();
-            result.out = out;
-            result.err = noErr ? null : err;
+            result.callback(callbackExecutor, callback);
         }
-        return result;
-    }
-
-    @NonNull
-    @Override
-    public Shell.Result exec() {
-        return exec0();
-    }
-
-    @NonNull
-    @Override
-    public Future<Shell.Result> enqueue() {
-        FutureTask<Shell.Result> future = new FutureTask<>(this::exec0);
-        shell.executor.execute(future);
-        return future;
-    }
-
-    @Override
-    public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
-        shell.executor.execute(() -> exec0().callback(executor, cb));
     }
 
     @NonNull

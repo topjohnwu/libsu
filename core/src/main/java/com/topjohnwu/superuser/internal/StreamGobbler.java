@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 John "topjohnwu" Wu
+ * Copyright 2024 John "topjohnwu" Wu
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.JobImpl.END_UUID;
-import static com.topjohnwu.superuser.internal.JobImpl.UUID_LEN;
+import static com.topjohnwu.superuser.internal.JobTask.END_UUID;
+import static com.topjohnwu.superuser.internal.JobTask.UUID_LEN;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
