@@ -1,3 +1,11 @@
+## 5.3.0
+
+- [core] New API `Shell.Builder.setCommands(String...)`
+- [core] New internal task scheduling implementation
+- [core] Remove deprecated `Shell.sh/su` methods
+- [service] Fix support on pre-6.0 devices
+- [service] Fix crashes on some LG devices
+
 ## 5.2.2
 
 - [service] Disable `dex2oat` when loading trampoline JAR
