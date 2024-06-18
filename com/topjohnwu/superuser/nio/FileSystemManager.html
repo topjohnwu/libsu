@@ -167,11 +167,11 @@ loadScripts(document, 'script');</script>
 <div class="block">Get the <a href="FileSystemManager.html" title="class in com.topjohnwu.superuser.nio"><code>FileSystemManager</code></a> to access the file system of the current local process.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FileSystemManager.html" title="class in com.topjohnwu.superuser.nio">FileSystemManager</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getRemote(android.os.IBinder)" class="member-name-link">getRemote</a><wbr>(<a href="https://developer.android.com/reference/android/os/IBinder.html" title="class or interface in android.os" class="external-link">IBinder</a>&nbsp;binder)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getRemote(IBinder)" class="member-name-link">getRemote</a><wbr>(IBinder&nbsp;binder)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a <a href="FileSystemManager.html" title="class in com.topjohnwu.superuser.nio"><code>FileSystemManager</code></a> to access the file system of a remote process.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://developer.android.com/reference/android/os/Binder.html" title="class or interface in android.os" class="external-link">Binder</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static Binder</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getService()" class="member-name-link">getService</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Get the service that exports the file system of the current process over Binder IPC.</div>
@@ -210,14 +210,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_READ_ONLY</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_READ_ONLY</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: open the file with read-only access.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_ONLY">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 <li>
@@ -225,14 +217,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_WRITE_ONLY</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_WRITE_ONLY</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: open the file with write-only access.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_WRITE_ONLY">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 <li>
@@ -240,14 +224,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_READ_WRITE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_READ_WRITE</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: open the file with read and write access.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_READ_WRITE">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 <li>
@@ -255,14 +231,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_CREATE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_CREATE</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: create the file if it doesn't already exist.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_CREATE">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 <li>
@@ -270,14 +238,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_TRUNCATE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_TRUNCATE</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: erase contents of file when opening.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_TRUNCATE">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 <li>
@@ -285,14 +245,6 @@ loadScripts(document, 'script');</script>
 <h3>MODE_APPEND</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">MODE_APPEND</span></div>
 <div class="block">For use with <a href="#openChannel(java.lang.String,int)"><code>openChannel(java.lang.String, int)</code></a>: append to end of file while writing.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../../constant-values.html#com.topjohnwu.superuser.nio.FileSystemManager.MODE_APPEND">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
 </section>
 </li>
 </ul>
@@ -321,19 +273,19 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getService()">
 <h3>getService</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
-</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://developer.android.com/reference/android/os/Binder.html" title="class or interface in android.os" class="external-link">Binder</a></span>&nbsp;<span class="element-name">getService</span>()</div>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type">Binder</span>&nbsp;<span class="element-name">getService</span>()</div>
 <div class="block">Get the service that exports the file system of the current process over Binder IPC.
  <p>
- Sending the <a href="https://developer.android.com/reference/android/os/Binder.html" title="class or interface in android.os" class="external-link"><code>Binder</code></a> obtained from this method to a client process enables
+ Sending the <code>Binder</code> obtained from this method to a client process enables
  the current process to perform file system operations on behalf of the client.
  This allows a client process to access files normally denied by its permissions.
  This method is usually called in a root process, and the Binder service returned will
  be send over to a non-root client process.
  <p>
- You can pass this <a href="https://developer.android.com/reference/android/os/Binder.html" title="class or interface in android.os" class="external-link"><code>Binder</code></a> object in multiple ways, such as returning it in the
- <code>onBind()</code> method of root services, passing it around in a <a href="https://developer.android.com/reference/android/os/Bundle.html" title="class or interface in android.os" class="external-link"><code>Bundle</code></a>,
- or returning it in an AIDL interface method. The receiving end will get an <a href="https://developer.android.com/reference/android/os/IBinder.html" title="class or interface in android.os" class="external-link"><code>IBinder</code></a>,
- which the developer should then pass to <a href="#getRemote(android.os.IBinder)"><code>getRemote(IBinder)</code></a> for usage.</div>
+ You can pass this <code>Binder</code> object in multiple ways, such as returning it in the
+ <code>onBind()</code> method of root services, passing it around in a <code>Bundle</code>,
+ or returning it in an AIDL interface method. The receiving end will get an <code>IBinder</code>,
+ which the developer should then pass to <a href="#getRemote(IBinder)"><code>getRemote(IBinder)</code></a> for usage.</div>
 </section>
 </li>
 <li>
@@ -345,12 +297,12 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="getRemote(android.os.IBinder)">
+<section class="detail" id="getRemote(IBinder)">
 <h3>getRemote</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="FileSystemManager.html" title="class in com.topjohnwu.superuser.nio">FileSystemManager</a></span>&nbsp;<span class="element-name">getRemote</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
- <a href="https://developer.android.com/reference/android/os/IBinder.html" title="class or interface in android.os" class="external-link">IBinder</a>&nbsp;binder)</span>
-                                   throws <span class="exceptions"><a href="https://developer.android.com/reference/android/os/RemoteException.html" title="class or interface in android.os" class="external-link">RemoteException</a></span></div>
+ IBinder&nbsp;binder)</span>
+                                   throws <span class="exceptions">RemoteException</span></div>
 <div class="block">Create a <a href="FileSystemManager.html" title="class in com.topjohnwu.superuser.nio"><code>FileSystemManager</code></a> to access the file system of a remote process.
  <p>
  Several APIs are not supported through a remote process:
@@ -365,9 +317,9 @@ loadScripts(document, 'script');</script>
  Calling these APIs will throw <a href="https://developer.android.com/reference/java/lang/UnsupportedOperationException.html" title="class or interface in java.lang" class="external-link"><code>UnsupportedOperationException</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>binder</code> - a remote proxy of the <a href="https://developer.android.com/reference/android/os/Binder.html" title="class or interface in android.os" class="external-link"><code>Binder</code></a> obtained from <a href="#getService()"><code>getService()</code></a></dd>
+<dd><code>binder</code> - a remote proxy of the <code>Binder</code> obtained from <a href="#getService()"><code>getService()</code></a></dd>
 <dt>Throws:</dt>
-<dd><code><a href="https://developer.android.com/reference/android/os/RemoteException.html" title="class or interface in android.os" class="external-link">RemoteException</a></code> - if the remote process has died.</dd>
+<dd><code>RemoteException</code> - if the remote process has died.</dd>
 </dl>
 </section>
 </li>

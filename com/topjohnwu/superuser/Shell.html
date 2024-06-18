@@ -158,10 +158,10 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <div class="col-last even-row-color">
 <div class="block">Set to <code>true</code> to enable verbose logging throughout the library.</div>
 </div>
-<div class="col-first odd-row-color"><code>static <a href="https://developer.android.com/reference/java/util/concurrent/ExecutorService.html" title="class or interface in java.util.concurrent" class="external-link">ExecutorService</a></code></div>
+<div class="col-first odd-row-color"><code>static <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></code></div>
 <div class="col-second odd-row-color"><code><a href="#EXECUTOR" class="member-name-link">EXECUTOR</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/ExecutorService.html" title="class or interface in java.util.concurrent" class="external-link"><code>ExecutorService</code></a> that manages all worker threads used in <code>libsu</code>.</div>
+<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link"><code>Executor</code></a> that manages all worker threads used in <code>libsu</code>.</div>
 </div>
 <div class="col-first even-row-color"><code>static final int</code></div>
 <div class="col-second even-row-color"><code><a href="#FLAG_MOUNT_MASTER" class="member-name-link">FLAG_MOUNT_MASTER</a></code></div>
@@ -433,10 +433,10 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <section class="detail" id="EXECUTOR">
 <h3>EXECUTOR</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
-</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://developer.android.com/reference/java/util/concurrent/ExecutorService.html" title="class or interface in java.util.concurrent" class="external-link">ExecutorService</a></span>&nbsp;<span class="element-name">EXECUTOR</span></div>
-<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/ExecutorService.html" title="class or interface in java.util.concurrent" class="external-link"><code>ExecutorService</code></a> that manages all worker threads used in <code>libsu</code>.
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></span>&nbsp;<span class="element-name">EXECUTOR</span></div>
+<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link"><code>Executor</code></a> that manages all worker threads used in <code>libsu</code>.
  <p>
- Note: If the developer decides to replace the default ExecutorService, keep in mind that
+ Note: If the developer decides to replace the default Executor, keep in mind that
  each <code>Shell</code> instance requires at least 3 threads to operate properly.</div>
 </section>
 </li>

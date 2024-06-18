@@ -118,8 +118,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
- with the default methods.</div>
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#build(java.lang.Process)" class="member-name-link">build</a><wbr>(<a href="https://developer.android.com/reference/java/lang/Process.html" title="class or interface in java.lang" class="external-link">Process</a>&nbsp;process)</code></div>
@@ -127,9 +126,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
  with the provided process.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#build(java.lang.String...)" class="member-name-link">build</a><wbr>(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build(java.lang.String...)" class="member-name-link">build</a><wbr>(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
  with the provided commands.</div>
 </div>
@@ -138,25 +137,30 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser"><code>Shell.Builder</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setContext(android.content.Context)" class="member-name-link">setContext</a><wbr>(<a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link">Context</a>&nbsp;context)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Set the <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link"><code>Context</code></a> to use when creating a shell.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setCommands(java.lang.String...)" class="member-name-link">setCommands</a><wbr>(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Set the commands that will be used to create a new <code>Shell</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setFlags(int)" class="member-name-link">setFlags</a><wbr>(int&nbsp;flags)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setContext(Context)" class="member-name-link">setContext</a><wbr>(Context&nbsp;context)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Set the <code>Context</code> to use when creating a shell.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setFlags(int)" class="member-name-link">setFlags</a><wbr>(int&nbsp;flags)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
  constructed.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setInitializers(java.lang.Class...)" class="member-name-link">setInitializers</a><wbr>(<a href="https://developer.android.com/reference/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;...&nbsp;classes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setInitializers(java.lang.Class...)" class="member-name-link">setInitializers</a><wbr>(<a href="https://developer.android.com/reference/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;...&nbsp;classes)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Set the desired <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser"><code>Shell.Initializer</code></a>s.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setTimeout(long)" class="member-name-link">setTimeout</a><wbr>(long&nbsp;timeout)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setTimeout(long)" class="member-name-link">setTimeout</a><wbr>(long&nbsp;timeout)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the maximum time to wait for shell verification.</div>
 </div>
 </div>
@@ -261,19 +265,34 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="setContext(android.content.Context)">
+<section class="detail" id="setCommands(java.lang.String...)">
+<h3>setCommands</h3>
+<div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
+</span><span class="modifiers">public abstract</span>&nbsp;<span class="return-type"><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></span>&nbsp;<span class="element-name">setCommands</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</span></div>
+<div class="block">Set the commands that will be used to create a new <code>Shell</code>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>commands</code> - commands that will be passed to <a href="https://developer.android.com/reference/java/lang/Runtime.html#exec-java.lang.String:A-" title="class or interface in java.lang" class="external-link"><code>Runtime.exec(String[])</code></a> to create
+                 a new <a href="https://developer.android.com/reference/java/lang/Process.html" title="class or interface in java.lang" class="external-link"><code>Process</code></a>.</dd>
+<dt>Returns:</dt>
+<dd>this Builder object for chaining of calls.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="setContext(Context)">
 <h3>setContext</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
 </span><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></span>&nbsp;<span class="element-name">setContext</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
- <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link">Context</a>&nbsp;context)</span></div>
-<div class="block">Set the <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link"><code>Context</code></a> to use when creating a shell.
+ Context&nbsp;context)</span></div>
+<div class="block">Set the <code>Context</code> to use when creating a shell.
  <p>
  The ContextImpl of the application will be obtained through the provided context,
- and that will be passed to <a href="Shell.Initializer.html#onInit(android.content.Context,com.topjohnwu.superuser.Shell)"><code>Shell.Initializer.onInit(Context, Shell)</code></a>.
+ and that will be passed to <a href="Shell.Initializer.html#onInit(Context,com.topjohnwu.superuser.Shell)"><code>Shell.Initializer.onInit(Context, Shell)</code></a>.
  <p>
  Calling this method is not usually necessary but recommended, as the library can
  obtain the current application context through Android internal APIs. However, if your
- application uses <a href="https://developer.android.com/reference/android/R.attr.html#sharedUserId" title="class or interface in android" class="external-link"><code>R.attr.sharedUserId</code></a>, or a shell/root service can be
+ application uses <code>android.R.attr#sharedUserId</code>, or a shell/root service can be
  created during the application attach process, then setting a Context explicitly
  using this method is required.</div>
 <dl class="notes">
@@ -289,11 +308,10 @@ loadScripts(document, 'script');</script>
 <h3>build</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
 </span><span class="modifiers">public abstract</span>&nbsp;<span class="return-type"><a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></span>&nbsp;<span class="element-name">build</span>()</div>
-<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
- with the default methods.
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance.
  <p>
- There are 3 methods to construct a Unix shell; if any method fails, it will fallback to
- the next method:
+ If not <a href="#setCommands(java.lang.String...)"><code>setCommands(String...)</code></a>, there are 3 methods to construct a Unix shell;
+ if any method fails, it will fallback to the next method:
  <ol>
      <li>If <a href="Shell.html#FLAG_NON_ROOT_SHELL"><code>Shell.FLAG_NON_ROOT_SHELL</code></a> is not set and <a href="Shell.html#FLAG_MOUNT_MASTER"><code>Shell.FLAG_MOUNT_MASTER</code></a>
      is set, construct a Unix shell by calling <code>su --mount-master</code>.
@@ -305,7 +323,11 @@ loadScripts(document, 'script');</script>
      conditions, but should it fail, it will throw <a href="NoShellException.html" title="class in com.topjohnwu.superuser"><code>NoShellException</code></a></li>
  </ol>
  The developer should check the status of the returned <code>Shell</code> with
- <a href="Shell.html#getStatus()"><code>Shell.getStatus()</code></a> since it may be constructed with any of the 3 possible methods.</div>
+ <a href="Shell.html#getStatus()"><code>Shell.getStatus()</code></a> since it may be constructed with calling <code>sh</code>.
+ <p>
+ If <a href="#setCommands(java.lang.String...)"><code>setCommands(String...)</code></a> is called, the provided commands will be used to
+ create a new <a href="https://developer.android.com/reference/java/lang/Process.html" title="class or interface in java.lang" class="external-link"><code>Process</code></a> directly. If the process fails to create, or the process
+ is not a valid shell, it will throw <a href="NoShellException.html" title="class in com.topjohnwu.superuser"><code>NoShellException</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the created <code>Shell</code> instance.</dd>
@@ -319,7 +341,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="build(java.lang.String...)">
 <h3>build</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
-</span><span class="modifiers">public abstract</span>&nbsp;<span class="return-type"><a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></span>&nbsp;<span class="element-name">build</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</span></div>
+</span><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a></span>&nbsp;<span class="element-name">build</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;commands)</span></div>
 <div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
  with the provided commands.</div>
 <dl class="notes">

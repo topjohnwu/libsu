@@ -62,27 +62,26 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Add a new operation running commands.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#attachBaseContext(android.content.Context)" class="member-name-link">attachBaseContext(Context)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#attachBaseContext(Context)" class="member-name-link">attachBaseContext(Context)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:B">B</h2>
 <dl class="index">
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(android.content.Intent,android.content.ServiceConnection)" class="member-name-link">bind(Intent, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(Intent,java.util.concurrent.Executor,ServiceConnection)" class="member-name-link">bind(Intent, Executor, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Bind to a root service, launching a new root process if needed.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)" class="member-name-link">bind(Intent, Executor, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bind(Intent,ServiceConnection)" class="member-name-link">bind(Intent, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Bind to a root service, launching a new root process if needed.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bindOrTask(android.content.Intent,java.util.concurrent.Executor,android.content.ServiceConnection)" class="member-name-link">bindOrTask(Intent, Executor, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#bindOrTask(Intent,java.util.concurrent.Executor,ServiceConnection)" class="member-name-link">bindOrTask(Intent, Executor, ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Bind to a root service, creating a task to launch a new root process if needed.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Builder.html#build()" class="member-name-link">build()</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
-<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance
- with the default methods.</div>
+<div class="block">Combine all of the options that have been set and build a new <code>Shell</code> instance.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Builder.html#build(java.lang.Process)" class="member-name-link">build(Process)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
@@ -221,7 +220,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.html#EXECUTOR" class="member-name-link">EXECUTOR</a> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
-<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/ExecutorService.html" title="class or interface in java.util.concurrent" class="external-link"><code>ExecutorService</code></a> that manages all worker threads used in <code>libsu</code>.</div>
+<div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link"><code>Executor</code></a> that manages all worker threads used in <code>libsu</code>.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/io/SuFile.html#exists()" class="member-name-link">exists()</a> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
@@ -351,7 +350,7 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/topjohnwu/superuser/io/SuFile.html#getParentFile()" class="member-name-link">getParentFile()</a> - Method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFile.html" title="class in com.topjohnwu.superuser.io">SuFile</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/nio/ExtendedFile.html#getParentFile()" class="member-name-link">getParentFile()</a> - Method in class com.topjohnwu.superuser.nio.<a href="com/topjohnwu/superuser/nio/ExtendedFile.html" title="class in com.topjohnwu.superuser.nio">ExtendedFile</a></dt>
-<dt><a href="com/topjohnwu/superuser/nio/FileSystemManager.html#getRemote(android.os.IBinder)" class="member-name-link">getRemote(IBinder)</a> - Static method in class com.topjohnwu.superuser.nio.<a href="com/topjohnwu/superuser/nio/FileSystemManager.html" title="class in com.topjohnwu.superuser.nio">FileSystemManager</a></dt>
+<dt><a href="com/topjohnwu/superuser/nio/FileSystemManager.html#getRemote(IBinder)" class="member-name-link">getRemote(IBinder)</a> - Static method in class com.topjohnwu.superuser.nio.<a href="com/topjohnwu/superuser/nio/FileSystemManager.html" title="class in com.topjohnwu.superuser.nio">FileSystemManager</a></dt>
 <dd>
 <div class="block">Create a <a href="com/topjohnwu/superuser/nio/FileSystemManager.html" title="class in com.topjohnwu.superuser.nio"><code>FileSystemManager</code></a> to access the file system of a remote process.</div>
 </dd>
@@ -562,17 +561,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The callback when a new element is added.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onAttach(android.content.Context)" class="member-name-link">onAttach(Context)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onAttach(Context)" class="member-name-link">onAttach(Context)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
-<div class="block">Called when the RootService is getting attached with a <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link"><code>Context</code></a>.</div>
+<div class="block">Called when the RootService is getting attached with a <code>Context</code>.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onBind(android.content.Intent)" class="member-name-link">onBind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onBind(Intent)" class="member-name-link">onBind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onCreate()" class="member-name-link">onCreate()</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onDestroy()" class="member-name-link">onDestroy()</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/topjohnwu/superuser/Shell.Initializer.html#onInit(android.content.Context,com.topjohnwu.superuser.Shell)" class="member-name-link">onInit(Context, Shell)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a></dt>
+<dt><a href="com/topjohnwu/superuser/Shell.Initializer.html#onInit(Context,com.topjohnwu.superuser.Shell)" class="member-name-link">onInit(Context, Shell)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a></dt>
 <dd>
 <div class="block">Called when a new shell is constructed.</div>
 </dd>
@@ -580,13 +579,13 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Check if current thread is main thread.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onRebind(android.content.Intent)" class="member-name-link">onRebind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onRebind(Intent)" class="member-name-link">onRebind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/Shell.ResultCallback.html#onResult(com.topjohnwu.superuser.Shell.Result)" class="member-name-link">onResult(Shell.Result)</a> - Method in interface com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.ResultCallback.html" title="interface in com.topjohnwu.superuser">Shell.ResultCallback</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/Shell.GetShellCallback.html#onShell(com.topjohnwu.superuser.Shell)" class="member-name-link">onShell(Shell)</a> - Method in interface com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.GetShellCallback.html" title="interface in com.topjohnwu.superuser">Shell.GetShellCallback</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onUnbind(android.content.Intent)" class="member-name-link">onUnbind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#onUnbind(Intent)" class="member-name-link">onUnbind(Intent)</a> - Method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/io/SuFileInputStream.html#open(java.io.File)" class="member-name-link">open(File)</a> - Static method in class com.topjohnwu.superuser.io.<a href="com/topjohnwu/superuser/io/SuFileInputStream.html" title="class in com.topjohnwu.superuser.io">SuFileInputStream</a></dt>
 <dd>
@@ -672,9 +671,13 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="com/topjohnwu/superuser/CallbackList.html#set(int,E)" class="member-name-link">set(int, E)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/CallbackList.html" title="class in com.topjohnwu.superuser">CallbackList</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/topjohnwu/superuser/Shell.Builder.html#setContext(android.content.Context)" class="member-name-link">setContext(Context)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
+<dt><a href="com/topjohnwu/superuser/Shell.Builder.html#setCommands(java.lang.String...)" class="member-name-link">setCommands(String...)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
-<div class="block">Set the <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link"><code>Context</code></a> to use when creating a shell.</div>
+<div class="block">Set the commands that will be used to create a new <code>Shell</code>.</div>
+</dd>
+<dt><a href="com/topjohnwu/superuser/Shell.Builder.html#setContext(Context)" class="member-name-link">setContext(Context)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
+<dd>
+<div class="block">Set the <code>Context</code> to use when creating a shell.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.html#setDefaultBuilder(com.topjohnwu.superuser.Shell.Builder)" class="member-name-link">setDefaultBuilder(Shell.Builder)</a> - Static method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
@@ -763,11 +766,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/topjohnwu/superuser/CallbackList.html#size()" class="member-name-link">size()</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/CallbackList.html" title="class in com.topjohnwu.superuser">CallbackList</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#stop(android.content.Intent)" class="member-name-link">stop(Intent)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#stop(Intent)" class="member-name-link">stop(Intent)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Force stop a root service, launching a new root process if needed.</div>
 </dd>
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#stopOrTask(android.content.Intent)" class="member-name-link">stopOrTask(Intent)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#stopOrTask(Intent)" class="member-name-link">stopOrTask(Intent)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Force stop a root service, creating a task to launch a new root process if needed.</div>
 </dd>
@@ -827,7 +830,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:U">U</h2>
 <dl class="index">
-<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#unbind(android.content.ServiceConnection)" class="member-name-link">unbind(ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
+<dt><a href="com/topjohnwu/superuser/ipc/RootService.html#unbind(ServiceConnection)" class="member-name-link">unbind(ServiceConnection)</a> - Static method in class com.topjohnwu.superuser.ipc.<a href="com/topjohnwu/superuser/ipc/RootService.html" title="class in com.topjohnwu.superuser.ipc">RootService</a></dt>
 <dd>
 <div class="block">Unbind from a root service.</div>
 </dd>

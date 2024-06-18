@@ -87,7 +87,7 @@ loadScripts(document, 'script');</script>
  is constructed, extend this class, add your own implementation, and register it with
  <a href="Shell.Builder.html#setInitializers(java.lang.Class...)"><code>Shell.Builder.setInitializers(Class[])</code></a>.
  The concept is similar to <code>.bashrc</code>: run specific scripts/commands when the shell
- starts up. <a href="#onInit(android.content.Context,com.topjohnwu.superuser.Shell)"><code>onInit(Context, Shell)</code></a> will be called as soon as the shell is
+ starts up. <a href="#onInit(Context,com.topjohnwu.superuser.Shell)"><code>onInit(Context, Shell)</code></a> will be called as soon as the shell is
  constructed and tested as a valid shell.
  <p>
  An initializer will be constructed and the callbacks will be invoked each time a new
@@ -120,7 +120,7 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onInit(android.content.Context,com.topjohnwu.superuser.Shell)" class="member-name-link">onInit</a><wbr>(<a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link">Context</a>&nbsp;context,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onInit(Context,com.topjohnwu.superuser.Shell)" class="member-name-link">onInit</a><wbr>(Context&nbsp;context,
  <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a>&nbsp;shell)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Called when a new shell is constructed.</div>
@@ -157,10 +157,10 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="onInit(android.content.Context,com.topjohnwu.superuser.Shell)">
+<section class="detail" id="onInit(Context,com.topjohnwu.superuser.Shell)">
 <h3>onInit</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">onInit</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
- <a href="https://developer.android.com/reference/android/content/Context.html" title="class or interface in android.content" class="external-link">Context</a>&nbsp;context,
+ Context&nbsp;context,
  <a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
  <a href="Shell.html" title="class in com.topjohnwu.superuser">Shell</a>&nbsp;shell)</span></div>
 <div class="block">Called when a new shell is constructed.</div>
