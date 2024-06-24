@@ -24,7 +24,6 @@ import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,14 +43,14 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
             .format("__RET=$?;echo %1$s;echo %1$s >&2;echo $__RET;unset __RET\n", END_UUID)
             .getBytes(UTF_8);
 
-    private static final List<String> UNSET_ERR = new ArrayList<>(0);
+    static final List<String> UNSET_LIST = new ArrayList<>(0);
 
     private final List<ShellInputSource> sources = new ArrayList<>();
 
     boolean redirect;
 
-    @Nullable protected List<String> out;
-    @Nullable protected List<String> err = UNSET_ERR;
+    @Nullable protected List<String> out = null;
+    @Nullable protected List<String> err = UNSET_LIST;
     @Nullable protected Executor callbackExecutor;
     @Nullable protected Shell.ResultCallback callback;
 
@@ -73,7 +72,7 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
     public void run(@NonNull OutputStream stdin,
                     @NonNull InputStream stdout,
                     @NonNull InputStream stderr) {
-        boolean noErr = err == UNSET_ERR;
+        boolean noErr = err == UNSET_LIST;
 
         List<String> outList = out;
         List<String> errList = noErr ? (redirect ? out : null) : err;

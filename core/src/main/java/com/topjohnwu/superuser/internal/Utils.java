@@ -134,7 +134,7 @@ public final class Utils {
     public static boolean isSynchronized(Collection<?> collection) {
         if (synchronizedCollectionClass == null) {
             synchronizedCollectionClass =
-                    Collections.synchronizedCollection(NOPList.getInstance()).getClass();
+                    Collections.synchronizedCollection(Collections.emptyList()).getClass();
         }
         return synchronizedCollectionClass.isInstance(collection);
     }
