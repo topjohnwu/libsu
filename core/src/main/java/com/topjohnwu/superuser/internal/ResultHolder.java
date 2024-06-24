@@ -17,15 +17,22 @@
 package com.topjohnwu.superuser.internal;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 
 class ResultHolder implements Shell.ResultCallback {
 
-    Shell.Result result;
+    @Nullable
+    private Shell.Result result;
 
     @Override
     public void onResult(@NonNull Shell.Result out) {
         result = out;
+    }
+
+    @NonNull
+    Shell.Result getResult() {
+        return result == null ? new ResultImpl() : result;
     }
 }

@@ -29,60 +29,49 @@ import java.util.concurrent.Future;
 
 class PendingJob extends JobTask {
 
+    @Nullable
+    private Runnable retryTask;
+
     PendingJob() {
         to(NOPList.getInstance());
     }
 
-    private Shell.Result exec0(ResultHolder h) {
+    @Override
+    public void shellDied() {
+        if (retryTask != null) {
+            Runnable r = retryTask;
+            retryTask = null;
+            r.run();
+        } else {
+            super.shellDied();
+        }
+    }
+
+    private void exec0() {
         ShellImpl shell;
         try {
             shell = MainShell.get();
         } catch (NoShellException e) {
-            close();
-            return ResultImpl.INSTANCE;
+            super.shellDied();
+            return;
         }
         try {
             shell.execTask(this);
         } catch (IOException ignored) { /* JobTask does not throw */ }
-        return h.result;
     }
 
     @NonNull
     @Override
     public Shell.Result exec() {
-        ResultHolder h = new ResultHolder();
-        callback = h;
+        retryTask = this::exec0;
+        ResultHolder holder = new ResultHolder();
+        callback = holder;
         callbackExecutor = null;
         if (out instanceof NOPList)
             out = new ArrayList<>();
 
-        Shell.Result r = exec0(h);
-        if (r == ResultImpl.SHELL_ERR) {
-            // The cached shell is terminated, try to re-run this task
-            return exec0(h);
-        }
-        return r;
-    }
-
-    private class RetryCallback implements Shell.ResultCallback {
-
-        private final Shell.ResultCallback base;
-        private boolean retry = true;
-
-        RetryCallback(Shell.ResultCallback b) {
-            base = b;
-        }
-
-        @Override
-        public void onResult(@NonNull Shell.Result out) {
-            if (retry && out == ResultImpl.SHELL_ERR) {
-                // The cached shell is terminated, try to re-schedule this task
-                retry = false;
-                submit0();
-            } else if (base != null) {
-                base.onResult(out);
-            }
-        }
+        exec0();
+        return holder.getResult();
     }
 
     private void submit0() {
@@ -95,19 +84,21 @@ class PendingJob extends JobTask {
     @NonNull
     @Override
     public Future<Shell.Result> enqueue() {
-        ResultFuture f = new ResultFuture();
-        callback = new RetryCallback(f);
+        retryTask = this::submit0;
+        ResultFuture future = new ResultFuture();
+        callback = future;
         callbackExecutor = null;
         if (out instanceof NOPList)
             out = new ArrayList<>();
         submit0();
-        return f;
+        return future;
     }
 
     @Override
     public void submit(@Nullable Executor executor, @Nullable Shell.ResultCallback cb) {
+        retryTask = this::submit0;
         callbackExecutor = executor;
-        callback = new RetryCallback(cb);
+        callback = cb;
         if (out instanceof NOPList)
             out = (cb == null) ? null : new ArrayList<>();
         submit0();

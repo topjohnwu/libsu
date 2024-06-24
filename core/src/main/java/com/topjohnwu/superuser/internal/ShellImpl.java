@@ -39,13 +39,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-class ShellTerminatedException extends IOException {
-
-    ShellTerminatedException() {
-        super("Shell terminated unexpectedly");
-    }
-}
-
 class ShellImpl extends Shell {
     private volatile int status;
 
@@ -216,9 +209,11 @@ class ShellImpl extends Shell {
         }
     }
 
-    private synchronized void exec0(Task task) throws IOException {
-        if (status < 0)
-            throw new ShellTerminatedException();
+    private synchronized void exec0(@NonNull Task task) throws IOException {
+        if (status < 0) {
+            task.shellDied();
+            return;
+        }
 
         ShellUtils.cleanInputStream(STDOUT);
         ShellUtils.cleanInputStream(STDERR);
@@ -226,9 +221,9 @@ class ShellImpl extends Shell {
             STDIN.write('\n');
             STDIN.flush();
         } catch (IOException e) {
-            // Shell is dead
             release();
-            throw new ShellTerminatedException();
+            task.shellDied();
+            return;
         }
 
         if (task instanceof JobTask) {
@@ -239,8 +234,8 @@ class ShellImpl extends Shell {
     }
 
     private void processTasks() {
-        Task task;
         for (;;) {
+            Task task;
             synchronized (tasks) {
                 if ((task = tasks.poll()) == null) {
                     runningTasks = false;
@@ -254,7 +249,8 @@ class ShellImpl extends Shell {
         }
     }
 
-    void submitTask(Task task) {
+    @Override
+    public void submitTask(@NonNull Task task) {
         synchronized (tasks) {
             tasks.offer(task);
             if (!runningTasks) {
@@ -282,5 +278,4 @@ class ShellImpl extends Shell {
     public Job newJob() {
         return new ShellJob(this);
     }
-
 }

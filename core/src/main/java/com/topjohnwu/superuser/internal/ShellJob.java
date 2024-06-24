@@ -27,22 +27,23 @@ import java.util.concurrent.Future;
 
 class ShellJob extends JobTask {
 
+    @NonNull
     private final ShellImpl shell;
 
-    ShellJob(ShellImpl s) {
+    ShellJob(@NonNull ShellImpl s) {
         shell = s;
     }
 
     @NonNull
     @Override
     public Shell.Result exec() {
-        ResultHolder h = new ResultHolder();
-        callback = h;
+        ResultHolder holder = new ResultHolder();
+        callback = holder;
         callbackExecutor = null;
         try {
             shell.execTask(this);
         } catch (IOException ignored) { /* JobTask does not throw */ }
-        return h.result;
+        return holder.getResult();
     }
 
     @Override
@@ -55,10 +56,10 @@ class ShellJob extends JobTask {
     @NonNull
     @Override
     public Future<Shell.Result> enqueue() {
-        ResultFuture f = new ResultFuture();
-        callback = f;
+        ResultFuture future = new ResultFuture();
+        callback = future;
         callbackExecutor = null;
         shell.submitTask(this);
-        return f;
+        return future;
     }
 }

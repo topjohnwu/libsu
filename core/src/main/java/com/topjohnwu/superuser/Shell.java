@@ -127,7 +127,6 @@ public abstract class Shell implements Closeable {
     @NonNull
     public static Executor EXECUTOR = Executors.newCachedThreadPool();
 
-
     /**
      * Set to {@code true} to enable verbose logging throughout the library.
      */
@@ -283,6 +282,13 @@ public abstract class Shell implements Closeable {
      * @throws IOException I/O errors when doing operations with STDIN/STDOUT/STDERR
      */
     public abstract void execTask(@NonNull Task task) throws IOException;
+
+    /**
+     * Submits a low-level {@link Task} for execution in a queue of the shell.
+     * @param task the desired task.
+     * @see #execTask(Task)
+     */
+    public abstract void submitTask(@NonNull Task task);
 
     /**
      * Construct a new {@link Job} that uses the shell for execution.
@@ -658,7 +664,7 @@ public abstract class Shell implements Closeable {
     public interface Task {
         /**
          * This method will be called when a task is executed by a shell.
-         * Calling {@link Closeable#close()} on all streams is NOP (does nothing).
+         * Calling {@link Closeable#close()} on any stream is NOP (does nothing).
          * @param stdin the STDIN of the shell.
          * @param stdout the STDOUT of the shell.
          * @param stderr the STDERR of the shell.
@@ -667,6 +673,11 @@ public abstract class Shell implements Closeable {
         void run(@NonNull OutputStream stdin,
                  @NonNull InputStream stdout,
                  @NonNull InputStream stderr) throws IOException;
+
+        /**
+         * This method will be called when a shell is unable to execute this task.
+         */
+        default void shellDied() {}
     }
 
     /**

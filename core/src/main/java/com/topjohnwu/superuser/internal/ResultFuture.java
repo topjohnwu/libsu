@@ -25,14 +25,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-class ResultFuture implements Shell.ResultCallback, Future<Shell.Result> {
+class ResultFuture extends ResultHolder implements Future<Shell.Result> {
 
-    Shell.Result result;
-    private CountDownLatch latch = new CountDownLatch(1);
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     @Override
     public void onResult(@NonNull Shell.Result out) {
-        result = out;
+        super.onResult(out);
         latch.countDown();
     }
 
@@ -54,7 +53,7 @@ class ResultFuture implements Shell.ResultCallback, Future<Shell.Result> {
     @Override
     public Shell.Result get() throws InterruptedException {
         latch.await();
-        return result;
+        return getResult();
     }
 
     @Override
@@ -63,6 +62,6 @@ class ResultFuture implements Shell.ResultCallback, Future<Shell.Result> {
         if (!latch.await(timeout, unit)) {
             throw new TimeoutException();
         }
-        return result;
+        return getResult();
     }
 }
