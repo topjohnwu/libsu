@@ -44,6 +44,9 @@ public final class MainShell {
     public static synchronized ShellImpl get() {
         ShellImpl shell = getCached();
         if (shell == null) {
+            if (isInitMain) {
+                throw new NoShellException("The main shell died during initialization");
+            }
             isInitMain = true;
             if (mainBuilder == null)
                 mainBuilder = new BuilderImpl();
