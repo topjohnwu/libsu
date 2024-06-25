@@ -50,7 +50,6 @@ public class MainActivity extends Activity implements Handler.Callback {
     static {
         Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.setDefaultBuilder(Shell.Builder.create()
-                .setFlags(Shell.FLAG_REDIRECT_STDERR)
                 .setInitializers(ExampleInitializer.class)
         );
     }

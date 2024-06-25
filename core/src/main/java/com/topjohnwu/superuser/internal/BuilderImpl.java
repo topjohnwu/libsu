@@ -18,6 +18,7 @@ package com.topjohnwu.superuser.internal;
 
 import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
 import static com.topjohnwu.superuser.Shell.FLAG_NON_ROOT_SHELL;
+import static com.topjohnwu.superuser.Shell.FLAG_REDIRECT_STDERR;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -131,6 +132,9 @@ public final class BuilderImpl extends Shell.Builder {
         } catch (IOException e) {
             Utils.ex(e);
             throw new NoShellException("Unable to create a shell!", e);
+        }
+        if (hasFlags(FLAG_REDIRECT_STDERR)) {
+            Shell.enableLegacyStderrRedirection = true;
         }
         MainShell.setCached(shell);
         if (initializers != null) {

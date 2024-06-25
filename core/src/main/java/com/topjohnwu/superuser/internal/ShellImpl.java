@@ -42,7 +42,6 @@ import java.util.concurrent.TimeoutException;
 class ShellImpl extends Shell {
     private volatile int status;
 
-    private final boolean redirect;
     private final Process proc;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
@@ -87,7 +86,6 @@ class ShellImpl extends Shell {
 
     ShellImpl(BuilderImpl builder, Process process) throws IOException {
         status = UNKNOWN;
-        redirect = builder.hasFlags(FLAG_REDIRECT_STDERR);
         proc = process;
         STDIN = new NoCloseOutputStream(process.getOutputStream());
         STDOUT = new NoCloseInputStream(process.getInputStream());
@@ -224,10 +222,6 @@ class ShellImpl extends Shell {
             release();
             task.shellDied();
             return;
-        }
-
-        if (task instanceof JobTask) {
-            ((JobTask) task).redirect = redirect;
         }
 
         task.run(STDIN, STDOUT, STDERR);

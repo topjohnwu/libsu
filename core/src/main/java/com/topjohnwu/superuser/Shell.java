@@ -96,22 +96,7 @@ public abstract class Shell implements Closeable {
     public static final int FLAG_MOUNT_MASTER = (1 << 1);
 
     /* Preserve (1 << 2) due to historical reasons */
-
-    /**
-     * If set, STDERR outputs will be redirected to STDOUT outputs.
-     * <p>
-     * Note: This flag only affects the following methods:
-     * <ul>
-     *     <li>{@link #cmd(String...)}</li>
-     *     <li>{@link #cmd(InputStream)}</li>
-     *     <li>{@link Job#to(List)}</li>
-     * </ul>
-     * Check the descriptions of each method above for more details.
-     * <p>
-     * Constant value {@value}.
-     */
-    public static final int FLAG_REDIRECT_STDERR = (1 << 3);
-
+    /* Preserve (1 << 3) due to historical reasons */
     /* Preserve (1 << 4) due to historical reasons */
 
     @Retention(SOURCE)
@@ -131,6 +116,21 @@ public abstract class Shell implements Closeable {
      * Set to {@code true} to enable verbose logging throughout the library.
      */
     public static boolean enableVerboseLogging = false;
+
+    /**
+     * This flag exists for compatibility reasons. DO NOT use unless necessary.
+     * <p>
+     * If enabled, STDERR outputs will be redirected to the STDOUT output list
+     * when a {@link Job} is configured with {@link Job#to(List)}.
+     * Since the {@code Shell.cmd(...)} methods are functionally equivalent to
+     * {@code Shell.getShell().newJob().add(...).to(new ArrayList<>())}, this variable
+     * also affects the behavior of those methods.
+     * <p>
+     * Note: The recommended way to redirect STDERR output to STDOUT is to assign the
+     * same list to both STDOUT and STDERR with {@link Job#to(List, List)}.
+     * The behavior of this flag is unintuitive and error prone.
+     */
+    public static boolean enableLegacyStderrRedirection = false;
 
     /**
      * Override the default {@link Builder}.
@@ -387,12 +387,10 @@ public abstract class Shell implements Closeable {
         }
 
         /**
-         * Set flags that controls how {@code Shell} works and how a new {@code Shell} will be
-         * constructed.
+         * Set flags to control how a new {@code Shell} will be constructed.
          * @param flags the desired flags.
          *              Value is either 0 or bitwise-or'd value of
-         *              {@link #FLAG_NON_ROOT_SHELL}, {@link #FLAG_MOUNT_MASTER}, or
-         *              {@link #FLAG_REDIRECT_STDERR}
+         *              {@link #FLAG_NON_ROOT_SHELL} or {@link #FLAG_MOUNT_MASTER}
          * @return this Builder object for chaining of calls.
          */
         @NonNull
@@ -547,16 +545,12 @@ public abstract class Shell implements Closeable {
     public abstract static class Job {
 
         /**
-         * Store output to a specific list.
-         * <p>
-         * Output of STDERR will be also be stored in the same {@link List} if the flag
-         * {@link #FLAG_REDIRECT_STDERR} is set; {@link Result#getErr()}
-         * will always return an empty list.
-         * @param output the list to store outputs. Pass {@code null} to omit all outputs.
+         * Store output of STDOUT to a specific list.
+         * @param stdout the list to store STDOUT. Pass {@code null} to omit all outputs.
          * @return this Job object for chaining of calls.
          */
         @NonNull
-        public abstract Job to(@Nullable List<String> output);
+        public abstract Job to(@Nullable List<String> stdout);
 
         /**
          * Store output of STDOUT and STDERR to specific lists.
@@ -709,6 +703,14 @@ public abstract class Shell implements Closeable {
      */
     @Deprecated
     public static final int ROOT_MOUNT_MASTER = 2;
+
+    /**
+     * For compatibility, setting this flag will set {@link #enableLegacyStderrRedirection}
+     * @deprecated not used anymore
+     * @see #enableLegacyStderrRedirection
+     */
+    @Deprecated
+    public static final int FLAG_REDIRECT_STDERR = (1 << 3);
 
     /**
      * Whether the application has access to root.

@@ -47,8 +47,6 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
 
     private final List<ShellInputSource> sources = new ArrayList<>();
 
-    boolean redirect;
-
     @Nullable protected List<String> out = null;
     @Nullable protected List<String> err = UNSET_LIST;
     @Nullable protected Executor callbackExecutor;
@@ -75,7 +73,7 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
         boolean noErr = err == UNSET_LIST;
 
         List<String> outList = out;
-        List<String> errList = noErr ? (redirect ? out : null) : err;
+        List<String> errList = noErr ? (Shell.enableLegacyStderrRedirection ? out : null) : err;
 
         if (outList != null && outList == errList && !Utils.isSynchronized(outList)) {
             // Synchronize the list internally only if both lists are the same and are not
@@ -119,8 +117,8 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
 
     @NonNull
     @Override
-    public Shell.Job to(List<String> output) {
-        out = output;
+    public Shell.Job to(List<String> stdout) {
+        out = stdout;
         return this;
     }
 
