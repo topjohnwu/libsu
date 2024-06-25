@@ -67,9 +67,6 @@ class PendingJob extends JobTask {
         ResultHolder holder = new ResultHolder();
         callback = holder;
         callbackExecutor = null;
-        if (out == UNSET_LIST)
-            out = new ArrayList<>();
-
         exec0();
         return holder.getResult();
     }
@@ -88,8 +85,6 @@ class PendingJob extends JobTask {
         ResultFuture future = new ResultFuture();
         callback = future;
         callbackExecutor = null;
-        if (out == UNSET_LIST)
-            out = new ArrayList<>();
         submit0();
         return future;
     }
@@ -99,8 +94,6 @@ class PendingJob extends JobTask {
         retryTask = this::submit0;
         callbackExecutor = executor;
         callback = cb;
-        if (out == UNSET_LIST)
-            out = (cb == null) ? null : new ArrayList<>();
         submit0();
     }
 }

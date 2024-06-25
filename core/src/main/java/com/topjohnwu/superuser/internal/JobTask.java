@@ -37,18 +37,18 @@ import java.util.concurrent.FutureTask;
 
 abstract class JobTask extends Shell.Job implements Shell.Task {
 
+    static final List<String> UNSET_LIST = new ArrayList<>(0);
+
     static final String END_UUID = UUID.randomUUID().toString();
     static final int UUID_LEN = 36;
     private static final byte[] END_CMD = String
             .format("__RET=$?;echo %1$s;echo %1$s >&2;echo $__RET;unset __RET\n", END_UUID)
             .getBytes(UTF_8);
 
-    static final List<String> UNSET_LIST = new ArrayList<>(0);
-
     private final List<ShellInputSource> sources = new ArrayList<>();
+    @Nullable private List<String> out = null;
+    @Nullable private List<String> err = UNSET_LIST;
 
-    @Nullable protected List<String> out = null;
-    @Nullable protected List<String> err = UNSET_LIST;
     @Nullable protected Executor callbackExecutor;
     @Nullable protected Shell.ResultCallback callback;
 
@@ -70,10 +70,11 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
     public void run(@NonNull OutputStream stdin,
                     @NonNull InputStream stdout,
                     @NonNull InputStream stderr) {
-        boolean noErr = err == UNSET_LIST;
+        final boolean noOut = out == UNSET_LIST;
+        final boolean noErr = err == UNSET_LIST;
 
-        List<String> outList = out;
-        List<String> errList = noErr ? (Shell.enableLegacyStderrRedirection ? out : null) : err;
+        List<String> outList = noOut ? (callback == null ? null : new ArrayList<>()) : out;
+        List<String> errList = noErr ? (Shell.enableLegacyStderrRedirection ? outList : null) : err;
 
         if (outList != null && outList == errList && !Utils.isSynchronized(outList)) {
             // Synchronize the list internally only if both lists are the same and are not
@@ -99,7 +100,7 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
             errGobbler.get();
 
             result.code = code;
-            result.out = out;
+            result.out = outList;
             result.err = noErr ? null : err;
         } catch (IOException | ExecutionException | InterruptedException e) {
             Utils.err(e);
@@ -119,6 +120,7 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
     @Override
     public Shell.Job to(List<String> stdout) {
         out = stdout;
+        err = UNSET_LIST;
         return this;
     }
 
