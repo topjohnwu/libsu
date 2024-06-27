@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
@@ -38,16 +39,48 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 class ShellImpl extends Shell {
     private volatile int status;
 
-    private final Process proc;
+    private final Process process;
     private final NoCloseOutputStream STDIN;
     private final NoCloseInputStream STDOUT;
     private final NoCloseInputStream STDERR;
+
+    // Guarded by scheduleLock
+    private final ReentrantLock scheduleLock = new ReentrantLock();
+    private final Condition idle = scheduleLock.newCondition();
     private final ArrayDeque<Task> tasks = new ArrayDeque<>();
-    private boolean runningTasks = false;
+    private boolean isRunningTask = false;
+
+    private static final class SyncTask implements Task {
+
+        private final Condition condition;
+        private boolean set = false;
+
+        SyncTask(Condition c) {
+            condition = c;
+        }
+
+        void signal() {
+            set = true;
+            condition.signal();
+        }
+
+        void await() {
+            while (!set) {
+                try {
+                    condition.await();
+                } catch (InterruptedException ignored) {}
+            }
+        }
+
+        @Override
+        public void run(OutputStream stdin, InputStream stdout, InputStream stderr) {}
+    }
 
     private static class NoCloseInputStream extends FilterInputStream {
 
@@ -84,12 +117,12 @@ class ShellImpl extends Shell {
         }
     }
 
-    ShellImpl(BuilderImpl builder, Process process) throws IOException {
+    ShellImpl(BuilderImpl builder, Process proc) throws IOException {
         status = UNKNOWN;
-        proc = process;
-        STDIN = new NoCloseOutputStream(process.getOutputStream());
-        STDOUT = new NoCloseInputStream(process.getInputStream());
-        STDERR = new NoCloseInputStream(process.getErrorStream());
+        process = proc;
+        STDIN = new NoCloseOutputStream(proc.getOutputStream());
+        STDOUT = new NoCloseInputStream(proc.getInputStream());
+        STDERR = new NoCloseInputStream(proc.getErrorStream());
 
         // Shell checks might get stuck indefinitely
         FutureTask<Integer> check = new FutureTask<>(this::shellCheck);
@@ -117,7 +150,7 @@ class ShellImpl extends Shell {
 
     private Integer shellCheck() throws IOException {
         try {
-            proc.exitValue();
+            process.exitValue();
             throw new IOException("Created process has terminated");
         } catch (IllegalThreadStateException ignored) {
             // Process is alive
@@ -156,7 +189,7 @@ class ShellImpl extends Shell {
         try { STDIN.close0(); } catch (IOException ignored) {}
         try { STDERR.close0(); } catch (IOException ignored) {}
         try { STDOUT.close0(); } catch (IOException ignored) {}
-        proc.destroy();
+        process.destroy();
     }
 
     @Override
@@ -164,19 +197,16 @@ class ShellImpl extends Shell {
         if (status < 0)
             return true;
 
-        synchronized (tasks) {
-            if (runningTasks) {
-                tasks.clear();
-                tasks.wait(unit.toMillis(timeout));
-            }
-            if (!runningTasks) {
-                release();
-                return true;
-            }
+        scheduleLock.lock();
+        try {
+            if (isRunningTask && !idle.await(timeout, unit))
+                return false;
+            close();
+        } finally {
+            scheduleLock.unlock();
         }
 
-        status = UNKNOWN;
-        return false;
+        return true;
     }
 
     @Override
@@ -198,8 +228,9 @@ class ShellImpl extends Shell {
             return false;
 
         try {
-            proc.exitValue();
+            process.exitValue();
             // Process is dead, shell is not alive
+            release();
             return false;
         } catch (IllegalThreadStateException e) {
             // Process is still running
@@ -228,43 +259,71 @@ class ShellImpl extends Shell {
     }
 
     private void processTasks() {
-        for (;;) {
-            Task task;
-            synchronized (tasks) {
-                if ((task = tasks.poll()) == null) {
-                    runningTasks = false;
-                    tasks.notifyAll();
-                    return;
-                }
-            }
+        Task task;
+        while ((task = processNextTask(false)) != null) {
             try {
                 exec0(task);
             } catch (IOException ignored) {}
         }
     }
 
+    @Nullable
+    private Task processNextTask(boolean fromExec) {
+        scheduleLock.lock();
+        try {
+            final Task task = tasks.poll();
+            if (task == null) {
+                isRunningTask = false;
+                idle.signalAll();
+                return null;
+            }
+            if (task instanceof SyncTask) {
+                ((SyncTask) task).signal();
+                return null;
+            }
+            if (fromExec) {
+                // Put the task back in front of the queue
+                tasks.offerFirst(task);
+            } else {
+                return task;
+            }
+        } finally {
+            scheduleLock.unlock();
+        }
+        EXECUTOR.execute(this::processTasks);
+        return null;
+    }
+
     @Override
     public void submitTask(@NonNull Task task) {
-        synchronized (tasks) {
+        scheduleLock.lock();
+        try {
             tasks.offer(task);
-            if (!runningTasks) {
-                runningTasks = true;
+            if (!isRunningTask) {
+                isRunningTask = true;
                 EXECUTOR.execute(this::processTasks);
             }
+        } finally {
+            scheduleLock.unlock();
         }
     }
 
     @Override
     public void execTask(@NonNull Task task) throws IOException {
-        synchronized (tasks) {
-            while (runningTasks) {
-                // Wait until all existing tasks are done
-                try {
-                    tasks.wait();
-                } catch (InterruptedException ignored) {}
+        scheduleLock.lock();
+        try {
+            if (isRunningTask) {
+                SyncTask sync = new SyncTask(scheduleLock.newCondition());
+                tasks.offer(sync);
+                // Wait until it's our turn
+                sync.await();
             }
+            isRunningTask = true;
+        } finally {
+            scheduleLock.unlock();
         }
         exec0(task);
+        processNextTask(true);
     }
 
     @NonNull
