@@ -150,8 +150,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#setFlags(int)" class="member-name-link">setFlags</a><wbr>(int&nbsp;flags)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
- constructed.</div>
+<div class="block">Set flags to control how a new <code>Shell</code> will be constructed.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setInitializers(java.lang.Class...)" class="member-name-link">setInitializers</a><wbr>(<a href="https://developer.android.com/reference/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;? extends <a href="Shell.Initializer.html" title="class in com.topjohnwu.superuser">Shell.Initializer</a>&gt;...&nbsp;classes)</code></div>
@@ -233,14 +232,12 @@ loadScripts(document, 'script');</script>
 <h3>setFlags</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
 </span><span class="modifiers">public abstract</span>&nbsp;<span class="return-type"><a href="Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></span>&nbsp;<span class="element-name">setFlags</span><wbr><span class="parameters">(int&nbsp;flags)</span></div>
-<div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
- constructed.</div>
+<div class="block">Set flags to control how a new <code>Shell</code> will be constructed.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>flags</code> - the desired flags.
               Value is either 0 or bitwise-or'd value of
-              <a href="Shell.html#FLAG_NON_ROOT_SHELL"><code>Shell.FLAG_NON_ROOT_SHELL</code></a>, <a href="Shell.html#FLAG_MOUNT_MASTER"><code>Shell.FLAG_MOUNT_MASTER</code></a>, or
-              <a href="Shell.html#FLAG_REDIRECT_STDERR"><code>Shell.FLAG_REDIRECT_STDERR</code></a></dd>
+              <a href="Shell.html#FLAG_NON_ROOT_SHELL"><code>Shell.FLAG_NON_ROOT_SHELL</code></a> or <a href="Shell.html#FLAG_MOUNT_MASTER"><code>Shell.FLAG_MOUNT_MASTER</code></a></dd>
 <dt>Returns:</dt>
 <dd>this Builder object for chaining of calls.</dd>
 </dl>

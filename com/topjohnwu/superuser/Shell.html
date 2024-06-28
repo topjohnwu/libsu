@@ -154,29 +154,29 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <div class="table-header col-second">Field</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static boolean</code></div>
-<div class="col-second even-row-color"><code><a href="#enableVerboseLogging" class="member-name-link">enableVerboseLogging</a></code></div>
+<div class="col-second even-row-color"><code><a href="#enableLegacyStderrRedirection" class="member-name-link">enableLegacyStderrRedirection</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">This flag exists for compatibility reasons.</div>
+</div>
+<div class="col-first odd-row-color"><code>static boolean</code></div>
+<div class="col-second odd-row-color"><code><a href="#enableVerboseLogging" class="member-name-link">enableVerboseLogging</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Set to <code>true</code> to enable verbose logging throughout the library.</div>
 </div>
-<div class="col-first odd-row-color"><code>static <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#EXECUTOR" class="member-name-link">EXECUTOR</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></code></div>
+<div class="col-second even-row-color"><code><a href="#EXECUTOR" class="member-name-link">EXECUTOR</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">The <a href="https://developer.android.com/reference/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link"><code>Executor</code></a> that manages all worker threads used in <code>libsu</code>.</div>
 </div>
-<div class="col-first even-row-color"><code>static final int</code></div>
-<div class="col-second even-row-color"><code><a href="#FLAG_MOUNT_MASTER" class="member-name-link">FLAG_MOUNT_MASTER</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code>static final int</code></div>
+<div class="col-second odd-row-color"><code><a href="#FLAG_MOUNT_MASTER" class="member-name-link">FLAG_MOUNT_MASTER</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">If set, create a root shell with the <code>--mount-master</code> option.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final int</code></div>
-<div class="col-second odd-row-color"><code><a href="#FLAG_NON_ROOT_SHELL" class="member-name-link">FLAG_NON_ROOT_SHELL</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">If set, create a non-root shell.</div>
-</div>
 <div class="col-first even-row-color"><code>static final int</code></div>
-<div class="col-second even-row-color"><code><a href="#FLAG_REDIRECT_STDERR" class="member-name-link">FLAG_REDIRECT_STDERR</a></code></div>
+<div class="col-second even-row-color"><code><a href="#FLAG_NON_ROOT_SHELL" class="member-name-link">FLAG_NON_ROOT_SHELL</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">If set, STDERR outputs will be redirected to STDOUT outputs.</div>
+<div class="block">If set, create a non-root shell.</div>
 </div>
 <div class="col-first odd-row-color"><code>static final int</code></div>
 <div class="col-second odd-row-color"><code><a href="#NON_ROOT_SHELL" class="member-name-link">NON_ROOT_SHELL</a></code></div>
@@ -286,16 +286,21 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Override the default <a href="Shell.Builder.html" title="class in com.topjohnwu.superuser"><code>Shell.Builder</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#waitAndClose()" class="member-name-link">waitAndClose</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#submitTask(com.topjohnwu.superuser.Shell.Task)" class="member-name-link">submitTask</a><wbr>(<a href="Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a>&nbsp;task)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Submits a low-level <a href="Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a> for execution in a queue of the shell.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#waitAndClose()" class="member-name-link">waitAndClose</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Wait indefinitely for any current/pending tasks to finish before closing this shell
  and release any system resources associated with the shell.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#waitAndClose(long,java.util.concurrent.TimeUnit)" class="member-name-link">waitAndClose</a><wbr>(long&nbsp;timeout,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#waitAndClose(long,java.util.concurrent.TimeUnit)" class="member-name-link">waitAndClose</a><wbr>(long&nbsp;timeout,
  <a href="https://developer.android.com/reference/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Wait for any current/pending tasks to finish before closing this shell
  and release any system resources associated with the shell.</div>
 </div>
@@ -405,31 +410,6 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 </section>
 </li>
 <li>
-<section class="detail" id="FLAG_REDIRECT_STDERR">
-<h3>FLAG_REDIRECT_STDERR</h3>
-<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">FLAG_REDIRECT_STDERR</span></div>
-<div class="block">If set, STDERR outputs will be redirected to STDOUT outputs.
- <p>
- Note: This flag only affects the following methods:
- <ul>
-     <li><a href="#cmd(java.lang.String...)"><code>cmd(String...)</code></a></li>
-     <li><a href="#cmd(java.io.InputStream)"><code>cmd(InputStream)</code></a></li>
-     <li><a href="Shell.Job.html#to(java.util.List)"><code>Shell.Job.to(List)</code></a></li>
- </ul>
- Check the descriptions of each method above for more details.
- <p>
- Constant value 8.</div>
-<dl class="notes">
-<dt>See Also:</dt>
-<dd>
-<ul class="see-list">
-<li><a href="../../../constant-values.html#com.topjohnwu.superuser.Shell.FLAG_REDIRECT_STDERR">Constant Field Values</a></li>
-</ul>
-</dd>
-</dl>
-</section>
-</li>
-<li>
 <section class="detail" id="EXECUTOR">
 <h3>EXECUTOR</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
@@ -445,6 +425,23 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <h3>enableVerboseLogging</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">enableVerboseLogging</span></div>
 <div class="block">Set to <code>true</code> to enable verbose logging throughout the library.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="enableLegacyStderrRedirection">
+<h3>enableLegacyStderrRedirection</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">enableLegacyStderrRedirection</span></div>
+<div class="block">This flag exists for compatibility reasons. DO NOT use unless necessary.
+ <p>
+ If enabled, STDERR outputs will be redirected to the STDOUT output list
+ when a <a href="Shell.Job.html" title="class in com.topjohnwu.superuser"><code>Shell.Job</code></a> is configured with <a href="Shell.Job.html#to(java.util.List)"><code>Shell.Job.to(List)</code></a>.
+ Since the <code>Shell.cmd(...)</code> methods are functionally equivalent to
+ <code>Shell.getShell().newJob().add(...).to(new ArrayList&lt;&gt;())</code>, this variable
+ also affects the behavior of those methods.
+ <p>
+ Note: The recommended way to redirect STDERR output to STDOUT is to assign the
+ same list to both STDOUT and STDERR with <a href="Shell.Job.html#to(java.util.List,java.util.List)"><code>Shell.Job.to(List, List)</code></a>.
+ The behavior of this flag is unintuitive and error prone.</div>
 </section>
 </li>
 </ul>
@@ -663,6 +660,24 @@ implements <a href="https://developer.android.com/reference/java/io/Closeable.ht
 <dd><code>task</code> - the desired task.</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://developer.android.com/reference/java/io/IOException.html" title="class or interface in java.io" class="external-link">IOException</a></code> - I/O errors when doing operations with STDIN/STDOUT/STDERR</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="submitTask(com.topjohnwu.superuser.Shell.Task)">
+<h3>submitTask</h3>
+<div class="member-signature"><span class="modifiers">public abstract</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">submitTask</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
+ <a href="Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a>&nbsp;task)</span></div>
+<div class="block">Submits a low-level <a href="Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a> for execution in a queue of the shell.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>task</code> - the desired task.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#execTask(com.topjohnwu.superuser.Shell.Task)"><code>execTask(Task)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

@@ -198,6 +198,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:E">E</h2>
 <dl class="index">
+<dt><a href="com/topjohnwu/superuser/Shell.html#enableLegacyStderrRedirection" class="member-name-link">enableLegacyStderrRedirection</a> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
+<dd>
+<div class="block">This flag exists for compatibility reasons.</div>
+</dd>
 <dt><a href="com/topjohnwu/superuser/Shell.html#enableVerboseLogging" class="member-name-link">enableVerboseLogging</a> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
 <div class="block">Set to <code>true</code> to enable verbose logging throughout the library.</div>
@@ -268,10 +272,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/topjohnwu/superuser/Shell.html#FLAG_NON_ROOT_SHELL" class="member-name-link">FLAG_NON_ROOT_SHELL</a> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
 <dd>
 <div class="block">If set, create a non-root shell.</div>
-</dd>
-<dt><a href="com/topjohnwu/superuser/Shell.html#FLAG_REDIRECT_STDERR" class="member-name-link">FLAG_REDIRECT_STDERR</a> - Static variable in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
-<dd>
-<div class="block">If set, STDERR outputs will be redirected to STDOUT outputs.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:G">G</h2>
@@ -690,8 +690,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Builder.html#setFlags(int)" class="member-name-link">setFlags(int)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
-<div class="block">Set flags that controls how <code>Shell</code> works and how a new <code>Shell</code> will be
- constructed.</div>
+<div class="block">Set flags to control how a new <code>Shell</code> will be constructed.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Builder.html#setInitializers(java.lang.Class...)" class="member-name-link">setInitializers(Class&lt;? extends Shell.Initializer&gt;...)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Builder.html" title="class in com.topjohnwu.superuser">Shell.Builder</a></dt>
 <dd>
@@ -760,6 +759,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A task that can be executed by a shell with the method <a href="com/topjohnwu/superuser/Shell.html#execTask(com.topjohnwu.superuser.Shell.Task)"><code>Shell.execTask(Task)</code></a>.</div>
 </dd>
+<dt><a href="com/topjohnwu/superuser/Shell.Task.html#shellDied()" class="member-name-link">shellDied()</a> - Method in interface com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Task.html" title="interface in com.topjohnwu.superuser">Shell.Task</a></dt>
+<dd>
+<div class="block">This method will be called when a shell is unable to execute this task.</div>
+</dd>
 <dt><a href="com/topjohnwu/superuser/ShellUtils.html" class="type-name-link" title="class in com.topjohnwu.superuser">ShellUtils</a> - Class in <a href="com/topjohnwu/superuser/package-summary.html">com.topjohnwu.superuser</a></dt>
 <dd>
 <div class="block">Some handy utility methods that are used in <code>libsu</code>.</div>
@@ -789,6 +792,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="com/topjohnwu/superuser/Shell.Job.html#submit(java.util.concurrent.Executor,com.topjohnwu.superuser.Shell.ResultCallback)" class="member-name-link">submit(Executor, Shell.ResultCallback)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></dt>
 <dd>
 <div class="block">Submit the job to an internal queue to run in the background.</div>
+</dd>
+<dt><a href="com/topjohnwu/superuser/Shell.html#submitTask(com.topjohnwu.superuser.Shell.Task)" class="member-name-link">submitTask(Shell.Task)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.html" title="class in com.topjohnwu.superuser">Shell</a></dt>
+<dd>
+<div class="block">Submits a low-level <a href="com/topjohnwu/superuser/Shell.Task.html" title="interface in com.topjohnwu.superuser"><code>Shell.Task</code></a> for execution in a queue of the shell.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/io/SuFile.html" class="type-name-link" title="class in com.topjohnwu.superuser.io">SuFile</a> - Class in <a href="com/topjohnwu/superuser/io/package-summary.html">com.topjohnwu.superuser.io</a></dt>
 <dd>
@@ -821,7 +828,7 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="com/topjohnwu/superuser/Shell.Job.html#to(java.util.List)" class="member-name-link">to(List&lt;String&gt;)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></dt>
 <dd>
-<div class="block">Store output to a specific list.</div>
+<div class="block">Store output of STDOUT to a specific list.</div>
 </dd>
 <dt><a href="com/topjohnwu/superuser/Shell.Job.html#to(java.util.List,java.util.List)" class="member-name-link">to(List&lt;String&gt;, List&lt;String&gt;)</a> - Method in class com.topjohnwu.superuser.<a href="com/topjohnwu/superuser/Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></dt>
 <dd>

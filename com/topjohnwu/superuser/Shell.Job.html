@@ -149,9 +149,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Submit the job to an internal queue to run in the background.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#to(java.util.List)" class="member-name-link">to</a><wbr>(<a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;output)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#to(java.util.List)" class="member-name-link">to</a><wbr>(<a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stdout)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Store output to a specific list.</div>
+<div class="block">Store output of STDOUT to a specific list.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>abstract <a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#to(java.util.List,java.util.List)" class="member-name-link">to</a><wbr>(<a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stdout,
@@ -195,15 +195,11 @@ loadScripts(document, 'script');</script>
 <h3>to</h3>
 <div class="member-signature"><span class="annotations"><a href="https://developer.android.com/reference/androidx/annotation/NonNull.html" title="class or interface in androidx.annotation" class="external-link">@NonNull</a>
 </span><span class="modifiers">public abstract</span>&nbsp;<span class="return-type"><a href="Shell.Job.html" title="class in com.topjohnwu.superuser">Shell.Job</a></span>&nbsp;<span class="element-name">to</span><wbr><span class="parameters">(<a href="https://developer.android.com/reference/androidx/annotation/Nullable.html" title="class or interface in androidx.annotation" class="external-link">@Nullable</a>
- <a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;output)</span></div>
-<div class="block">Store output to a specific list.
- <p>
- Output of STDERR will be also be stored in the same <a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> if the flag
- <a href="Shell.html#FLAG_REDIRECT_STDERR"><code>Shell.FLAG_REDIRECT_STDERR</code></a> is set; <a href="Shell.Result.html#getErr()"><code>Shell.Result.getErr()</code></a>
- will always return an empty list.</div>
+ <a href="https://developer.android.com/reference/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://developer.android.com/reference/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stdout)</span></div>
+<div class="block">Store output of STDOUT to a specific list.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>output</code> - the list to store outputs. Pass <code>null</code> to omit all outputs.</dd>
+<dd><code>stdout</code> - the list to store STDOUT. Pass <code>null</code> to omit all outputs.</dd>
 <dt>Returns:</dt>
 <dd>this Job object for chaining of calls.</dd>
 </dl>
