@@ -4,7 +4,7 @@
 
 - [core] New API `Shell.Builder.setCommands(String...)`
 - [core] New API `Shell.submitTask(Task)`
-- [core] New API `Shell.Job.shellDied()`
+- [core] New API `Shell.Task.shellDied()`
 - [core] New internal task scheduling implementation
 - [core] Remove deprecated `Shell.sh/su` methods
 - [core] Deprecate `FLAG_REDIRECT_STDERR`
@@ -13,8 +13,8 @@
 
 ### Migration Guide
 
-- Usage of `Shell.sh/su` methods should be directly replaced with `Shell.cmd`. If you only want to run certain jobs if the shell is running as root, manually check with `Shell.isRoot()` before creating the job.
-- The behavior of `FLAG_REDIRECT_STDERR` changed and usage is deprecated. Setting `FLAG_REDIRECT_STDERR` in `Shell.Builder.setFlags(int)` will start to internally enable `Shell.enableLegacyStderrRedirection` as a best-effort backwards compatibility support to emulate its behavior. Please note that the new `Shell.enableLegacyStderrRedirection` flag controls the behavior of the entire program, NOT on a per-shell basis as it used to be. If you want to redirect STDERR to STDOUT, please switch over to setting the same output list for both STDOUT and STDERR with `Shell.Job.to(List, List)` as soon as possible.
+- Usage of `Shell.sh/su` methods should be directly replaced with `Shell.cmd`. If you only want to run certain jobs when the shell is root, manually check with `Shell.isRoot()` before creating the job.
+- The behavior of `FLAG_REDIRECT_STDERR` changed and its usage is deprecated. Setting `FLAG_REDIRECT_STDERR` in `Shell.Builder.setFlags(int)` will internally enable `Shell.enableLegacyStderrRedirection` as a best-effort backwards compatibility emulation to support the old behavior. Please note that the new `Shell.enableLegacyStderrRedirection` flag controls the behavior of the entire program, NOT on a per-shell basis as it used to be. If you want to redirect STDERR to STDOUT, please switch over to setting the same output list for both STDOUT and STDERR with `Shell.Job.to(List, List)`, and do not rely on `FLAG_REDIRECT_STDERR` or `Shell.enableLegacyStderrRedirection`.
 
 ## 5.2.2
 
