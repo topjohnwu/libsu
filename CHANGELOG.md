@@ -1,10 +1,20 @@
-## 5.3.0
+## 6.0.0
+
+(5.3.0 release notes are merged into 6.0.0)
 
 - [core] New API `Shell.Builder.setCommands(String...)`
+- [core] New API `Shell.submitTask(Task)`
+- [core] New API `Shell.Job.shellDied()`
 - [core] New internal task scheduling implementation
 - [core] Remove deprecated `Shell.sh/su` methods
+- [core] Deprecate `FLAG_REDIRECT_STDERR`
 - [service] Fix support on pre-6.0 devices
 - [service] Fix crashes on some LG devices
+
+### Migration Guide
+
+- Usage of `Shell.sh/su` methods should be directly replaced with `Shell.cmd`. If you only want to run certain jobs if the shell is running as root, manually check with `Shell.isRoot()` before creating the job.
+- The behavior of `FLAG_REDIRECT_STDERR` changed and usage is deprecated. Setting `FLAG_REDIRECT_STDERR` in `Shell.Builder.setFlags(int)` will start to internally enable `Shell.enableLegacyStderrRedirection` as a best-effort backwards compatibility support to emulate its behavior. Please note that the new `Shell.enableLegacyStderrRedirection` flag controls the behavior of the entire program, NOT on a per-shell basis as it used to be. If you want to redirect STDERR to STDOUT, please switch over to setting the same output list for both STDOUT and STDERR with `Shell.Job.to(List, List)` as soon as possible.
 
 ## 5.2.2
 
