@@ -107,7 +107,7 @@ abstract class JobTask extends Shell.Job implements Shell.Task {
         }
 
         close();
-        setResult(new ResultImpl());
+        setResult(result);
     }
 
     @Override
