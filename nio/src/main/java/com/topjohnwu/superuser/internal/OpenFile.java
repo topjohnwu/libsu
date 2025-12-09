@@ -116,10 +116,18 @@ class OpenFile implements Closeable {
     synchronized int pread(int len, long offset) throws ErrnoException, IOException {
         if (fd == null || write == null)
             throw new ClosedChannelException();
-        final long result;
+        long result;
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
-            Int64Ref inOff = offset < 0 ? null : new Int64Ref(offset);
-            result = FileUtils.splice(fd, inOff, write, null, len, 0);
+            try {
+                Int64Ref inOff = offset < 0 ? null : new Int64Ref(offset);
+                result = FileUtils.splice(fd, inOff, write, null, len, 0);
+            } catch (ErrnoException e) {
+                // Fallback for pseudo files that do not support splice
+                if (e.errno == OsConstants.EINVAL)
+                    result = preadFb(len, offset);
+                else
+                    throw e;
+            }
         } else {
             StructStat st = getStat();
             if (OsConstants.S_ISREG(st.st_mode) || OsConstants.S_ISBLK(st.st_mode)) {
@@ -128,63 +136,80 @@ class OpenFile implements Closeable {
                 result = FileUtils.sendfile(write, fd, inOff, len);
             } else {
                 // Fallback to copy into internal buffer
-                ByteBuffer buf = getBuf();
-                buf.limit(Math.min(len, buf.capacity()));
-                if (offset < 0) {
-                    Os.read(fd, buf);
-                } else {
-                    Os.pread(fd, buf, offset);
-                }
-                buf.flip();
-                result = buf.remaining();
-                // Need to write all bytes
-                for (int sz = (int) result; sz > 0; ) {
-                    sz -= Os.write(write, buf);
-                }
+                result = preadFb(len, offset);
             }
         }
         return (int) result;
+    }
+
+    private int preadFb(int len, long offset) throws ErrnoException, IOException {
+        ByteBuffer buf = getBuf();
+        buf.limit(Math.min(len, buf.capacity()));
+        if (offset < 0) {
+            Os.read(fd, buf);
+        } else {
+            Os.pread(fd, buf, offset);
+        }
+        buf.flip();
+        int result = buf.remaining();
+        // Need to write all bytes
+        for (int sz = (int) result; sz > 0; ) {
+            sz -= Os.write(write, buf);
+        }
+        return result;
     }
 
     synchronized int pwrite(int len, long offset, boolean exact) throws ErrnoException, IOException {
         if (fd == null || read == null)
             throw new ClosedChannelException();
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
-            Int64Ref outOff = offset < 0 ? null : new Int64Ref(offset);
-            if (exact) {
-                int sz = len;
-                while (sz > 0) {
-                    sz -= FileUtils.splice(read, null, fd, outOff, sz, 0);
+            try {
+                Int64Ref outOff = offset < 0 ? null : new Int64Ref(offset);
+                if (exact) {
+                    int sz = len;
+                    while (sz > 0) {
+                        sz -= FileUtils.splice(read, null, fd, outOff, sz, 0);
+                    }
+                    return len;
+                } else {
+                    return (int) FileUtils.splice(read, null, fd, outOff, len, 0);
                 }
-                return len;
-            } else {
-                return (int) FileUtils.splice(read, null, fd, outOff, len, 0);
+            } catch (ErrnoException e) {
+                // Fallback for pseudo files that do not support splice
+                if (e.errno == OsConstants.EINVAL)
+                    return pwriteFb(len, offset, exact);
+                else
+                    throw e;
             }
         } else {
             // Unfortunately, sendfile does not allow reading from pipes.
             // Manually read into an internal buffer then write to output.
-            ByteBuffer buf = getBuf();
-            int sz = 0;
-            buf.limit(len);
-            if (exact) {
-                while (len > sz) {
-                    sz += Os.read(read, buf);
-                }
-            } else {
-                sz = Os.read(read, buf);
-            }
-            len = sz;
-            buf.flip();
-            while (sz > 0) {
-                if (offset < 0) {
-                    sz -= Os.write(fd, buf);
-                } else {
-                    int w = Os.pwrite(fd, buf, offset);
-                    sz -= w;
-                    offset += w;
-                }
-            }
-            return len;
+            return pwriteFb(len, offset, exact);
         }
+    }
+
+    private int pwriteFb(int len, long offset, boolean exact) throws ErrnoException, IOException {
+        ByteBuffer buf = getBuf();
+        int sz = 0;
+        buf.limit(len);
+        if (exact) {
+            while (len > sz) {
+                sz += Os.read(read, buf);
+            }
+        } else {
+            sz = Os.read(read, buf);
+        }
+        len = sz;
+        buf.flip();
+        while (sz > 0) {
+            if (offset < 0) {
+                sz -= Os.write(fd, buf);
+            } else {
+                int w = Os.pwrite(fd, buf, offset);
+                sz -= w;
+                offset += w;
+            }
+        }
+        return len;
     }
 }
