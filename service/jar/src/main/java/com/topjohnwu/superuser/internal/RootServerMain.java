@@ -16,6 +16,11 @@
 
 package com.topjohnwu.superuser.internal;
 
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_START_DAEMON;
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_START_SERVICE;
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_STOP_SERVICE;
+import static com.topjohnwu.superuser.internal.Constants.getServiceName;
+
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
@@ -33,41 +38,21 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
 /*
-Trampoline to start a root service.
-
-This is the only class included in main.jar as a raw asset.
-The client will execute the main method in a root shell.
-
-This class will get the system context by calling into Android private APIs with reflection, and
-uses that to create our client package context. The client context will have the full APK loaded,
-just like it was launched in a non-root environment.
-
-Expected command-line args:
-args[0]: client service component name
-args[1]: client UID
-args[2]: CMDLINE_START_SERVICE, CMDLINE_START_DAEMON, or CMDLINE_STOP_SERVICE
+ * Trampoline to start a root service.
+ *
+ * This is the only class included in main.jar as a raw asset.
+ * The client will execute the main method in a root shell.
+ *
+ * This class will get the system context by calling into Android private APIs with reflection, and
+ * uses that to create our client package context. The client context will have the full APK loaded,
+ * just like it was launched in a non-root environment.
+ *
+ * Expected command-line args:
+ * args[0]: client service component name
+ * args[1]: client UID
+ * args[2]: CMDLINE_START_SERVICE, CMDLINE_START_DAEMON, or CMDLINE_STOP_SERVICE
 */
 class RootServerMain extends ContextWrapper implements Callable<Object[]> {
-
-    static final String CMDLINE_START_SERVICE = "start";
-    static final String CMDLINE_START_DAEMON = "daemon";
-    static final String CMDLINE_STOP_SERVICE = "stop";
-
-    private static final Method getService;
-    private static final Method attachBaseContext;
-
-    static {
-        try {
-            @SuppressLint("PrivateApi")
-            Class<?> sm = Class.forName("android.os.ServiceManager");
-            getService = sm.getDeclaredMethod("getService", String.class);
-            attachBaseContext = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
-            attachBaseContext.setAccessible(true);
-        } catch (Exception e) {
-            // Shall not happen!
-            throw new RuntimeException(e);
-        }
-    }
 
     @SuppressLint("PrivateApi")
     static Context getSystemContext() {
@@ -80,11 +65,6 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    // Put "libsu" in front of the service name to prevent possible conflicts
-    static String getServiceName(String pkg) {
-        return "libsu-" + pkg;
     }
 
     public static void main(String[] args) {
@@ -144,8 +124,8 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
 
         if (isDaemon) daemon: try {
             // Get existing daemon process
-            Object binder = getService.invoke(null, getServiceName(name.getPackageName()));
-            IRootServiceManager m = IRootServiceManager.Stub.asInterface((IBinder) binder);
+            IBinder binder = HiddenAPIs.getService(getServiceName(name.getPackageName()));
+            IRootServiceManager m = IRootServiceManager.Stub.asInterface(binder);
             if (m == null)
                 break daemon;
 
@@ -204,7 +184,7 @@ class RootServerMain extends ContextWrapper implements Callable<Object[]> {
         Class<?> clz = cl.loadClass(name.getClassName());
         Constructor<?> ctor = clz.getDeclaredConstructor();
         ctor.setAccessible(true);
-        attachBaseContext.invoke(ctor.newInstance(), this);
+        HiddenAPIs.attachBaseContext(ctor.newInstance(), this);
     }
 
     static class ResourcesWrapper extends Resources {

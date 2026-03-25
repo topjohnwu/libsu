@@ -16,9 +16,9 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_DAEMON;
-import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_START_SERVICE;
-import static com.topjohnwu.superuser.internal.RootServerMain.CMDLINE_STOP_SERVICE;
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_START_DAEMON;
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_START_SERVICE;
+import static com.topjohnwu.superuser.internal.Constants.CMDLINE_STOP_SERVICE;
 import static com.topjohnwu.superuser.ipc.RootService.CATEGORY_DAEMON_MODE;
 
 import android.Manifest;

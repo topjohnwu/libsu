@@ -16,13 +16,12 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServiceManager.TAG;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 
 import java.lang.reflect.Method;
 
@@ -35,7 +34,10 @@ import java.lang.reflect.Method;
 @SuppressLint("PrivateApi,DiscouragedPrivateApi,SoonBlockedPrivateApi")
 class HiddenAPIs {
 
+    private static final String TAG = "HiddenAPIs";
+
     private static Method addService;
+    private static Method getService;
     private static Method attachBaseContext;
     private static Method setAppName;
 
@@ -46,6 +48,7 @@ class HiddenAPIs {
     static {
         try {
             Class<?> sm = Class.forName("android.os.ServiceManager");
+            getService = sm.getDeclaredMethod("getService", String.class);
             if (Build.VERSION.SDK_INT >= 28) {
                 try {
                     addService = sm.getDeclaredMethod("addService",
@@ -64,7 +67,7 @@ class HiddenAPIs {
             Class<?> ddm = Class.forName("android.ddm.DdmHandleAppName");
             setAppName = ddm.getDeclaredMethod("setAppName", String.class, int.class);
         } catch (ReflectiveOperationException e) {
-            Utils.err(TAG, e);
+            Log.e(TAG, "", e);
         }
     }
 
@@ -73,6 +76,14 @@ class HiddenAPIs {
             setAppName.invoke(null, name, 0);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static IBinder getService(String name) {
+        try {
+            return (IBinder) getService.invoke(null, name);
+        } catch (ReflectiveOperationException e) {
+            return null;
         }
     }
 
@@ -85,7 +96,7 @@ class HiddenAPIs {
                 addService.invoke(null, name, service);
             }
         } catch (ReflectiveOperationException e) {
-            Utils.err(TAG, e);
+            Log.e(TAG, "", e);
         }
     }
 

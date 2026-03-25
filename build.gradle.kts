@@ -69,7 +69,10 @@ fun Project.android(configuration: BaseExtension.() -> Unit) =
 fun Project.androidLibrary(configuration: LibraryExtension.() -> Unit) =
         extensions.getByName<LibraryExtension>("android").configuration()
 
-subprojects {
+allprojects {
+    if (this == rootProject)
+        return@allprojects
+
     configurations.create("javadocDeps")
     afterEvaluate {
         android {

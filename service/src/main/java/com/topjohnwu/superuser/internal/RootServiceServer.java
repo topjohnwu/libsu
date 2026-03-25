@@ -16,7 +16,7 @@
 
 package com.topjohnwu.superuser.internal;
 
-import static com.topjohnwu.superuser.internal.RootServerMain.getServiceName;
+import static com.topjohnwu.superuser.internal.Constants.getServiceName;
 import static com.topjohnwu.superuser.internal.RootServiceManager.DEBUG_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.LOGGING_ENV;
 import static com.topjohnwu.superuser.internal.RootServiceManager.MSG_STOP;

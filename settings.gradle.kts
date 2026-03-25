@@ -15,4 +15,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-include(":example", ":core", ":service", ":nio", ":io")
+include(":example", ":core", ":nio", ":io")
+include(":service", ":service:shared", ":service:jar")
