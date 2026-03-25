@@ -1,12 +1,14 @@
-import com.android.build.gradle.BaseExtension
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.variant.AndroidComponentsExtension
 import java.io.ByteArrayOutputStream
+import java.net.URI
 import java.net.URL
 
 plugins {
     id("java")
     id("maven-publish")
-    id("com.android.library") version "8.5.0" apply false
+    id("com.android.library") version "9.1.0" apply false
 }
 
 val dlPackageList by tasks.registering {
@@ -16,9 +18,9 @@ val dlPackageList by tasks.registering {
         // so links to Android classes can work properly in Javadoc
 
         val bos = ByteArrayOutputStream()
-        URL("https://developer.android.com/reference/package-list")
+        URI("https://developer.android.com/reference/package-list").toURL()
                 .openStream().use { src -> src.copyTo(bos) }
-        URL("https://developer.android.com/reference/androidx/package-list")
+        URI("https://developer.android.com/reference/androidx/package-list").toURL()
                 .openStream().use { src -> src.copyTo(bos) }
 
         // Strip out empty lines
@@ -38,13 +40,12 @@ val javadoc = (tasks["javadoc"] as Javadoc).apply {
     title = "libsu API"
     exclude("**/internal/**")
     (options as StandardJavadocDocletOptions).apply {
-        linksOffline = listOf(JavadocOfflineLink(
-            "https://developer.android.com/reference/",
-            rootProject.layout.buildDirectory.asFile.get().path))
+        linksOffline("https://developer.android.com/reference/",
+            rootProject.layout.buildDirectory.get().asFile.path)
         isNoDeprecated = true
         addBooleanOption("-ignore-source-errors").value = true
     }
-    setDestinationDir(rootProject.layout.buildDirectory.dir("javadoc").get().asFile)
+    destinationDir = rootProject.layout.buildDirectory.dir("javadoc").get().asFile
 }
 
 val javadocJar by tasks.registering(Jar::class) {
@@ -63,11 +64,14 @@ publishing {
     }
 }
 
-fun Project.android(configuration: BaseExtension.() -> Unit) =
-        extensions.getByName<BaseExtension>("android").configuration()
+private fun Project.android(configure: Action<CommonExtension>) =
+    extensions.configure("android", configure)
 
-fun Project.androidLibrary(configuration: LibraryExtension.() -> Unit) =
-        extensions.getByName<LibraryExtension>("android").configuration()
+private fun Project.androidLibrary(configure: Action<LibraryExtension>) =
+    extensions.configure("android", configure)
+
+private fun Project.androidComponents(configure: Action<AndroidComponentsExtension<*, *, *>>) =
+    extensions.configure(AndroidComponentsExtension::class.java, configure)
 
 allprojects {
     if (this == rootProject)
@@ -76,16 +80,19 @@ allprojects {
     configurations.create("javadocDeps")
     afterEvaluate {
         android {
-            compileSdkVersion(34)
-            buildToolsVersion = "34.0.0"
+            compileSdk {
+                version = release(36) {
+                    minorApiLevel = 1
+                }
+            }
+            buildToolsVersion = "36.1.0"
 
-            defaultConfig {
-                if (minSdkVersion == null)
+            defaultConfig.apply {
+                if (minSdk == null)
                     minSdk = 19
-                targetSdk = 34
             }
 
-            compileOptions {
+            compileOptions.apply {
                 sourceCompatibility = JavaVersion.VERSION_1_8
                 targetCompatibility = JavaVersion.VERSION_1_8
             }
@@ -94,16 +101,23 @@ allprojects {
         if (plugins.hasPlugin("com.android.library")) {
             apply(plugin = "maven-publish")
 
+            androidComponents {
+                onVariants {
+                    javadoc.apply {
+                        classpath += project.files(sdkComponents.bootClasspath)
+                    }
+                }
+            }
+
             androidLibrary {
                 buildFeatures {
                     buildConfig = false
                 }
 
-                val sources = sourceSets.getByName("main").java.getSourceFiles()
-
+                val sources = project.files(
+                    *sourceSets.getByName("main").java.directories.toTypedArray()).asFileTree
                 javadoc.apply {
                     source += sources
-                    classpath += project.files(bootClasspath)
                     classpath += configurations.getByName("javadocDeps")
                 }
 
