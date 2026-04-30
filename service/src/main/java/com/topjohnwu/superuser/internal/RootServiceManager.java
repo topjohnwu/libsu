@@ -51,6 +51,7 @@ import com.topjohnwu.superuser.ShellUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -284,15 +285,28 @@ public class RootServiceManager implements Handler.Callback {
     public Shell.Task createBindTask(Intent intent, Executor executor, ServiceConnection conn) {
         ServiceKey key = bindInternal(intent, executor, conn);
         if (key != null) {
-            pendingTasks.add(() -> bindInternal(intent, executor, conn) == null);
+            PendingBindTask pending = new PendingBindTask(key, intent, executor, conn);
+            pendingTasks.add(pending);
             int mask = key.isDaemon() ? DAEMON_EN_ROUTE : REMOTE_EN_ROUTE;
             if ((flags & mask) == 0) {
                 flags |= mask;
                 String action = key.isDaemon() ? CMDLINE_START_DAEMON : CMDLINE_START_SERVICE;
-                return startRootProcess(key.getName(), action);
+                return new RootProcessStartTask(startRootProcess(key.getName(), action), key.isDaemon());
             }
         }
         return null;
+    }
+
+    private void cancelPendingBinds(boolean daemon) {
+        UiThreadHandler.runAndWait(() -> {
+            int mask = daemon ? DAEMON_EN_ROUTE : REMOTE_EN_ROUTE;
+            flags &= ~mask;
+            for (int i = pendingTasks.size() - 1; i >= 0; --i) {
+                if (pendingTasks.get(i).isDaemon() == daemon) {
+                    pendingTasks.remove(i);
+                }
+            }
+        });
     }
 
     public void unbind(@NonNull ServiceConnection conn) {
@@ -463,7 +477,65 @@ public class RootServiceManager implements Handler.Callback {
         }
     }
 
+    private class PendingBindTask implements BindTask {
+        private final ServiceKey key;
+        private final Intent intent;
+        private final Executor executor;
+        private final ServiceConnection conn;
+
+        PendingBindTask(
+                ServiceKey key,
+                Intent intent,
+                Executor executor,
+                ServiceConnection conn) {
+            this.key = key;
+            this.intent = intent;
+            this.executor = executor;
+            this.conn = conn;
+        }
+
+        @Override
+        public boolean isDaemon() {
+            return key.isDaemon();
+        }
+
+        @Override
+        public boolean run() {
+            return bindInternal(intent, executor, conn) == null;
+        }
+    }
+
+    private class RootProcessStartTask implements Shell.Task {
+        private final Shell.Task task;
+        private final boolean daemon;
+
+        RootProcessStartTask(Shell.Task task, boolean daemon) {
+            this.task = task;
+            this.daemon = daemon;
+        }
+
+        @Override
+        public void run(
+                @NonNull OutputStream stdin,
+                @NonNull InputStream stdout,
+                @NonNull InputStream stderr) throws IOException {
+            try {
+                task.run(stdin, stdout, stderr);
+            } catch (IOException e) {
+                cancelPendingBinds(daemon);
+                throw e;
+            }
+        }
+
+        @Override
+        public void shellDied() {
+            cancelPendingBinds(daemon);
+            task.shellDied();
+        }
+    }
+
     private interface BindTask {
+        boolean isDaemon();
         boolean run();
     }
 
