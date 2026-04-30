@@ -195,8 +195,11 @@ public abstract class RootService extends ContextWrapper {
                 Shell shell = Shell.getShell();
                 if (shell.isRoot()) {
                     shell.execTask(task);
+                } else {
+                    task.shellDied();
                 }
             } catch (IOException e) {
+                task.shellDied();
                 Utils.err(e);
             }
         };
